@@ -3,7 +3,7 @@
 
 Points:
 1. building blocks as functions:
-    - `**.ng` files with macros (see [`why macros`](https://github.com/mauriziocescon/ng-playground/blob/main/why-macros.md) as well), 
+    - `**.ng` files with macros (see [`why macros`](https://github.com/mauriziocescon/ng-playground/blob/main/why-macros.md)), 
     - `component`: a `script` with scoped logic that returns a `template`,
     - `directive`: a `script` that can change the appearance or behaviour of DOM elements,
     - `declaration`: a way to declare `const` variables in templates that depend on DI,
