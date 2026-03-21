@@ -353,7 +353,6 @@ export #component Menu({
    */
    children = fragment<void>(),
 }) {
-  
   script: () => {
     /** ... **/
     
@@ -495,8 +494,6 @@ export #component UserDetailConsumer() {
     const email = signal<string>(...);
 
     function makeAdmin() {/** ... **/}
-    
-    const all = { user, email, makeAdmin };
     
     /**
      * bind:**={object} bind entries of object; same for model / on
