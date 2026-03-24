@@ -1,5 +1,5 @@
 # Anatomy of signal components
-**⚠️ Note ⚠️: just personal thoughts from a DEV perspective on [the future of angular](https://myconf.dev/videos/2024-keynote-session-the-future-of-angular) (template level).**
+**⚠️ Note ⚠️: personal thoughts from a developer's perspective on [the future of Angular](https://myconf.dev/videos/2024-keynote-session-the-future-of-angular) (template level).**
 
 Points:
 1. building blocks as functions:
@@ -139,7 +139,7 @@ export #component UserDetail({
 }
 ```
 
-Lexical scoping: template => script => func / const / enum / interface imported in the file => global.
+Lexical scoping resolves in this order: template → script → functions, constants, enums, and interfaces imported in the file → global.
 ```ts
 enum Type {
   Counter = 'counter',
@@ -222,7 +222,7 @@ export #directive tooltip({
 ```
 
 ## Declarations and template-scope `@const` constants
-Definition of a template-scoped `@const` constant whose creation happens once per view life cycle and which can run in an injection context:
+Defines a template-scoped `@const` constant created once per view lifecycle that runs in an injection context:
 ```ts
 import { signal, computed, inject, input } from '@angular/core';
 import { Item, PriceManager } from '@mylib/item';
@@ -257,10 +257,10 @@ export #component PriceSimulator({
   script: () => {
     /**
      * any declaration can be used directly in the template
-     * declarations require @ cause they can only be used with @const
-     * 
-     * qty / price have the same @let scope and get created once 
-     * following the @for embedded views life cycle
+     * declarations require @ because they can only be used with @const
+     *
+     * qty / price share the same @let scope and are created once,
+     * following the @for embedded view lifecycle
      */
     return (
       @for (item of items(); track item.id) {
@@ -280,7 +280,7 @@ export #component PriceSimulator({
 ```
 
 ## Inputs
-Inputs lifted up for providers init:
+Inputs hoisted to the component level for use in provider initialization:
 ```ts
 import { linkedSignal, input, WritableSignal, provide, inject } from '@angular/core';
 
@@ -316,9 +316,9 @@ export #component Counter({
 ```
 
 ## Composition with fragments, directives and spread syntax
-Fragments are very similar to [`svelte snippets`](https://svelte.dev/docs/svelte/snippet): functions returning html markup. Returned markup is opaque: you cannot manipulate it similarly to [`react Children (legacy)`](https://react.dev/reference/react/Children) or [`solid children`](https://www.solidjs.com/tutorial/props_children). Directives behave similarly to [`svelte attachments`](https://svelte.dev/docs/svelte/@attach). Spread syntax can be used at component function level similarly to react. Note: the examples below are simplified.
+Fragments are similar to [Svelte snippets](https://svelte.dev/docs/svelte/snippet): functions that return HTML markup. The returned markup is opaque — it cannot be manipulated like [React Children (legacy)](https://react.dev/reference/react/Children) or [Solid children](https://www.solidjs.com/tutorial/props_children). Directives behave similarly to [Svelte attachments](https://svelte.dev/docs/svelte/@attach). Spread syntax can be used at the component function level, similarly to React. Note: the examples below are simplified.
 
-Implicit children fragment (where + when) and binding context:
+Implicit children fragment (placement and lifecycle) and binding context:
 ```ts
 import { signal } from '@angular/core';
 import { Menu, MenuItem } from '@mylib/menu';
@@ -461,7 +461,7 @@ export #component Button({
   disabled = input<boolean>(false),
   click = output<void>(),
   /**
-   * all @directive applied to <Button />
+   * all directives applied to <Button />
    * 
    * readonly signal provided by ng (not bindable directly)
    * name reserved to ng
@@ -483,7 +483,7 @@ export #component Button({
 }
 ```
 
-Wrapping components and passing inputs / outputs:
+Wrapping components and forwarding inputs and outputs:
 ```ts
 import { input, computed, Props } from '@angular/core';
 import { UserDetail, User } from './user-detail.ng';
@@ -496,7 +496,7 @@ export #component UserDetailConsumer() {
     function makeAdmin() {/** ... **/}
     
     /**
-     * bind:**={object} bind entries of object; same for model / on
+     * bind:**={object} binds all entries of an object; same for model / on
      * compile-time unrolling + type checking
      */
     return (
@@ -511,9 +511,9 @@ export #component UserDetailConsumer() {
 export #component UserDetailWrapper({
   user = input<User>(),
   /**
-   * destruction syntax: whatever is not matching 
-   * inputs / outputs / models / fragments / directives
-   * defined explicitly (like user).
+   * destructuring syntax: captures everything that does not match
+   * the explicitly defined inputs / outputs / models / fragments / directives
+   * (like user).
    */
   ...rest,
 }: Props<UserDetail>) {
@@ -549,7 +549,7 @@ export #component UserDetail({
 }
 ```
 
-Wrapping native elements and passing attributes / event listeners:
+Wrapping native elements and forwarding attributes and event listeners:
 ```ts
 import { signal } from '@angular/core';
 import { Button } from '@mylib/button';
@@ -596,7 +596,7 @@ export #component Button({
     const innerStyle = computed(() => `${style()}; color: red;`);
     
     /**
-     * {...rest} adds type / class / ...
+     * {...rest} spreads remaining attributes like type, class, etc.
      */
     return (
       <button {...directives()} {...rest} style={innerStyle()}>
@@ -628,7 +628,7 @@ export #component Something() {
 ```
 
 ## Template ref
-Retrieving references of elements / components / directives (runtime):
+Retrieving runtime references to elements, components, and directives:
 ```ts
 import { ref, Signal, signal, afterNextRender } from '@angular/core';
 import { tooltip } from '@mylib/tooltip';
@@ -659,8 +659,8 @@ export #component Parent() {
 
     /**
      * 1. can only use what's returned by Child.script.exports
-     * 2. templates only lookup: cannot retrieve providers
-     *    defined in the Child comp tree
+     * 2. template-only lookup: cannot retrieve providers
+     *    defined in the Child component tree
      */
     const child = ref('child');
 
@@ -695,7 +695,7 @@ export #component Parent() {
 ```
 
 ## DI enhancements
-Better ergonomics around types / tokens:
+Improved ergonomics for types and tokens:
 ```ts
 import { inject, provide, injectionToken, input } from '@angular/core';
 
@@ -786,20 +786,20 @@ export #component Counter({
 - `ng-content`: replaced by `fragments`,
 - `ng-template` (`let-*` shorthands + `ngTemplateGuard_*`): likely replaced by `fragments`,
 - structural directives: likely replaced by `fragments`,
-- `Ng**Outlet` + `ng-container`: likely replaced by the new things,
+- `Ng**Outlet` + `ng-container`: likely replaced by the new primitives,
 - `pipes`: replaced by declarations,
-- `event delegation`: not explicitly considered, but it could fit as "special attributes" (`onClick`, ...) similarly to [solid events](https://docs.solidjs.com/concepts/components/event-handlers),
-- `@let`: likely obsolete and not needed anymore,
-- `directives` attached to the host (components): not possible anymore, but you can pass directives and spread them,
-- `directive` types: since `host` is defined as an input (rather than injected), static type checking could be introduced (directives can be applied only to compatible elements),
-- `queries`: if `ref` makes sense, likely not needed anymore; if they stay, it would be nice to limit their DI capabilities: no way to `read` providers from `injector` tree (see [`viewChild abuses`](https://stackblitz.com/edit/stackblitz-starters-wkkqtd9j)),
-- multiple `directives` attached to the same element: as for the previous point, it would be nice to avoid directives injection when applied to the same element (see [`ngModel hijacking`](https://stackblitz.com/edit/stackblitz-starters-ezryrmmy)); instead, it should be an explicit template operation with a `ref` passed as an `input`,
-- in general, the concept of injecting components / directives inside each other should be restricted because it generates lots of indirection and complexity; the downside is that some ng-reserved names are necessary (`host`, `directives`, `children`).
+- `event delegation`: not explicitly considered, but it could fit as "special attributes" (`onClick`, ...) similarly to [Solid events](https://docs.solidjs.com/concepts/components/event-handlers),
+- `@let`: likely obsolete and no longer needed,
+- `directives` attached to the host (components): no longer possible, but directives can be passed in and spread onto elements,
+- `directive` types: since `host` is defined as an input (rather than injected), static type checking could be introduced, allowing directives to be applied only to compatible elements,
+- `queries`: if `ref` covers the use case, they may no longer be needed; if they remain, it would be good to limit their DI capabilities — specifically, preventing `read` of providers from the injector tree (see [`viewChild abuses`](https://stackblitz.com/edit/stackblitz-starters-wkkqtd9j)),
+- multiple `directives` on the same element: similarly, it would be good to prevent directives from injecting each other when applied to the same element (see [`ngModel hijacking`](https://stackblitz.com/edit/stackblitz-starters-ezryrmmy)); instead, interaction should be an explicit template operation using a `ref` passed as an `input`,
+- in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`host`, `directives`, `children`).
 
 ### Unresolved points
-- other decorator props: in this proposal, components and directives have only `providers` / `script` entries. On the other hand, `@Component` and `@Directive` have many more and some of them (like `preserveWhitespaces`) should probably stay. They are not covered here to avoid digressions;
-- `providers` defined at the `directive` level: never really understood the added value, but experienced the confusion they generate; not really sure if they have a meaning or not;
-- there isn't any obvious `short notation` for passing signals (like svelte / vue);
+- other decorator properties: in this proposal, components and directives expose only `providers` and `script` entries. However, `@Component` and `@Directive` have many more properties, some of which (like `preserveWhitespaces`) should probably remain. They are not covered here to avoid scope creep;
+- `providers` defined at the `directive` level: the added value is unclear, but the confusion they generate is well-documented; it is uncertain whether this concept remains meaningful;
+- there is no obvious shorthand for passing signals (as in Svelte or Vue);
 ```ts
 <User user={user()} age={age()} gender={gender()} model:address={address} on:userChange={userChange} />
 
@@ -808,7 +808,7 @@ export #component Counter({
 
 <User {user} {age} {gender} model:{address} on:{userChange} />
 ```
-- there isn't any obvious way to conditionally apply directives;
+- there is no obvious way to conditionally apply directives;
 ```ts
 // maybe using another ()?
 
@@ -816,16 +816,16 @@ export #component Counter({
   Click / Hover me
 </Button>
 ```
-- can reassign inputs / outputs inside script:
+- inputs and outputs can be reassigned inside the script:
   - `https://github.com/microsoft/TypeScript/issues/18497`,
   - [`no-param-reassign`](https://eslint.org/docs/latest/rules/no-param-reassign).
 
 ### Pros and cons
-Pros: 
-- familiar enough, 
-- not affected by typical SFC limitations, 
-- strict structure, 
-- no `splitProps` drama 😅. 
+Pros:
+- familiar enough,
+- not subject to typical single-file component (SFC) limitations,
+- enforces a strict structure,
+- no `splitProps` drama 😅.
 
 Cons:
-- deeper gap with plain TypeScript.
+- creates a wider gap from plain TypeScript.

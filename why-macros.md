@@ -1,5 +1,5 @@
 ## Why macros
-Considering the `tsx` grammar doesn't currently support Angular control flow or directives, the likely way to go is using something like a DSL + [Volar](https://volarjs.dev/) which requires `**.ng` files and a new parser. In practice, something similar to what [ripple](https://www.ripple-ts.com/) did (high level). Assuming this setup (or similar in nature), one might argue that macros are not really necessary because a component could be written as a "sort of valid function". On the other hand: 
+Since `tsx` grammar does not currently support Angular control flow or directives, the likely path forward involves a DSL combined with [Volar](https://volarjs.dev/), requiring `**.ng` files and a custom parser — similar in principle to what [ripple](https://www.ripple-ts.com/) has done. Assuming this setup (or something comparable), one could argue that macros are unnecessary, since a component could be written as a plain function. However, consider the following: 
 ```ts
 import { component, ... } from '@angular/core';
 
@@ -21,13 +21,13 @@ let Comp = component(({
 });
 ```
 
-So with macros and DLS + Volar (or equivalent)
-- you avoid unwanted flexibility (definitions: let / var),
-- you avoid strange scope behaviours (`unwanted` above),
-- you have clear markers for tools,
-- you keep DI separated from script / template and at the same time enable the definition of providers depending on inputs, but not on variables defined inside script. 
+With macros and DSL + Volar (or equivalent):
+- unwanted flexibility is avoided (e.g., `let` / `var` declarations),
+- unexpected scope behaviors are eliminated (e.g., the `unwanted` variable in the example above),
+- tooling has clear structural markers to work with,
+- DI is kept separate from the script and template, while still allowing providers to depend on inputs — but not on variables defined inside the script.
 
-Note that the entire proposal is keeping the idea of creating inputs / outputs / ... at component level, have ng syncing them and strict type checking at build time. Moreover, script runs only once at component creation time. 
+Note that the entire proposal preserves the concept of declaring inputs, outputs, and similar constructs at the component level, with Angular syncing them and enforcing strict type checking at build time. Additionally, the script runs only once, at component creation time.
 
 ### Another example
 ```ts
