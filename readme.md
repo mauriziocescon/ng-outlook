@@ -85,7 +85,7 @@ export #component UserDetailConsumer() {
     
     /**
      * any component can be used directly in the template
-     * bind: model: on: behaves the same as for native elements
+     * bind: model: on: behave the same as for native elements
      * 
      * ⚠️ must provide all required inputs / models ⚠️
      * 
