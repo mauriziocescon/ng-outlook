@@ -5,7 +5,7 @@ Points:
 1. building blocks as functions:
     - `**.ng` files with macros (see [`why macros`](https://github.com/mauriziocescon/ng-playground/blob/main/why-macros.md)), 
     - `component`: a `script` with scoped logic that returns a `template`,
-    - `directive`: a `script` that can change the appearance or behaviour of DOM elements,
+    - `directive`: a `script` that can change the appearance or behavior of DOM elements,
     - `declaration`: a way to declare `const` variables in templates that depend on DI,
     - `fragment`: a way to capture some markup in the form of a function,
 2. ts expressions with `{}`: bindings + text interpolation,
@@ -51,7 +51,7 @@ export #component TextSearch({
      * can use multiple class: and style:
      * ✅ <span class="..." class:some-class={...} class:some-other-class={...}> ✅
      * 
-     * can bind not existing attributes (ignored)
+     * can bind to non-existent attributes (ignored)
      * ✅ <span nonsense={...} on:nonsense={...}> ✅ -->
      */
     return (
@@ -96,7 +96,7 @@ export #component UserDetailConsumer() {
      * shouldn't use 'on' prefix with input / model / output
      * ⚠️ <UserDetail onInput={...} model:onModel={...} on:onEvent={...} /> ⚠️
      * 
-     * can bind not existing entries (ignored)
+     * can bind to non-existent entries (ignored)
      * ✅ <UserDetail nonsense={...} on:nonsense={...} /> ✅
      */
     return (
@@ -222,7 +222,7 @@ export #directive tooltip({
 ```
 
 ## Declarations and template-scope `@const` constants
-Definition of template-scoped constant `@const` where creation happens once (view life cycle) and can run in an injection context:
+Definition of a template-scoped `@const` constant whose creation happens once per view life cycle and which can run in an injection context:
 ```ts
 import { signal, computed, inject, input } from '@angular/core';
 import { Item, PriceManager } from '@mylib/item';
@@ -316,7 +316,7 @@ export #component Counter({
 ```
 
 ## Composition with fragments, directives and spread syntax
-Fragments are very similar to [`svelte snippets`](https://svelte.dev/docs/svelte/snippet): functions returning html markup. Returned markup is opaque: cannot manipulate it similarly to [`react Children (legacy)`](https://react.dev/reference/react/Children) or [`solid children`](https://www.solidjs.com/tutorial/props_children). Directives behave similarly to [`svelte attachments`](https://svelte.dev/docs/svelte/@attach). Spread syntax can be used at component function level similarly to react. Note: the examples below are simplified.
+Fragments are very similar to [`svelte snippets`](https://svelte.dev/docs/svelte/snippet): functions returning html markup. Returned markup is opaque: you cannot manipulate it similarly to [`react Children (legacy)`](https://react.dev/reference/react/Children) or [`solid children`](https://www.solidjs.com/tutorial/props_children). Directives behave similarly to [`svelte attachments`](https://svelte.dev/docs/svelte/@attach). Spread syntax can be used at component function level similarly to react. Note: the examples below are simplified.
 
 Implicit children fragment (where + when) and binding context:
 ```ts
@@ -378,7 +378,7 @@ export #component MenuItem({
 }
 ```
 
-Customising components:
+Customizing components:
 ```ts
 import { signal } from '@angular/core';
 import { Menu } from '@mylib/menu';
@@ -791,14 +791,14 @@ export #component Counter({
 - `event delegation`: not explicitly considered, but it could fit as "special attributes" (`onClick`, ...) similarly to [solid events](https://docs.solidjs.com/concepts/components/event-handlers),
 - `@let`: likely obsolete and not needed anymore,
 - `directives` attached to the host (components): not possible anymore, but you can pass directives and spread them,
-- `directive` types: since `host` is defined as an input (rather then injected), static types checking could be introduced (directives can be applied only to compatible elementes),
+- `directive` types: since `host` is defined as an input (rather than injected), static type checking could be introduced (directives can be applied only to compatible elements),
 - `queries`: if `ref` makes sense, likely not needed anymore; if they stay, it would be nice to limit their DI capabilities: no way to `read` providers from `injector` tree (see [`viewChild abuses`](https://stackblitz.com/edit/stackblitz-starters-wkkqtd9j)),
 - multiple `directives` attached to the same element: as for the previous point, it would be nice to avoid directives injection when applied to the same element (see [`ngModel hijacking`](https://stackblitz.com/edit/stackblitz-starters-ezryrmmy)); instead, it should be an explicit template operation with a `ref` passed as an `input`,
-- in general, the concept of injecting components / directives inside each others should be restricted cause it generates lots of indirection / complexity; the downside is that some ng-reserved names are necessary (`host`, `directives`, `children`).
+- in general, the concept of injecting components / directives inside each other should be restricted because it generates lots of indirection and complexity; the downside is that some ng-reserved names are necessary (`host`, `directives`, `children`).
 
 ### Unresolved points
-- other decorator props: in this proposal, components and directives have only `providers` / `script` entries. On the other hand, `@Component` and `@Directive` have many more and some of them (like `preserveWhitespaces`) should probably stay. They are not considered to avoid digressions; 
-- `providers` defined at `directive` level: never really understood the added value, but experienced the confusion they generate; not really sure if they have a meaning or not; 
+- other decorator props: in this proposal, components and directives have only `providers` / `script` entries. On the other hand, `@Component` and `@Directive` have many more and some of them (like `preserveWhitespaces`) should probably stay. They are not covered here to avoid digressions;
+- `providers` defined at the `directive` level: never really understood the added value, but experienced the confusion they generate; not really sure if they have a meaning or not;
 - there isn't any obvious `short notation` for passing signals (like svelte / vue);
 ```ts
 <User user={user()} age={age()} gender={gender()} model:address={address} on:userChange={userChange} />
@@ -828,4 +828,4 @@ Pros:
 - no `splitProps` drama 😅. 
 
 Cons:
-- deeper gap with plain typescript.
+- deeper gap with plain TypeScript.

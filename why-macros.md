@@ -1,5 +1,5 @@
 ## Why macros
-Considering the `tsx` grammar doesn't currently support angular control flow or directives, the likely way to go is using something like DLS + [Volar](https://volarjs.dev/) which requires `**.ng` files and a new parser. In practice, something similar to what [ripple](https://www.ripple-ts.com/) did (high level). Assuming this setup (or similar in nature), one might argue that macros are not really necessary cause a component could be written as a "sort of valid function". On the other hand: 
+Considering the `tsx` grammar doesn't currently support Angular control flow or directives, the likely way to go is using something like a DSL + [Volar](https://volarjs.dev/) which requires `**.ng` files and a new parser. In practice, something similar to what [ripple](https://www.ripple-ts.com/) did (high level). Assuming this setup (or similar in nature), one might argue that macros are not really necessary because a component could be written as a "sort of valid function". On the other hand: 
 ```ts
 import { component, ... } from '@angular/core';
 
@@ -22,7 +22,7 @@ let Comp = component(({
 ```
 
 So with macros and DLS + Volar (or equivalent)
-- you avoid unwanted flexility (definitions: let / var),
+- you avoid unwanted flexibility (definitions: let / var),
 - you avoid strange scope behaviours (`unwanted` above),
 - you have clear markers for tools,
 - you keep DI separated from script / template and at the same time enable the definition of providers depending on inputs, but not on variables defined inside script. 
