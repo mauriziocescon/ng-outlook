@@ -1,13 +1,13 @@
 {
-  "name": "ng-playground",
+  "name": "ng-outlook",
   "version": "1.0.0",
-  "description": "Signal components (personal thoughts)",
+  "description": "Personal thoughts from a developer's perspective on the future of Angular (template level)",
   "author": "Maurizio Cescon <maurizio.cescon@gmail.com>",
   "homepage": "https://be.linkedin.com/in/mauriziocescon",
   "private": false,
   "repository": {
     "type": "git",
-    "url": "https://github.com/mauriziocescon/ng-playground"
+    "url": "https://github.com/mauriziocescon/ng-outlook"
   },
   "licenses": [
     {
