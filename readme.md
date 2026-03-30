@@ -200,13 +200,13 @@ export const TextSearch = component({
 // -- tooltip in @mylib/tooltip --------------------
 import { directive, input, output, inject, DestroyRef, Renderer2, afterRenderEffect } from '@angular/core';
 
-export const tooltip = directive<HTMLElement>({
+export const tooltip = directive<HTMLElement>({  // HTMLElement: constrains which host elements this directive can be attached to
   props: {
     message: input.required<string>(),
-    dismiss: output<void>(),     
+    dismiss: output<void>(),
   },
   /**
-   * host: Usable only in afterNextRender or similar
+   * host: typed as HTMLElement (from the generic); usable only in afterNextRender or similar
    * tooltip can be attached to any HTMLElement
    */
   script: ({ message, dismiss }, { host }) => {
@@ -518,14 +518,14 @@ export const UserDetailConsumer = component({
   },  
 });
 
-export const UserDetailWrapper = component<Props<UserDetail>>({
+export const UserDetailWrapper = component<Props<UserDetail>>({  // Props<UserDetail>: defines the full set of props rest is typed against
   props: {
     user: input<User>(),
   },
   /**
    * rest (destructuring syntax): captures everything that does not match
    * the explicitly defined inputs / outputs / models / fragments / directives
-   * (like user).
+   * (like user). Components have no host, so { rest } is the only second-argument context.
    */
   script: ({ user }, { rest }) => {
     const other = computed(() => /** something depending on user or a default value **/);
