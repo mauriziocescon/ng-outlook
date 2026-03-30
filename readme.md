@@ -200,7 +200,8 @@ export const TextSearch = component({
 // -- tooltip in @mylib/tooltip --------------------
 import { directive, input, output, inject, DestroyRef, Renderer2, afterRenderEffect } from '@angular/core';
 
-export const tooltip = directive<HTMLElement>({  // HTMLElement: constrains which host elements this directive can be attached to
+// HTMLElement: constrains which host elements this directive can be attached to
+export const tooltip = directive<HTMLElement>({
   props: {
     message: input.required<string>(),
     dismiss: output<void>(),
@@ -518,7 +519,8 @@ export const UserDetailConsumer = component({
   },  
 });
 
-export const UserDetailWrapper = component<Props<UserDetail>>({  // Props<UserDetail>: defines the full set of props rest is typed against
+// Props<UserDetail>: defines the full set of props rest is typed against
+export const UserDetailWrapper = component<Props<UserDetail>>({
   props: {
     user: input<User>(),
   },
