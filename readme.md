@@ -6,7 +6,7 @@ Points:
     - `*.ng` files with template DSL (see [`Co-located templates in Angular via .ng files`](https://github.com/mauriziocescon/ng-outlook/blob/main/ng-files-proposal.md)),
     - `component`: a `script` with scoped logic that returns a `template`,
     - `directive`: a `script` that can change the appearance or behavior of DOM elements,
-    - `declaration`: a way to declare `const` variables in templates that depend on DI,
+    - `composable`: a factory for template-scoped state that requires DI,
     - `fragment`: a way to capture some markup in the form of a function,
 2. ts expressions with `{}`: bindings + text interpolation,
 3. extra bindings for DOM elements: `bind:`, `on:`, `model:`, `class:`, `style:`, `animate:`,
@@ -225,34 +225,30 @@ export const tooltip = directive<HTMLElement>({
 });
 ```
 
-## Declarations and template-scope `@const` constants
-Defines a template-scoped `@const` constant created once per view lifecycle that runs in an injection context:
+## Template-scope `@const` constants and composables
+`@const` defines a template-scoped constant created once per view lifecycle. When the right-hand side is a `@composable(...)`, ng additionally establishes an injection context before calling its `script`:
 ```ts
-import { component, declaration, signal, computed, inject, input } from '@angular/core';
+import { component, composable, linkedSignal, computed, inject, input } from '@angular/core';
 import { Item, PriceManager } from '@mylib/item';
 
-function quantity(value?: number) {
-  const qty = signal(value ?? 0);
-
-  return {
-    value: qty.asReadonly(),
-    decrease: () => qty.update(c => c - 1),
-    increase: () => qty.update(c => c + 1),
-  };
-}
-
-const price = declaration({
+const simulation = composable({
   props: {
     /**
-     * Can only have input
+     * Only inputs are allowed: a composable has no DOM host,
+     * so there is no surface to emit outputs or sync models against
      */
-    qty: input.required<number>(),    
+    qty: input.required<number>(),
   },
   script: ({ qty }) => {
-    // injection context
     const priceManager = inject(PriceManager);
+    const value = linkedSignal(() => qty());
     
-    return computed(/** ... **/);
+    return {
+      value: value.asReadonly(),
+      decrease: () => value.update(c => c - 1),
+      increase: () => value.update(c => c + 1),
+      price: computed(/** ... **/),
+    };
   },  
 });
 
@@ -262,23 +258,21 @@ export const PriceSimulator = component({
   },
   script: ({ items }) => {
     /**
-     * Any declaration can be used directly in the template
-     * Declarations require @ because they can only be used with @const
+     * Any composable can be used directly in the template
      *
-     * qty / price share the same @let scope and are created once,
-     * following the @for embedded view lifecycle
+     * s shares the @for embedded view scope and is created once,
+     * following its lifecycle
      */
     return (
       @for (item of items(); track item.id) {
-        @const qty = quantity(0);
-        @const price = @price({qty: qty.value});
+        @const s = @simulation({qty: 0});
       
         <h5>{item.desc}</h5>
-        <button on:click={() => qty.decrease()}>-</button>
-        <div>Quantity: {qty.value()}</div>
-        <button on:click={() => qty.increase()}>+</button>
+        <button on:click={() => s.decrease()}>-</button>
+        <div>Quantity: {s.value()}</div>
+        <button on:click={() => s.increase()}>+</button>
         <hr />
-        <div>Price: {price()}</div>
+        <div>Price: {s.price()}</div>
       }
     );
   },
@@ -803,7 +797,7 @@ export const Counter = component({
 - `ng-template` (`let-*` shorthands + `ngTemplateGuard_*`): likely replaced by `fragments`,
 - structural directives: likely replaced by `fragments`,
 - `Ng**Outlet` + `ng-container`: likely replaced by the new primitives,
-- `pipes`: replaced by declarations,
+- `pipes`: replaced by composables — composables cover the same transform use case but also support stateful patterns (reactive state, methods, DI),
 - `event delegation`: not explicitly considered, but it could fit as "special attributes" (`onClick`, ...) similarly to [Solid events](https://docs.solidjs.com/concepts/components/event-handlers),
 - `@let`: likely obsolete and no longer needed,
 - `directives` attached to the host (components): no longer possible, but directives can be passed in and spread onto elements,
