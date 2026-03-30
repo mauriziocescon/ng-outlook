@@ -24,14 +24,14 @@ import { component, signal, linkedSignal, input, output } from '@angular/core';
 
 export const TextSearch = component({
   /**
-   * by the time script is called,
+   * By the time script is called,
    * inputs are populated with parent data
    */
   props: {
     value: input.required<string>(),
     valueChange: output<string>(),
   },
-  // runs once on init
+  // Runs once on init
   script: ({ value, valueChange }) => {
     const text = linkedSignal(() => value());
     const isDanger = signal(false);
@@ -45,15 +45,15 @@ export const TextSearch = component({
      * - 2way: model:property={var} (input / select / textarea)
      * - events: on:event_name={handler}
      * 
-     * cannot duplicate attribute names: only one (static or bound)
+     * Cannot duplicate attribute names: only one (static or bound)
      * ‼️ <span class="..." class="..." class={...}> ‼️
      * ‼️ <span on:click={...} on:click={...}> ‼️
      * 
-     * can use multiple class: and style:
+     * Can use multiple class: and style:
      * ✅ <span class="..." class:some-class={...} class:some-other-class={...}> ✅
      * 
-     * can bind to non-existent attributes (ignored)
-     * ✅ <span nonsense={...} on:nonsense={...}> ✅ -->
+     * Can bind to non-existent attributes (ignored)
+     * ✅ <span nonsense={...} on:nonsense={...}> ✅
      */
     return (
       <label class:danger={isDanger()}>Text:</label>
@@ -79,25 +79,25 @@ import { UserDetail, User } from './user-detail.ng';
 
 export const UserDetailConsumer = component({
   script: () => {
-    const user = signal<User>(...);
-    const email = signal<string>(...);
+    const user = signal<User>(/** ... **/);
+    const email = signal<string>(/** ... **/);
 
     function makeAdmin() {/** ... **/}
-    
+
     /**
-     * any component can be used directly in the template
-     * bind: model: on: behave the same as for native elements
+     * Any component can be used directly in the template
+     * bind:, model:, on: behave the same as for native elements
      * 
-     * ⚠️ must provide all required inputs / models ⚠️
+     * ⚠️ Must provide all required inputs / models ⚠️
      * 
-     * cannot duplicate prop names: only one
+     * Cannot duplicate prop names: only one
      * ‼️ <UserDetail user={...} user={...} model:user={...} /> ‼️
      * ‼️ <UserDetail on:makeAdmin={...} on:makeAdmin={...} /> ‼️
      * 
-     * shouldn't use 'on' prefix with input / model / output
+     * Shouldn't use 'on' prefix with input / model / output
      * ⚠️ <UserDetail onInput={...} model:onModel={...} on:onEvent={...} /> ⚠️
      * 
-     * can bind to non-existent entries (ignored)
+     * Can bind to non-existent entries (ignored)
      * ✅ <UserDetail nonsense={...} on:nonsense={...} /> ✅
      */
     return (
@@ -116,7 +116,7 @@ export interface User {/** ... **/}
 
 export const UserDetail = component({
   /**
-   * mental model: 
+   * Mental model:
    * 
    * <UserDetail 
    *   style="..."
@@ -206,7 +206,7 @@ export const tooltip = directive<_, HTMLElement>({
     dismiss: output<void>(),     
   },
   /**
-   * host: usable only in afterNextRender or similar
+   * host: Usable only in afterNextRender or similar
    * tooltip can be attached to any HTMLElement
    */
   script: ({ message, dismiss }, { host }) => {
@@ -243,7 +243,7 @@ function quantity(value?: number) {
 const price = declaration({
   props: {
     /**
-     * can only have input
+     * Can only have input
      */
     qty: input.required<number>(),    
   },
@@ -257,12 +257,12 @@ const price = declaration({
 
 export const PriceSimulator = component({
   props: {
-   items: input.required<Item[]>(), 
+    items: input.required<Item[]>(),
   },
   script: ({ items }) => {
     /**
-     * any declaration can be used directly in the template
-     * declarations require @ because they can only be used with @const
+     * Any declaration can be used directly in the template
+     * Declarations require @ because they can only be used with @const
      *
      * qty / price share the same @let scope and are created once,
      * following the @for embedded view lifecycle
@@ -275,7 +275,7 @@ export const PriceSimulator = component({
         <h5>{item.desc}</h5>
         <button on:click={() => qty.decrease()}>-</button>
         <div>Quantity: {qty.value()}</div>
-        <button on:click={() => qty.increase()}>+</button>
+        <button on:click={() => qty.increment()}>+</button>
         <hr />
         <div>Price: {price()}</div>
       }
@@ -335,7 +335,7 @@ export const MenuConsumer = component({
     const second = signal('Second');
     
     /**
-     * markup inside comp tag => implicitly becomes a fragment called children
+     * Markup inside comp tag => implicitly becomes a fragment called children
      */
     return (
       <Menu>
@@ -355,16 +355,16 @@ export const Menu = component({
     /**
      * children = fragment<void>()
      * 
-     * readonly signal provided by ng (not bindable directly)
-     * name reserved to ng
+     * Readonly signal provided by ng (not bindable directly)
+     * Name reserved to ng
      */
-     children: fragment<void>(),    
+     children: fragment<void>(),
   },
   script: ({ children }) => {
     /** ... **/
-    
+
     /**
-     * no need to have an explicit anchor point like ng-container
+     * No need to have an explicit anchor point like ng-container
      */
     return (
       @if (children()) {
@@ -402,8 +402,8 @@ export const MenuConsumer = component({
     const items = signal<Item[]>(/** ... **/);
     
     /**
-    * menuItem inside <Menu></Menu> automatically becomes a fragment input
-    */
+     * menuItem inside <Menu></Menu> automatically becomes a fragment input
+     */
     return (
       @fragment menuItem(item: Item) {
         <div class="my-menu-item">
@@ -471,10 +471,10 @@ export const Button = component({
     disabled: input<boolean>(false),
     click: output<void>(),
     /**
-     * all directives applied to <Button />
-     * 
-     * readonly signal provided by ng (not bindable directly)
-     * name reserved to ng
+     * All directives applied to <Button />
+     *
+     * Readonly signal provided by ng (not bindable directly)
+     * Name reserved to ng
      */
     directives: attachments<HTMLButtonElement>(),     
   },
@@ -482,7 +482,7 @@ export const Button = component({
     // ...
     
     /**
-     * compile-time unrolling + type checking
+     * Compile-time unrolling + type checking
      */
     return (
       <button {...directives()} disabled={disabled()} on:click={() => click.emit()}>
@@ -500,14 +500,14 @@ import { UserDetail, User } from './user-detail.ng';
 
 export const UserDetailConsumer = component({
   script: () => {
-    const user = signal<User>(...);
-    const email = signal<string>(...);
+    const user = signal<User>(/** ... **/);
+    const email = signal<string>(/** ... **/);
 
     function makeAdmin() {/** ... **/}
-    
+
     /**
      * bind:**={object} binds all entries of an object; same for model / on
-     * compile-time unrolling + type checking
+     * Compile-time unrolling + type checking
      */
     return (
       <UserDetailWrapper
@@ -531,7 +531,7 @@ export const UserDetailWrapper = component<Props<UserDetail>>({
     const other = computed(() => /** something depending on user or a default value **/);
     
     /**
-     * compile-time unrolling (UserDetail props): no real runtime spread + strict types
+     * Compile-time unrolling (UserDetail props): no real runtime spread + strict types
      */
     return (
       <UserDetail {...rest} user={other()} />
@@ -650,7 +650,7 @@ const Child = component({
     const text = signal('');
 
     /**
-     * can define an object that
+     * Can define an object that
      * any ref can use to interact
      * with the component
      * (public interface)
@@ -669,8 +669,8 @@ export const Parent = component({
     const el = ref<HTMLDivElement>('el');
 
     /**
-     * 1. can only use what's returned by Child.exports
-     * 2. template-only lookup: cannot retrieve providers
+     * 1. Can only use what's returned by Child.exports
+     * 2. Template-only lookup: cannot retrieve providers
      *    defined in the Child component tree
      */
     const child = ref('child');
@@ -684,7 +684,7 @@ export const Parent = component({
     });
     
     /**
-     * ref: can bind to a function as well (runs at view creation)
+     * ref: Can bind to a function as well (runs at view creation)
      */
     return (
       <div
@@ -711,7 +711,7 @@ Improved ergonomics for types and tokens:
 import { component, inject, provide, injectionToken, input } from '@angular/core';
 
 /**
- * not provided in root by default: the token
+ * Not provided in root by default: the token
  * must be provided somewhere
  * 
  * factory defines a default implementation and type
@@ -733,7 +733,7 @@ const compToken = injectionToken('desc', {
 });
 
 /**
- * root provider: no need to provide it
+ * Root provider: no need to provide it
  */
 const rootToken = injectionToken('desc', {
   level: 'root',
