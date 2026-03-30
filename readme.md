@@ -200,7 +200,7 @@ export const TextSearch = component({
 // -- tooltip in @mylib/tooltip --------------------
 import { directive, input, output, inject, DestroyRef, Renderer2, afterRenderEffect } from '@angular/core';
 
-export const tooltip = directive<void, HTMLElement>({
+export const tooltip = directive<HTMLElement>({
   props: {
     message: input.required<string>(),
     dismiss: output<void>(),     
