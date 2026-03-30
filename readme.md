@@ -236,7 +236,7 @@ function quantity(value?: number) {
   return {
     value: qty.asReadonly(),
     decrease: () => qty.update(c => c - 1),
-    increment: () => qty.update(c => c + 1),
+    increase: () => qty.update(c => c + 1),
   };
 }
 
@@ -275,7 +275,7 @@ export const PriceSimulator = component({
         <h5>{item.desc}</h5>
         <button on:click={() => qty.decrease()}>-</button>
         <div>Quantity: {qty.value()}</div>
-        <button on:click={() => qty.increment()}>+</button>
+        <button on:click={() => qty.increase()}>+</button>
         <hr />
         <div>Price: {price()}</div>
       }
