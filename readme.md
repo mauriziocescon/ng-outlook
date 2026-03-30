@@ -240,7 +240,6 @@ const simulation = declaration({
     qty: input.required<number>(),
   },
   script: ({ qty }) => {
-    // injection context
     const priceManager = inject(PriceManager);
     const value = linkedSignal(() => qty());
     
@@ -260,9 +259,6 @@ export const PriceSimulator = component({
   script: ({ items }) => {
     /**
      * Any declaration can be used directly in the template
-     * 
-     * @ signals that ng must establish an injection context before
-     * calling script — this is why declarations can only appear in @const
      *
      * s shares the @for embedded view scope and is created once,
      * following its lifecycle
@@ -801,7 +797,7 @@ export const Counter = component({
 - `ng-template` (`let-*` shorthands + `ngTemplateGuard_*`): likely replaced by `fragments`,
 - structural directives: likely replaced by `fragments`,
 - `Ng**Outlet` + `ng-container`: likely replaced by the new primitives,
-- `pipes`: replaced by declarations,
+- `pipes`: replaced by declarations — declarations cover the same transform use case but also support stateful patterns (reactive state, methods, DI),
 - `event delegation`: not explicitly considered, but it could fit as "special attributes" (`onClick`, ...) similarly to [Solid events](https://docs.solidjs.com/concepts/components/event-handlers),
 - `@let`: likely obsolete and no longer needed,
 - `directives` attached to the host (components): no longer possible, but directives can be passed in and spread onto elements,
