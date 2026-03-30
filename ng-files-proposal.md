@@ -1,4 +1,4 @@
-## Why ng files with tsx like templates
+## Co-located templates in Angular via .ng files
 Since `tsx` grammar currently does not support Angular control flow or directives, the likely path forward involves a DSL combined with [Volar](https://volarjs.dev/), requiring `*.ng` files and a custom parser — similar in principle to what [ripple](https://www.ripple-ts.com/) has done. Assuming this setup (or something comparable), one could argue that losing the ability to keep the template as a separate file (e.g., via `templateUrl`) is a significant regression. That said, agents tend to prefer something similar in nature to React where
 - the template is part of the component definition,
 - the template is defined within the script's scope, with direct access to its variables,
