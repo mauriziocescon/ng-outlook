@@ -225,34 +225,30 @@ export const tooltip = directive<HTMLElement>({
 });
 ```
 
-## Declarations and template-scope `@const` constants
-Defines a template-scoped `@const` constant created once per view lifecycle that runs in an injection context:
+## Template-scope `@const` constants and declarations
+Defines a template-scoped constant via `@const`, created once per view lifecycle and running in an injection context:
 ```ts
-import { component, declaration, signal, computed, inject, input } from '@angular/core';
+import { component, declaration, linkedSignal, computed, inject, input } from '@angular/core';
 import { Item, PriceManager } from '@mylib/item';
 
-function quantity(value?: number) {
-  const qty = signal(value ?? 0);
-
-  return {
-    value: qty.asReadonly(),
-    decrease: () => qty.update(c => c - 1),
-    increase: () => qty.update(c => c + 1),
-  };
-}
-
-const price = declaration({
+const simulation = declaration({
   props: {
     /**
-     * Can only have input
+     * Only inputs are allowed
      */
     qty: input.required<number>(),    
   },
   script: ({ qty }) => {
     // injection context
     const priceManager = inject(PriceManager);
+    const value = linkedSignal(() => qty());
     
-    return computed(/** ... **/);
+    return {
+      value: value.asReadonly(),
+      decrease: () => value.update(c => c - 1),
+      increase: () => value.update(c => c + 1),
+      price: computed(/** ... **/),
+    };
   },  
 });
 
@@ -270,15 +266,14 @@ export const PriceSimulator = component({
      */
     return (
       @for (item of items(); track item.id) {
-        @const qty = quantity(0);
-        @const price = @price({qty: qty.value});
+        @const s = @simulation({qty: 0});
       
         <h5>{item.desc}</h5>
-        <button on:click={() => qty.decrease()}>-</button>
-        <div>Quantity: {qty.value()}</div>
-        <button on:click={() => qty.increase()}>+</button>
+        <button on:click={() => s.decrease()}>-</button>
+        <div>Quantity: {s.value()}</div>
+        <button on:click={() => s.increase()}>+</button>
         <hr />
-        <div>Price: {price()}</div>
+        <div>Price: {s.price()}</div>
       }
     );
   },
