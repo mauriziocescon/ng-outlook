@@ -42,46 +42,47 @@ export interface Item {
   price: number;
 }
 
-#directive tooltip({
-  message = input.required<string>(),
-  host = ref<HTMLElement>(),
-}) {
-  script: () => {
+const tooltip = directive<_, HTMLElement>({
+  props: {
+    message: input.required<string>(),
+  },
+  script: ({ message }, { host }) => {
     const renderer = inject(Renderer2);
 
     afterRenderEffect(() => {
       /** ... **/
     });
   },
-}
+});
 
-#declaration currency({
-  value = input.required<number | undefined>(),
-  currencyCode = input<string>(),
-}) {
-  script: () => {
-    const localeId = inject(LOCALE_ID);
-    
-    return computed(/** ... **/);
+const currency = declaration({
+  props: {
+    value: input.required<number | undefined>(),
+    currencyCode: input<string>(),
   },
-}
+  script: ({ value, currencyCode }) => {
+    const localeId = inject(LOCALE_ID);
 
-#component List({
-  items = input.required<Item[]>(),
-  item = fragment<[Item]>(),
-}) {
+    return computed(/** ... **/);
+});
+
+const List = component({
+  props: {
+    items: input.required<Item[]>(),
+    item: fragment<[Item]>(),
+  },
   script: () => (
     @for (i of items(); track i.id) {
-      <Render fragment={item()} params={[i]} />
+      <Render fragment = { item() }  params = { [i] } />
     }
   ),
-}
+});
 
 class ItemsStore {
   /** ... **/
 }
 
-export #component ItemsPage() {
+export const ItemsPage = component({
   script: () => {
     const store = inject(ItemsStore);
   
@@ -114,5 +115,5 @@ export #component ItemsPage() {
   providers: () => [
     provide({ token: ItemsStore, useFactory: () => new ItemsStore() }),
   ],
-}
+});
 ```

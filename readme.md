@@ -137,7 +137,9 @@ export const UserDetail = component({
     email: model<string>(),
     makeAdmin: output<void>(),    
   },
-  // ...  
+  script: ({ user, email, makeAdmin }) => {
+    // ...      
+  },
 });
 ```
 
@@ -196,22 +198,18 @@ export const TextSearch = component({
 });
 
 // -- tooltip in @mylib/tooltip --------------------
-import { directive, input, output, ref, inject, DestroyRef, Renderer2, afterRenderEffect } from '@angular/core';
+import { directive, input, output, inject, DestroyRef, Renderer2, afterRenderEffect } from '@angular/core';
 
-export const tooltip = directive({
+export const tooltip = directive<_, HTMLElement>({
   props: {
     message: input.required<string>(),
-    dismiss: output<void>(),
-    /**
-     * usable only in afterNextRender or similar
-     * tooltip can be attached to any HTMLElement
-     * 
-     * readonly signal provided by ng (not bindable directly)
-     * name reserved to ng
-     */
-     host: ref<HTMLElement>(),    
+    dismiss: output<void>(),     
   },
-  script: ({ message, dismiss  }) => {
+  /**
+   * host: usable only in afterNextRender or similar
+   * tooltip can be attached to any HTMLElement
+   */
+  script: ({ message, dismiss }, { host }) => {
     const destroyRef = inject(DestroyRef);
     const renderer = inject(Renderer2);
 
@@ -382,7 +380,7 @@ export const MenuItem = component({
   props: {
     children: fragment<void>(),    
   },
-  script: () => (
+  script: ({ children }) => (
     <Render fragment={children()} />
   ),
 });
@@ -439,16 +437,16 @@ export const Menu = component({
 
 Directives attached to a component and bound to an element:
 ```ts
-import { signal } from '@angular/core';
+import { component, signal } from '@angular/core';
 import { Button } from '@mylib/button';
 import { ripple } from '@mylib/ripple';
 import { tooltip } from '@mylib/tooltip';
 
-export #component ButtonConsumer() {
+export const ButtonConsumer = component({
   script: () => {
     const tooltipMsg = signal('');
     const valid = signal(false);
-
+  
     function doSomething() {/** ... **/}
     
     return (
@@ -460,26 +458,27 @@ export #component ButtonConsumer() {
           Click / Hover me
       </Button>
     );
-  },
-}
+  },  
+});
 
 // -- button in @mylib/button --------------------
-import { input, output, fragment, attachments } from '@angular/core';
+import { component, input, output, fragment, attachments } from '@angular/core';
 import { Render } from '@angular/common';
 
-export #component Button({
-  children = fragment<void>(),
-  disabled = input<boolean>(false),
-  click = output<void>(),
-  /**
-   * all directives applied to <Button />
-   * 
-   * readonly signal provided by ng (not bindable directly)
-   * name reserved to ng
-   */
-  directives = attachments<HTMLButtonElement>(), 
-}) {
-  script: () => {
+export const Button = component({
+  props: {
+    children: fragment<void>(),
+    disabled: input<boolean>(false),
+    click: output<void>(),
+    /**
+     * all directives applied to <Button />
+     * 
+     * readonly signal provided by ng (not bindable directly)
+     * name reserved to ng
+     */
+    directives: attachments<HTMLButtonElement>(),     
+  },
+  script: ({ children, disabled, click , directives }) => {
     // ...
     
     /**
@@ -491,15 +490,15 @@ export #component Button({
       </button>
     );
   },
-}
+});
 ```
 
 Wrapping components and forwarding inputs and outputs:
 ```ts
-import { input, computed, Props } from '@angular/core';
+import { component, input, computed, Props } from '@angular/core';
 import { UserDetail, User } from './user-detail.ng';
 
-export #component UserDetailConsumer() {
+export const UserDetailConsumer = component({
   script: () => {
     const user = signal<User>(...);
     const email = signal<string>(...);
@@ -516,19 +515,19 @@ export #component UserDetailConsumer() {
         model:**={{email}}
         on:**={{makeAdmin}} />
     );
-  },
-}
+  },  
+});
 
-export #component UserDetailWrapper({
-  user = input<User>(),
+export const UserDetailWrapper = component<Props<UserDetail>>({
+  props: {
+    user: input<User>(),
+  },
   /**
-   * destructuring syntax: captures everything that does not match
+   * rest (destructuring syntax): captures everything that does not match
    * the explicitly defined inputs / outputs / models / fragments / directives
    * (like user).
    */
-  ...rest,
-}: Props<UserDetail>) {
-  script: () => {
+  script: ({ user }, { rest }) => {
     const other = computed(() => /** something depending on user or a default value **/);
     
     /**
@@ -537,47 +536,49 @@ export #component UserDetailWrapper({
     return (
       <UserDetail {...rest} user={other()} />
     );
-  },
-}
+  },  
+});
 
 // -- UserDetail -----------------------------------
-import { input, model, output, fragment, attachments } from '@angular/core';
+import { component, input, model, output, fragment, attachments } from '@angular/core';
 
 export interface User {/** ... **/}
 
-export #component UserDetail({
-  user = input.required<User>(),
-  email = model.required<string>(),
-  makeAdmin = output<void>(),
-  children = fragment<void>(),
-  directives = attachments<HTMLElement>(), 
-}) {
-  script: () => {
+export const UserDetail = component({
+  props: {
+    user: input.required<User>(),
+    email: model.required<string>(),
+    makeAdmin: output<void>(),
+    children: fragment<void>(),
+    directives: attachments<HTMLElement>(),     
+  },
+  script: ({ ... }) => {
     // ...
     
     return (...);
   },
-}
+  
+});
 ```
 
 Wrapping native elements and forwarding attributes and event listeners:
 ```ts
-import { signal } from '@angular/core';
+import { component, signal } from '@angular/core';
 import { Button } from '@mylib/button';
 import { ripple } from '@mylib/ripple';
 import { tooltip } from '@mylib/tooltip';
 
-export #component ButtonConsumer() {
+export const ButtonConsumer = component({
   script: () => {
     const tooltipMsg = signal('');
     const valid = signal(false);
-
+  
     function doSomething() {/** ... **/}
     
     /**
-     * can pass down attributes (either static or bound) and event listeners
-     * cannot have multiple style / class / ...
-     */
+    * can pass down attributes (either static or bound) and event listeners
+    * cannot have multiple style / class / ...
+    */
     return (
       <Button
         type="button"
@@ -591,19 +592,19 @@ export #component ButtonConsumer() {
       </Button>
     );
   },
-}
+});
 
 // -- button in @mylib/button --------------------
-import { input, computed, fragment, attachments } from '@angular/core';
+import { component, input, computed, fragment, attachments } from '@angular/core';
 import { HTMLButtonAttributes } from '@angular/core/elements';
 
-export #component Button({
-  style = input<string>(''),
-  children = fragment<void>(),
-  directives = attachments<HTMLButtonElement>(), 
-  ...rest,
-}: HTMLButtonAttributes) {
-  script: () => {
+export const Button = component<HTMLButtonAttributes>({
+  props: {
+    style: input<string>(''),
+    children: fragment<void>(),
+    directives: attachments<HTMLButtonElement>(), 
+  },
+  script: ({ style, children, directives }, { rest }) => {
     const innerStyle = computed(() => `${style()}; color: red;`);
     
     /**
@@ -615,17 +616,17 @@ export #component Button({
       </button>
     );
   },
-}
+});
 ```
 
 Dynamic components:
 ```ts
-import { signal, computed } from '@angular/core';
+import { component, signal, computed } from '@angular/core';
 import { Dynamic } from '@angular/common';
 import { AComp } from './a-comp.ng';
 import { BComp } from './b-comp.ng';
 
-export #component Something() {
+export const Something = component({
   script: () => {
     const condition = signal<boolean>(/** ... **/);
     const comp = computed(() => condition() ? AComp : BComp);
@@ -634,17 +635,17 @@ export #component Something() {
     return (
       <Dynamic component={comp()} inputs={inputs()} />
     );
-  },
-}
+  },  
+});
 ```
 
 ## Template ref
 Retrieving runtime references to elements, components and directives:
 ```ts
-import { ref, Signal, signal, afterNextRender, exports } from '@angular/core';
+import { component, ref, Signal, signal, afterNextRender, exports } from '@angular/core';
 import { tooltip } from '@mylib/tooltip';
 
-#component Child() {
+const Child = component({
   script: () => {
     const text = signal('');
 
@@ -659,10 +660,10 @@ import { tooltip } from '@mylib/tooltip';
     });
     
     return (...);
-  },
-}
+  },  
+});
 
-export #component Parent() {
+export const Parent = component({
   script: () => {
     // readonly signal
     const el = ref<HTMLDivElement>('el');
@@ -700,14 +701,14 @@ export #component Parent() {
     
       <button on:click={() => tlp().toggle()}>Toggle tlp</button>
     );
-  },
-}
+  },  
+});
 ```
 
 ## DI enhancements
 Improved ergonomics for types and tokens:
 ```ts
-import { inject, provide, injectionToken, input } from '@angular/core';
+import { component, inject, provide, injectionToken, input } from '@angular/core';
 
 /**
  * not provided in root by default: the token
@@ -764,9 +765,10 @@ const multiToken = injectionToken('desc', {
  */
 class Store {}
 
-export #component Counter({
-  initialValue = input<number>(),
-}) {
+export const Counter = component({
+  props: {
+    initialValue: input<number>(),    
+  },
   script: () => {
     const rootCounter = inject(rootToken);
     const compCounter = inject(compToken);
@@ -774,7 +776,7 @@ export #component Counter({
     const store = inject(Store);
     /** ... **/
   },
-  providers: () => [
+  providers: ({ initialValue }) => [
     // provide compToken at Counter level using the default factory
     provide(compToken),
     
@@ -787,7 +789,7 @@ export #component Counter({
     // class
     provide({ token: Store, useFactory: () => new Store() }),
   ],
-}
+});
 ```
 
 ## Final considerations
@@ -804,7 +806,7 @@ export #component Counter({
 - `directive` types: since `host` is defined as an input (rather than injected), static type checking could be introduced, allowing directives to be applied only to compatible elements,
 - `queries`: if `ref` covers the use case, they may no longer be needed; if they remain, it would be good to limit their DI capabilities — specifically, preventing `read` of providers from the injector tree (see [`viewChild abuses`](https://stackblitz.com/edit/stackblitz-starters-wkkqtd9j)),
 - multiple `directives` on the same element: similarly, it would be good to prevent directives from injecting each other when applied to the same element (see [`ngModel hijacking`](https://stackblitz.com/edit/stackblitz-starters-ezryrmmy)); instead, interaction should be an explicit template operation using a `ref` passed as an `input`,
-- in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`host`, `directives`, `children`).
+- in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`directives`, `children`).
 
 ### Unresolved points
 - other decorator properties: in this proposal, components and directives expose only `providers` and `script` entries. However, `@Component` and `@Directive` have many more properties, some of which (like `preserveWhitespaces`) should probably remain. They are not covered here to avoid scope creep;
