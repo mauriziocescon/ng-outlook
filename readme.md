@@ -234,9 +234,10 @@ import { Item, PriceManager } from '@mylib/item';
 const simulation = declaration({
   props: {
     /**
-     * Only inputs are allowed
+     * Only inputs are allowed: a declaration has no DOM host,
+     * so there is no surface to emit outputs or sync models against
      */
-    qty: input.required<number>(),    
+    qty: input.required<number>(),
   },
   script: ({ qty }) => {
     // injection context
@@ -259,10 +260,12 @@ export const PriceSimulator = component({
   script: ({ items }) => {
     /**
      * Any declaration can be used directly in the template
-     * Declarations require @ because they can only be used with @const
+     * 
+     * @ signals that ng must establish an injection context before
+     * calling script — this is why declarations can only appear in @const
      *
-     * qty / price share the same @let scope and are created once,
-     * following the @for embedded view lifecycle
+     * s shares the @for embedded view scope and is created once,
+     * following its lifecycle
      */
     return (
       @for (item of items(); track item.id) {
