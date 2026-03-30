@@ -3,7 +3,7 @@
 
 Points:
 1. building blocks as functions:
-    - `*.ng` files with template DSL (see [`Co-located templates in Angular via .ng files`](https://github.com/mauriziocescon/ng-outlook/blob/main/ng-files-proposal.md)),
+    - `*.ng` files with template DSL (see [`.ng files proposal`](https://github.com/mauriziocescon/ng-outlook/blob/main/why-ng-files.md)),
     - `component`: a `script` with scoped logic that returns a `template`,
     - `directive`: a `script` that can change the appearance or behavior of DOM elements,
     - `composable`: a factory for template-scoped state that requires DI,
