@@ -52,7 +52,7 @@ const List = component({
   },
   script: ({ items, item }) => (
     @for (i of items(); track i.id) {
-      <Render fragment={item()} params={[i]} />
+      @render(item(i))
     }
   ),
 });

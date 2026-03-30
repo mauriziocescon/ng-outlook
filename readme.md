@@ -343,14 +343,13 @@ export const MenuConsumer = component({
 
 // -- Menu in @mylib/menu --------------------------
 import { component, fragment } from '@angular/core';
-import { Render } from '@angular/common';
 
 export const Menu = component({
   props: {
     /**
      * children = fragment<void>()
-     * 
-     * Readonly signal provided by ng (not bindable directly)
+     *
+     * Nullable function provided by ng (not bindable directly)
      * Name reserved to ng
      */
      children: fragment<void>(),
@@ -362,21 +361,21 @@ export const Menu = component({
      * No need to have an explicit anchor point like ng-container
      */
     return (
-      @if (children()) {
-        <Render fragment={children()} />
+      @if (children) {
+        @render(children())
       } @else {
         <span>Empty</span>
       }
     );
-  },  
+  },
 });
 
 export const MenuItem = component({
   props: {
-    children: fragment<void>(),    
+    children: fragment<void>(),
   },
   script: ({ children }) => (
-    <Render fragment={children()} />
+    @render(children())
   ),
 });
 ```
@@ -413,18 +412,17 @@ export const MenuConsumer = component({
 
 // -- Menu in @mylib/menu --------------------------
 import { component, input, fragment } from '@angular/core';
-import { Render } from '@angular/common';
 
 export const Menu = component({
   props: {
     items: input.required<{ id: string, desc: string }[]>(),
-    menuItem: fragment<[{ id: string, desc: string }]>(), 
+    menuItem: fragment<[{ id: string, desc: string }]>(),
   },
   script: ({ items, menuItem }) => (
     <h1> Total items: {items().length} </h1>
-    
+
     @for (item of items(); track item.id) {
-      <Render fragment={menuItem()} params={[item]} />
+      @render(menuItem(item))
     }
   ),
 });
@@ -458,7 +456,6 @@ export const ButtonConsumer = component({
 
 // -- button in @mylib/button --------------------
 import { component, input, output, fragment, attachments } from '@angular/core';
-import { Render } from '@angular/common';
 
 export const Button = component({
   props: {
@@ -471,17 +468,17 @@ export const Button = component({
      * Readonly signal provided by ng (not bindable directly)
      * Name reserved to ng
      */
-    directives: attachments<HTMLButtonElement>(),     
+    directives: attachments<HTMLButtonElement>(),
   },
   script: ({ children, disabled, click, directives }) => {
     // ...
-    
+
     /**
      * Compile-time unrolling + type checking
      */
     return (
       <button {...directives()} disabled={disabled()} on:click={() => click.emit()}>
-        <Render fragment={children()} />
+        @render(children())
       </button>
     );
   },
@@ -592,24 +589,23 @@ export const ButtonConsumer = component({
 
 // -- button in @mylib/button --------------------
 import { component, input, computed, fragment, attachments } from '@angular/core';
-import { Render } from '@angular/common';
 import { HTMLButtonAttributes } from '@angular/core/elements';
 
 export const Button = component<HTMLButtonAttributes>({
   props: {
     style: input<string>(''),
     children: fragment<void>(),
-    directives: attachments<HTMLButtonElement>(), 
+    directives: attachments<HTMLButtonElement>(),
   },
   script: ({ style, children, directives }, { rest }) => {
     const innerStyle = computed(() => `${style()}; color: red;`);
-    
+
     /**
      * {...rest} spreads remaining attributes like type, class, etc.
      */
     return (
       <button {...directives()} {...rest} style={innerStyle()}>
-        <Render fragment={children()} />
+        @render(children())
       </button>
     );
   },
