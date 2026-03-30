@@ -6,7 +6,7 @@ Points:
     - `*.ng` files with template DSL (see [`Co-located templates in Angular via .ng files`](https://github.com/mauriziocescon/ng-outlook/blob/main/ng-files-proposal.md)),
     - `component`: a `script` with scoped logic that returns a `template`,
     - `directive`: a `script` that can change the appearance or behavior of DOM elements,
-    - `declaration`: a way to declare `const` variables in templates that depend on DI,
+    - `declaration`: a factory for template-scoped state that requires DI,
     - `fragment`: a way to capture some markup in the form of a function,
 2. ts expressions with `{}`: bindings + text interpolation,
 3. extra bindings for DOM elements: `bind:`, `on:`, `model:`, `class:`, `style:`, `animate:`,
@@ -226,7 +226,7 @@ export const tooltip = directive<HTMLElement>({
 ```
 
 ## Template-scope `@const` constants and declarations
-Defines a template-scoped constant via `@const`, created once per view lifecycle and running in an injection context:
+`@const` defines a template-scoped constant created once per view lifecycle. When the right-hand side is a `@declaration(...)`, ng additionally establishes an injection context before calling its `script`:
 ```ts
 import { component, declaration, linkedSignal, computed, inject, input } from '@angular/core';
 import { Item, PriceManager } from '@mylib/item';
