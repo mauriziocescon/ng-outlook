@@ -347,7 +347,7 @@ export const MenuConsumer = component({
 });
 
 // -- Menu in @mylib/menu --------------------------
-import { component, input, fragment } from '@angular/core';
+import { component, fragment } from '@angular/core';
 import { Render } from '@angular/common';
 
 export const Menu = component({
@@ -596,6 +596,7 @@ export const ButtonConsumer = component({
 
 // -- button in @mylib/button --------------------
 import { component, input, computed, fragment, attachments } from '@angular/core';
+import { Render } from '@angular/common';
 import { HTMLButtonAttributes } from '@angular/core/elements';
 
 export const Button = component<HTMLButtonAttributes>({
@@ -643,6 +644,7 @@ export const Something = component({
 Retrieving runtime references to elements, components and directives:
 ```ts
 import { component, ref, Signal, signal, afterNextRender, exports } from '@angular/core';
+import { ripple } from '@mylib/ripple';
 import { tooltip } from '@mylib/tooltip';
 
 const Child = component({
