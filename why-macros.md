@@ -10,10 +10,10 @@ let Comp = component(({
   return {
     script: () => {
       ...
-      return {
-        template: (...),
-        exports: {...},
-      };
+
+      exports({...});
+      
+      return (...);
     },
     style: `...`,
     providers: () => [...],
