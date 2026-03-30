@@ -628,7 +628,7 @@ export #component Something() {
 ```
 
 ## Template ref
-Retrieving runtime references to elements, components, and directives:
+Retrieving runtime references to elements, components and directives:
 ```ts
 import { ref, Signal, signal, afterNextRender, exports } from '@angular/core';
 import { tooltip } from '@mylib/tooltip';
