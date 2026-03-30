@@ -180,27 +180,27 @@ export const TextSearch = component({
 
     function valueChange() {/** ... **/}
     function doSomething() {/** ... **/}
-    
-     /**
-      * encapsulation of directive data: @directive(...)
-      * any directive can be used directly in the template
-      */
-     return (
-       <input
-         type="text"
-         model:value={text}
-         on:input={valueChange}
-         @tooltip(message={message()} on:dismiss={doSomething}) />
-     
-       <p>Value: {text()}</p>
-     );
+
+    /**
+     * Encapsulation of directive data: @directive(...)
+     * Any directive can be used directly in the template
+     */
+    return (
+      <input
+        type="text"
+        model:value={text}
+        on:input={valueChange}
+        @tooltip(message={message()} on:dismiss={doSomething}) />
+
+      <p>Value: {text()}</p>
+    );
   },  
 });
 
 // -- tooltip in @mylib/tooltip --------------------
 import { directive, input, output, inject, DestroyRef, Renderer2, afterRenderEffect } from '@angular/core';
 
-export const tooltip = directive<_, HTMLElement>({
+export const tooltip = directive<void, HTMLElement>({
   props: {
     message: input.required<string>(),
     dismiss: output<void>(),     
@@ -478,7 +478,7 @@ export const Button = component({
      */
     directives: attachments<HTMLButtonElement>(),     
   },
-  script: ({ children, disabled, click , directives }) => {
+  script: ({ children, disabled, click, directives }) => {
     // ...
     
     /**
@@ -495,7 +495,7 @@ export const Button = component({
 
 Wrapping components and forwarding inputs and outputs:
 ```ts
-import { component, input, computed, Props } from '@angular/core';
+import { component, signal, input, computed, Props } from '@angular/core';
 import { UserDetail, User } from './user-detail.ng';
 
 export const UserDetailConsumer = component({
@@ -552,9 +552,9 @@ export const UserDetail = component({
     children: fragment<void>(),
     directives: attachments<HTMLElement>(),     
   },
-  script: ({ ... }) => {
+  script: ({ user, email, makeAdmin, children, directives }) => {
     // ...
-    
+
     return (...);
   },
   
@@ -576,9 +576,9 @@ export const ButtonConsumer = component({
     function doSomething() {/** ... **/}
     
     /**
-    * can pass down attributes (either static or bound) and event listeners
-    * cannot have multiple style / class / ...
-    */
+     * Can pass down attributes (either static or bound) and event listeners
+     * Cannot have multiple style / class / ...
+     */
     return (
       <Button
         type="button"
@@ -708,7 +708,7 @@ export const Parent = component({
 ## DI enhancements
 Improved ergonomics for types and tokens:
 ```ts
-import { component, inject, provide, injectionToken, input } from '@angular/core';
+import { component, inject, provide, injectionToken, input, signal } from '@angular/core';
 
 /**
  * Not provided in root by default: the token

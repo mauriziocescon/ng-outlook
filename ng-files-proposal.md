@@ -20,7 +20,7 @@ export interface Item {
   price: number;
 }
 
-const tooltip = directive<_, HTMLElement>({
+const tooltip = directive<void, HTMLElement>({
   props: {
     message: input.required<string>(),
   },
