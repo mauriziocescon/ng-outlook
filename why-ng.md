@@ -1,31 +1,9 @@
-## Why macros
-Since `tsx` grammar does not currently support Angular control flow or directives, the likely path forward involves a DSL combined with [Volar](https://volarjs.dev/), requiring `**.ng` files and a custom parser — similar in principle to what [ripple](https://www.ripple-ts.com/) has done. Assuming this setup (or something comparable), one could argue that macros are unnecessary, since a component could be written as a plain function. However, consider the following: 
-```ts
-import { component, ... } from '@angular/core';
-
-let Comp = component(({
-  /** ... **/
-}) => {
-  const unwanted = 'unwanted';
-  return {
-    script: () => {
-      ...
-
-      exports({...});
-      
-      return (...);
-    },
-    style: `...`,
-    providers: () => [...],
-  };
-});
-```
-
-With macros and DSL + Volar (or equivalent):
-- unwanted flexibility is avoided (e.g., `let` / `var` declarations),
-- unexpected scope behaviors are eliminated (e.g., the `unwanted` variable in the example above),
+## Why ng files with tsx like templates
+Since `tsx` grammar currently does not support Angular control flow or directives, the likely path forward involves a DSL combined with [Volar](https://volarjs.dev/), requiring `*.ng` files and a custom parser — similar in principle to what [ripple](https://www.ripple-ts.com/) has done. Assuming this setup (or something comparable), one could argue that losing the ability to keep the template as a separate file (e.g., via `templateUrl`) is a significant regression. That said, agents tend to prefer something similar in nature to React where
+- the template is part of the component definition,
+- the template is defined within the script's scope, with direct access to its variables,
 - tooling has clear structural markers to work with,
-- DI is kept separate from the script and template, while still allowing providers to depend on inputs — but not on variables defined inside the script.
+- provider declarations are kept separate from the script and template, while still allowing providers to depend on inputs — but not on variables defined inside the script.
 
 Note that the entire proposal preserves the concept of declaring inputs, outputs, and similar constructs at the component level, with Angular syncing them and enforcing strict type checking at build time. Additionally, the script runs only once, at component creation time.
 
@@ -64,6 +42,7 @@ const currency = declaration({
     const localeId = inject(LOCALE_ID);
 
     return computed(/** ... **/);
+  },
 });
 
 const List = component({
@@ -71,7 +50,7 @@ const List = component({
     items: input.required<Item[]>(),
     item: fragment<[Item]>(),
   },
-  script: () => (
+  script: ({ items, item }) => (
     @for (i of items(); track i.id) {
       <Render fragment = { item() }  params = { [i] } />
     }
