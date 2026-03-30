@@ -615,20 +615,27 @@ export const Button = component<HTMLButtonAttributes>({
 Dynamic components:
 ```ts
 import { component, signal, computed } from '@angular/core';
-import { Dynamic } from '@angular/common';
-import { AComp } from './a-comp.ng';
-import { BComp } from './b-comp.ng';
+import { AdminPanel } from './admin-panel.ng';   // props: { user: input.required<User>() }
+import { GuestPanel } from './guest-panel.ng';   // props: { message: input.required<string>() }
 
-export const Something = component({
+export const Dashboard = component({
   script: () => {
-    const condition = signal<boolean>(/** ... **/);
-    const comp = computed(() => condition() ? AComp : BComp);
-    const inputs = computed(() => /** ... **/);
-    
+    const isAdmin = signal(false);
+    const user = signal<User>(/** ... **/);
+
+    const panel = computed(() => isAdmin() ? AdminPanel : GuestPanel);
+
+    /**
+     * {panel()} as a tag: panel() returns typeof AdminPanel | typeof GuestPanel,
+     * so props are type-checked against the union — no untyped inputs bag
+     *
+     * ⚠️ Only props shared by both components can be safely passed ⚠️
+     */
     return (
-      <Dynamic component={comp()} inputs={inputs()} />
+      <button on:click={() => isAdmin.update(v => !v)}>Toggle role</button>
+      <{panel()} user={user()} />
     );
-  },  
+  },
 });
 ```
 
