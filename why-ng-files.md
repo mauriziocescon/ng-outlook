@@ -37,7 +37,7 @@ const tooltip = directive<HTMLElement>({
   },
 });
 
-const currency = composable({
+const currency = derivation({
   props: {
     value: input.required<number | undefined>(),
     currencyCode: input<string>(),
