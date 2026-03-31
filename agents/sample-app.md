@@ -140,13 +140,14 @@ export const tooltip = directive<HTMLElement>({
     let tooltipEl: HTMLElement | null = null;
 
     afterRenderEffect(() => {
+      const hostEl = host(); // host is Signal<HTMLElement>
       tooltipEl?.remove();
       if (!message()) return;
 
       tooltipEl = document.createElement('span');
       tooltipEl.textContent = message();
       tooltipEl.className = 'tooltip';
-      host.appendChild(tooltipEl);
+      hostEl.appendChild(tooltipEl);
     });
 
     destroyRef.onDestroy(() => tooltipEl?.remove());
@@ -173,7 +174,7 @@ export const highlight = directive<HTMLElement>({
   },
   script: ({ color }, { host }) => {
     afterRenderEffect(() => {
-      host.style.backgroundColor = color();
+      host().style.backgroundColor = color(); // host is Signal<HTMLElement>
     });
 
     return {};
