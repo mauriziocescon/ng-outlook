@@ -651,9 +651,9 @@ export const Dashboard = component({
 ```
 
 ## Template ref
-Retrieving runtime references to elements, components and directives. Declare `ref('name')` in the script paired with `#name` in the template to get a `Signal<exports | undefined>` accessible anywhere — template expressions, `afterNextRender`, reactive expressions, and event handlers.
+Retrieving runtime references to elements, components and directives. Declare a `ref(Type)` in the script and assign it via `ref={signal}` in the template to get a `Signal<exports | undefined>` accessible anywhere — template expressions, `afterNextRender`, reactive expressions, and event handlers. The ref resolves after `afterNextRender`; before that it is `undefined`.
 ```ts
-import { component, ref, Signal, signal, afterNextRender } from '@angular/core';
+import { component, ref, refMany, signal, afterNextRender } from '@angular/core';
 import { ripple } from '@mylib/ripple';
 import { tooltip } from '@mylib/tooltip';
 
@@ -676,13 +676,13 @@ const Child = component({
 
       /**
        * exports is the component's public interface.
-       * 
+       *
        * Only what is listed here is accessible via ref —
        * everything else in script() is private and inaccessible
        * from outside (including _internal above).
        *
-       * Template-only lookup: cannot retrieve providers defined
-       * in the Child component tree via ref.
+       * ref does not pierce the injector — providers inside Child
+       * are not accessible from the parent via ref.
        */
       exports: {
         text: text.asReadonly(),
@@ -698,46 +698,50 @@ export const Parent = component({
      *
      * Native elements — no exports to infer from,
      * so the type must be provided explicitly:
-     *   ref<HTMLDivElement>('el')  →  Signal<HTMLDivElement | undefined>
+     *   ref<HTMLDivElement>()  →  Signal<HTMLDivElement | undefined>
      *
      * Components — type inferred from script().exports:
-     *   ref('child')  →  Signal<{ text: Signal<string> } | undefined>
+     *   ref(Child)   →  Signal<{ text: Signal<string> } | undefined>
      *
      * Directives — type inferred from what script() returns
      * (directive scripts have no template; their return value
      * is the exports object directly):
-     *   ref('tlp')  →  Signal<{ toggle: () => void } | undefined>
+     *   ref(tooltip) →  Signal<{ toggle: () => void } | undefined>
+     *
+     * Multiple refs of the same type (e.g. inside @for):
+     *   refMany(Child) →  Signal<{ text: Signal<string> }[]>
      */
-    const el = ref<HTMLDivElement>('el');
-    const child = ref('child');
-    const tlp = ref('tlp');
-    const many = signal<{ text: Signal<string> }[]>([]);
+    const el = ref<HTMLDivElement>();
+    const child = ref(Child);
+    const tlp = ref(tooltip);
+    const many = refMany(Child);
 
     afterNextRender(() => {
-      // el, child, tlp available here as Signal<T | undefined>
+      // refs resolve here; el, child, tlp are Signal<T | undefined>
+      // many is Signal<T[]> — populated for each ref={many} instance
     });
 
     /**
-     * ref('child') + #child:
-     *   child()?.text() uses the signal wrapper; accessible
-     *   anywhere — template expressions, the script
-     *   (afterNextRender, handlers, …).
+     * ref={signal}: assigns the element/component/directive instance
+     *   to the signal; undefined before afterNextRender or when
+     *   conditionally removed from the DOM.
      *
-     * ref={fn}: callback form, runs at view creation (no #name needed)
+     * ref={many}: appends each instance to the array signal;
+     *   use for dynamic lists (e.g. inside @for).
      */
     return (
       <div
-        #el
+        ref={el}
         @ripple()
-        @tooltip(message={'something'} ref=#tlp)>
+        @tooltip(message={'something'} ref={tlp})>
           Something
       </div>
 
-      <Child #child />
+      <Child ref={child} />
       <button on:click={() => child()?.text()}>Show text</button>
 
-      <Child ref={(c) => many.update(v => [...v, c])} />
-      <Child ref={(c) => many.update(v => [...v, c])} />
+      <Child ref={many} />
+      <Child ref={many} />
 
       <button on:click={() => tlp()?.toggle()}>Toggle tlp</button>
     );
