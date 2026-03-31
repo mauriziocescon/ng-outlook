@@ -502,15 +502,11 @@ export const UserDetailConsumer = component({
 
     function makeAdmin() {/** ... **/}
 
-    /**
-     * bind:**={object} binds all entries of an object; same for model / on
-     * Compile-time unrolling + type checking
-     */
     return (
       <UserDetailWrapper
-        bind:**={{user}}
-        model:**={{email}}
-        on:**={{makeAdmin}} />
+        user={user()}
+        model:email={email}
+        on:makeAdmin={makeAdmin} />
     );
   },  
 });
