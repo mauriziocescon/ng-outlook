@@ -239,7 +239,8 @@ export const tooltip = directive<HTMLElement>({
 
 ## Binding shorthands
 - **Name-matching**: omit the value when the local variable name matches the prop; binding type inferred from the signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs.
-- **`when`**: built-in reserved prop on directives for conditional application; cannot be used as a directive input name.
+- **`:ref`**: captures a directive instance from a `use:` binding; equivalent to `ref={signal}` on elements and components.
+- **`:when`**: conditionally applies a `use:` binding; sits outside the directive's inputs and cannot clash with them.
 
 ```ts
 import { component, signal } from '@angular/core';
@@ -261,14 +262,14 @@ export const UserCard = component({
         user={user()}
         model:email={email}
         on:userChange={userChange}
-        use:tooltip(message={tip()} when={showTip()}) />
+        use:tooltip(message={tip()}):when={showTip()} />
 
       // shorthand — when local variable names match prop names
       <UserDetail
         {user}
         model:{email}
         on:{userChange}
-        use:tooltip(message={tip()} when={showTip()}) />
+        use:tooltip(message={tip()}):when={showTip()} />
     );
   },
 });
@@ -678,7 +679,7 @@ export const Dashboard = component({
 ```
 
 ## Template ref
-Declare a `ref(Type)` in the script and assign it via `ref={signal}` in the template to get a `Signal<expose | undefined>`. Refs resolve after `afterNextRender`; before that they are `undefined`.
+Declare a `ref(Type)` in the script and assign it via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` directive bindings, to get a `Signal<expose | undefined>`. Refs resolve after `afterNextRender`; before that they are `undefined`.
 ```ts
 import { component, ref, refMany, signal, afterNextRender } from '@angular/core';
 import { ripple } from '@mylib/ripple';
@@ -718,7 +719,7 @@ export const Parent = component({
       <div
         ref={el}
         use:ripple()
-        use:tooltip(message={'something'} ref={tlp})>
+        use:tooltip(message={'something'}):ref={tlp}>
           Something
       </div>
 
