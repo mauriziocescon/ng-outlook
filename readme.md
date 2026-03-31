@@ -455,7 +455,7 @@ export const ButtonConsumer = component({
     
     return (
       <Button
-        @ripple
+        @ripple()
         @tooltip(message={tooltipMsg()})
         disabled={!valid()}
         on:click={doSomething}>
