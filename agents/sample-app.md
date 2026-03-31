@@ -284,13 +284,13 @@ export const Button = component<HTMLButtonAttributes>({
 ---
 
 ## `app/components/icon-button.ng`
-Wraps `Button` using `Props<T>` and `{...rest}` forwarding.
+Wraps `Button` using `Props<typeof T>` and `{...rest}` forwarding.
 
 ```ts
 import { component, input, Props } from '@angular/core';
 import { Button } from './button.ng';
 
-export const IconButton = component<Props<Button>>({
+export const IconButton = component<Props<typeof Button>>({
   props: {
     icon: input.required<string>(),
     label: input.required<string>(),
@@ -653,7 +653,7 @@ export const AppPage = component({
 | `children` fragment (implicit) | `card.ng`, `button.ng` |
 | Named/typed fragment + `@fragment` inline | `product-list.ng`, `catalog-page.ng` |
 | `behaviours` + `directives` spread | `button.ng` |
-| `Props<T>` + `{...rest}` component wrapping | `icon-button.ng` |
+| `Props<typeof T>` + `{...rest}` component wrapping | `icon-button.ng` |
 | `HTMLButtonAttributes` + `{...rest}` native wrapping | `button.ng` |
 | Dynamic components | `app-page.ng` |
 | `ref` + `refMany` + `afterNextRender` | `search-bar.ng` (internal), `catalog-page.ng` |

@@ -550,8 +550,8 @@ export const UserDetailConsumer = component({
   },  
 });
 
-// Props<UserDetail>: defines the full set of props rest is typed against
-export const UserDetailWrapper = component<Props<UserDetail>>({
+// Props<typeof UserDetail>: defines the full set of props rest is typed against
+export const UserDetailWrapper = component<Props<typeof UserDetail>>({
   props: {
     user: input<User>(),
   },
