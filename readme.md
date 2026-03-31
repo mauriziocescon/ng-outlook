@@ -588,7 +588,7 @@ export const ButtonConsumer = component({
         type="button"
         style="background-color: cyan"
         class={valid() ? 'global-css-valid' : ''}
-        @ripple
+        @ripple()
         @tooltip(message={tooltipMsg()})
         disabled={!valid()}
         on:click={doSomething}>
@@ -733,7 +733,7 @@ export const Parent = component({
     return (
       <div
         #el
-        @ripple
+        @ripple()
         @tooltip(message={'something'})=#tlp>
           Something
       </div>
