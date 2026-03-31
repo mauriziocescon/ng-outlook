@@ -17,6 +17,8 @@ Points:
 8. DI enhancements, 
 9. Final considerations (`!important`).
 
+**Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
+
 ## Components
 Component structure and element bindings:
 ```ts
@@ -207,8 +209,13 @@ export const tooltip = directive<HTMLElement>({
     dismiss: output<void>(),
   },
   /**
-   * host: typed as HTMLElement (from the generic); 
+   * host: typed as HTMLElement (from the generic);
    * usable only in afterNextRender or similar
+   *
+   * Directive scripts return their exports directly — there is
+   * no template to return. The returned object is the public
+   * interface accessible via ref; everything else in script()
+   * is private.
    */
   script: ({ message, dismiss }, { host }) => {
     const destroyRef = inject(DestroyRef);
@@ -217,10 +224,14 @@ export const tooltip = directive<HTMLElement>({
     afterRenderEffect(() => {
       // something with host
     });
-    
+
     destroyRef.onDestroy(() => {
       // cleanup logic
     });
+
+    return {
+      toggle: () => { /** ... **/ },
+    };
   },
 });
 ```
@@ -577,7 +588,7 @@ export const ButtonConsumer = component({
         type="button"
         style="background-color: cyan"
         class={valid() ? 'global-css-valid' : ''}
-        @ripple
+        @ripple()
         @tooltip(message={tooltipMsg()})
         disabled={!valid()}
         on:click={doSomething}>
@@ -640,69 +651,105 @@ export const Dashboard = component({
 ```
 
 ## Template ref
-Retrieving runtime references to elements, components and directives:
+Retrieving runtime references to elements, components and directives. Two usage patterns:
+- **Template-only** (`#name` alone, no `ref()` in script): the exports are accessible directly as a template expression — no signal wrapper needed. Use for simple one-off calls inside the template.
+- **Script signal** (`ref('name')` + `#name`): creates a `Signal<exports | undefined>` in the script. Use when the ref is needed in `afterNextRender`, reactive expressions, or event handlers defined in the script.
 ```ts
-import { component, ref, Signal, signal, afterNextRender, exports } from '@angular/core';
+import { component, ref, Signal, signal, afterNextRender } from '@angular/core';
 import { ripple } from '@mylib/ripple';
 import { tooltip } from '@mylib/tooltip';
 
 const Child = component({
   script: () => {
     const text = signal('');
+    const _internal = signal(0); // private: not listed in exports
 
     /**
-     * Can define an object that
-     * any ref can use to interact
-     * with the component
-     * (public interface)
+     * Angular DSL — not JSX. script() return shapes:
+     *   - component, no exports:  returns template DSL directly (concise arrow)
+     *   - component with exports: returns { template, exports }
+     *   - directive:              returns the exports object directly (no template)
+     *
+     * The return type drives ref type inference in all three cases —
+     * no function-body scanning required.
      */
-    exports({
-      text: text.asReadonly(),
-    });
-    
-    return (...);
-  },  
+    return {
+      template: (...),
+
+      /**
+       * exports is the component's public interface.
+       * 
+       * Only what is listed here is accessible via ref —
+       * everything else in script() is private and inaccessible
+       * from outside (including _internal above).
+       *
+       * Template-only lookup: cannot retrieve providers defined
+       * in the Child component tree via ref.
+       */
+      exports: {
+        text: text.asReadonly(),
+      },
+    };
+  },
 });
 
 export const Parent = component({
   script: () => {
-    // readonly signal
-    const el = ref<HTMLDivElement>('el');
-
     /**
-     * 1. Can only use what's returned by Child.exports
-     * 2. Template-only lookup: cannot retrieve providers
-     *    defined in the Child component tree
+     * Pattern 2 — script signal (ref('name') + #name in template).
+     * Type inference:
+     *
+     * Native elements — no exports to infer from,
+     * so the type must be provided explicitly:
+     *   ref<HTMLDivElement>('el')  →  Signal<HTMLDivElement | undefined>
+     *
+     * Components — type inferred from script().exports:
+     *   ref('child2')  →  Signal<{ text: Signal<string> } | undefined>
+     *
+     * Directives — type inferred from what script() returns
+     * (directive scripts have no template; their return value
+     * is the exports object directly):
+     *   ref('tlp')  →  Signal<{ toggle: () => void } | undefined>
      */
-    const child = ref('child');
-
-    // using what's returned by tooltip.script
-    const tlp = ref<{ toggle: () => void }>('tlp');
+    const el = ref<HTMLDivElement>('el');
+    const child2 = ref('child2');
+    const tlp = ref('tlp');
     const many = signal<{ text: Signal<string> }[]>([]);
 
     afterNextRender(() => {
-      // something with refs
+      // el, child2, tlp available here as Signal<T | undefined>
     });
-    
+
     /**
-     * ref: Can bind to a function as well (runs at view creation)
+     * Pattern 1 — #child (template-only, no ref() in script):
+     *   child.text() is directly accessible in template expressions.
+     *
+     * Pattern 2 — ref('child2') + #child2:
+     *   child2()?.text() uses the signal wrapper; needed when
+     *   the ref is used in the script (afterNextRender, handlers, …).
+     *
+     * ref={fn}: callback form, runs at view creation (no #name needed)
      */
     return (
       <div
         #el
-        @ripple=#rpl
+        @ripple()
         @tooltip(message={'something'})=#tlp>
           Something
       </div>
-    
+
       <Child #child />
-      
+      <button on:click={() => child.text()}>Show text</button>
+
+      <Child #child2 />
+      <button on:click={() => child2()?.text()}>Show text</button>
+
       <Child ref={(c) => many.update(v => [...v, c])} />
       <Child ref={(c) => many.update(v => [...v, c])} />
-    
-      <button on:click={() => tlp().toggle()}>Toggle tlp</button>
+
+      <button on:click={() => tlp()?.toggle()}>Toggle tlp</button>
     );
-  },  
+  },
 });
 ```
 

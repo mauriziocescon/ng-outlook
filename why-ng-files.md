@@ -30,6 +30,10 @@ const tooltip = directive<HTMLElement>({
     afterRenderEffect(() => {
       /** ... **/
     });
+
+    return {
+      /** ... **/
+    };
   },
 });
 
