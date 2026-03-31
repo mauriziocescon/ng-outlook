@@ -81,11 +81,11 @@ export const ItemsPage = component({
               <Img url={i.imgUrl} />
               <VStack>
                 <Title title={i.title} />
-                <Description @tooltip(message={i.title}) description={i.description} />
+                <Description @use:tooltip(message={i.title}) description={i.description} />
                 
                 <hr />                
                 
-                @const price = @currency({value: i.price, currencyCode: 'EUR'});
+                @const price = currency({value: i.price, currencyCode: 'EUR'});
                 <p>Price: {price()}</p>
               </VStack>
             </HStack>

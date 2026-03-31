@@ -184,7 +184,7 @@ export const TextSearch = component({
     function doSomething() {/** ... **/}
 
     /**
-     * Encapsulation of directive data: @directive(...)
+     * Encapsulation of directive data: @use:directive(...)
      * Any directive can be used directly in the template
      */
     return (
@@ -192,7 +192,7 @@ export const TextSearch = component({
         type="text"
         model:value={text}
         on:input={valueChange}
-        @tooltip(message={message()} on:dismiss={doSomething}) />
+        @use:tooltip(message={message()} on:dismiss={doSomething}) />
 
       <p>Value: {text()}</p>
     );
@@ -237,7 +237,7 @@ export const tooltip = directive<HTMLElement>({
 ```
 
 ## Template-scope `@const` constants and derivations
-`@const` defines a template-scoped constant created once per view lifecycle. When the right-hand side is a `@derivation(...)`, ng additionally establishes an injection context before calling its `script`:
+`@const` defines a template-scoped constant created once per view lifecycle. When the right-hand side is a `derivation(...)`, ng additionally establishes an injection context before calling its `script`:
 ```ts
 import { component, derivation, computed, inject, input } from '@angular/core';
 import { Item, PriceManager } from '@mylib/item';
@@ -274,7 +274,7 @@ export const PriceSimulator = component({
      */
     return (
       @for (item of items(); track item.id) {
-        @const price = @simulation({qty: 1, item: item});
+        @const price = simulation({qty: 1, item: item});
 
         <h5>{item.desc}</h5>
         <div>Price: {price()}</div>
@@ -449,14 +449,14 @@ export const ButtonConsumer = component({
     
     return (
       <Button
-        @ripple()
-        @tooltip(message={tooltipMsg()})
+        @use:ripple()
+        @use:tooltip(message={tooltipMsg()})
         disabled={!valid()}
         on:click={doSomething}>
           Click / Hover me
       </Button>
     );
-  },  
+  },
 });
 
 // -- button in @mylib/button --------------------
@@ -582,8 +582,8 @@ export const ButtonConsumer = component({
         type="button"
         style="background-color: cyan"
         class={valid() ? 'global-css-valid' : ''}
-        @ripple()
-        @tooltip(message={tooltipMsg()})
+        @use:ripple()
+        @use:tooltip(message={tooltipMsg()})
         disabled={!valid()}
         on:click={doSomething}>
           Click / Hover me
@@ -726,8 +726,8 @@ export const Parent = component({
     return (
       <div
         ref={el}
-        @ripple()
-        @tooltip(message={'something'} ref={tlp})>
+        @use:ripple()
+        @use:tooltip(message={'something'} ref={tlp})>
           Something
       </div>
 
@@ -863,7 +863,7 @@ export const Counter = component({
 ```ts
 // maybe using another ()?
 
-<Button ( @tooltip(message={tooltipMsg()}) && {enabled()} )>
+<Button ( @use:tooltip(message={tooltipMsg()}) && {enabled()} )>
   Click / Hover me
 </Button>
 ```
