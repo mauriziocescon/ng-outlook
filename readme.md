@@ -846,13 +846,12 @@ export const Counter = component({
 ### Unresolved points
 - other decorator properties: in this proposal, components and directives expose only `providers` and `script` entries. However, `@Component` and `@Directive` have many more properties, some of which (like `preserveWhitespaces`) should probably remain. They are not covered here to avoid scope creep;
 - `providers` defined at the `directive` level: the added value is unclear, but the confusion they generate is well-documented; it is uncertain whether this concept remains meaningful;
-- there is no obvious shorthand for passing signals (as in Svelte or Vue);
+- name-matching shorthand for passing signals (as in Svelte or Vue): works when the local variable name matches the prop name; the compiler infers the binding type from the variable's type (`Signal<T>` → auto-called for inputs, `WritableSignal<T>` → passed as-is for models, `() => void` → passed as-is for outputs); falls back to explicit form when names differ or the expression is not a single identifier;
 ```ts
+// explicit form — always works
 <User user={user()} age={age()} gender={gender()} model:address={address} on:userChange={userChange} />
 
-// hacky way: "matching the name only for signals"
-// error in case of string interpolation or similar
-
+// shorthand — requires local variable names to match prop names
 <User {user} {age} {gender} model:{address} on:{userChange} />
 ```
 - there is no obvious way to conditionally apply directives;
