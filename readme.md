@@ -237,6 +237,45 @@ export const tooltip = directive<HTMLElement>({
 });
 ```
 
+## Binding shorthands
+Two convenience features reduce template verbosity: name-matching lets you omit the value when the local variable name matches the prop name, and `when` conditionally applies a directive without wrapping elements in an `@if`.
+
+- **Name-matching**: binding type inferred from the signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs; falls back to explicit form when names differ or the expression is not a single identifier.
+- **`when`**: built-in reserved prop on directives (like `children` and `behaviours` on components); it cannot be used as a directive input name.
+
+```ts
+import { component, signal } from '@angular/core';
+import { tooltip } from '@mylib/tooltip';
+import { UserDetail, User } from './user-detail.ng';
+
+export const UserCard = component({
+  script: () => {
+    const user = signal<User>(/** ... **/);
+    const email = signal<string>(/** ... **/);
+    const showTip = signal(true);
+    const tip = signal('View details');
+
+    function userChange() {/** ... **/}
+
+    return (
+      // explicit form — always works
+      <UserDetail
+        user={user()}
+        model:email={email}
+        on:userChange={userChange}
+        use:tooltip(message={tip()} when={showTip()}) />
+
+      // shorthand — when local variable names match prop names
+      <UserDetail
+        {user}
+        model:{email}
+        on:{userChange}
+        use:tooltip(message={tip()} when={showTip()}) />
+    );
+  },
+});
+```
+
 ## Template-scope derivations with `@derive`
 `@derive` creates a template-scoped reactive computation, establishing an injection context before calling the derivation's `script`. It follows the lifecycle of the enclosing view:
 ```ts
@@ -804,23 +843,6 @@ export const Counter = component({
 ### Notes
 - other decorator properties: in this proposal, components and directives expose only `providers` and `script` entries. However, `@Component` and `@Directive` have many more properties, some of which (like `preserveWhitespaces`) should probably remain. They are not covered here to avoid scope creep;
 - `providers` defined at the `directive` level: the added value is unclear, but the confusion they generate is well-documented; it is uncertain whether this concept remains meaningful;
-- name-matching shorthand for passing signals (as in Svelte or Vue): when a local variable name matches the prop name, the binding type is inferred from its signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs; falls back to explicit form when names differ or the expression is not a single identifier;
-```ts
-// explicit form — always works
-<User user={user()} age={age()} gender={gender()} model:address={address} on:userChange={userChange} />
-
-// shorthand — requires local variable names to match prop names
-<User {user} {age} {gender} model:{address} on:{userChange} />
-```
-- `when` is a built-in reserved prop on directives (framework-owned, like `children` and `behaviours` on components) for conditional application; it cannot be used as a directive input name;
-```ts
-<Button
-  use:ripple()
-  use:tooltip(message={tooltipMsg()} when={enabled()})
-  on:click={doSomething}>
-    Click / Hover me
-</Button>
-```
 - inputs and outputs can be reassigned inside the script:
   - `https://github.com/microsoft/TypeScript/issues/18497`,
   - [`no-param-reassign`](https://eslint.org/docs/latest/rules/no-param-reassign).
