@@ -238,10 +238,8 @@ export const tooltip = directive<HTMLElement>({
 ```
 
 ## Binding shorthands
-Two convenience features reduce template verbosity: name-matching lets you omit the value when the local variable name matches the prop name, and `when` conditionally applies a directive without wrapping elements in an `@if`.
-
-- **Name-matching**: binding type inferred from the signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs; falls back to explicit form when names differ or the expression is not a single identifier.
-- **`when`**: built-in reserved prop on directives (like `children` and `behaviours` on components); it cannot be used as a directive input name.
+- **Name-matching**: omit the value when the local variable name matches the prop; binding type inferred from the signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs.
+- **`when`**: built-in reserved prop on directives for conditional application; cannot be used as a directive input name.
 
 ```ts
 import { component, signal } from '@angular/core';
