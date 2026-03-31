@@ -651,7 +651,9 @@ export const Dashboard = component({
 ```
 
 ## Template ref
-Retrieving runtime references to elements, components and directives:
+Retrieving runtime references to elements, components and directives. Two usage patterns:
+- **Template-only** (`#name` alone, no `ref()` in script): the exports are accessible directly as a template expression — no signal wrapper needed. Use for simple one-off calls inside the template.
+- **Script signal** (`ref('name')` + `#name`): creates a `Signal<exports | undefined>` in the script. Use when the ref is needed in `afterNextRender`, reactive expressions, or event handlers defined in the script.
 ```ts
 import { component, ref, Signal, signal, afterNextRender } from '@angular/core';
 import { ripple } from '@mylib/ripple';
@@ -694,6 +696,7 @@ const Child = component({
 export const Parent = component({
   script: () => {
     /**
+     * Pattern 2 — script signal (ref('name') + #name in template).
      * Type inference:
      *
      * Native elements — no exports to infer from,
@@ -701,7 +704,7 @@ export const Parent = component({
      *   ref<HTMLDivElement>('el')  →  Signal<HTMLDivElement | undefined>
      *
      * Components — type inferred from script().exports:
-     *   ref('child')  →  Signal<{ text: Signal<string> } | undefined>
+     *   ref('child2')  →  Signal<{ text: Signal<string> } | undefined>
      *
      * Directives — type inferred from what script() returns
      * (directive scripts have no template; their return value
@@ -709,16 +712,23 @@ export const Parent = component({
      *   ref('tlp')  →  Signal<{ toggle: () => void } | undefined>
      */
     const el = ref<HTMLDivElement>('el');
-    const child = ref('child');
+    const child2 = ref('child2');
     const tlp = ref('tlp');
     const many = signal<{ text: Signal<string> }[]>([]);
 
     afterNextRender(() => {
-      // something with refs
+      // el, child2, tlp available here as Signal<T | undefined>
     });
 
     /**
-     * ref: Can bind to a function as well (runs at view creation)
+     * Pattern 1 — #child (template-only, no ref() in script):
+     *   child.text() is directly accessible in template expressions.
+     *
+     * Pattern 2 — ref('child2') + #child2:
+     *   child2()?.text() uses the signal wrapper; needed when
+     *   the ref is used in the script (afterNextRender, handlers, …).
+     *
+     * ref={fn}: callback form, runs at view creation (no #name needed)
      */
     return (
       <div
@@ -729,6 +739,10 @@ export const Parent = component({
       </div>
 
       <Child #child />
+      <button on:click={() => child.text()}>Show text</button>
+
+      <Child #child2 />
+      <button on:click={() => child2()?.text()}>Show text</button>
 
       <Child ref={(c) => many.update(v => [...v, c])} />
       <Child ref={(c) => many.update(v => [...v, c])} />
