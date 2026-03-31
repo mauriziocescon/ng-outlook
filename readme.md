@@ -460,7 +460,7 @@ export const ButtonConsumer = component({
 });
 
 // -- button in @mylib/button --------------------
-import { component, input, output, fragment, forward } from '@angular/core';
+import { component, input, output, fragment, directives } from '@angular/core';
 
 export const Button = component({
   props: {
@@ -473,16 +473,16 @@ export const Button = component({
      * Readonly signal provided by ng (not bindable directly)
      * Name reserved to ng
      */
-    directives: forward<HTMLButtonElement>(),
+    behaviours: directives<HTMLButtonElement>(),
   },
-  script: ({ children, disabled, click, directives }) => {
+  script: ({ children, disabled, click, behaviours }) => {
     // ...
 
     /**
      * Compile-time unrolling + type checking
      */
     return (
-      <button {...directives()} disabled={disabled()} on:click={() => click.emit()}>
+      <button {...behaviours()} disabled={disabled()} on:click={() => click.emit()}>
         @render(children())
       </button>
     );
@@ -538,7 +538,7 @@ export const UserDetailWrapper = component<Props<UserDetail>>({
 });
 
 // -- UserDetail -----------------------------------
-import { component, input, model, output, fragment, forward } from '@angular/core';
+import { component, input, model, output, fragment, directives } from '@angular/core';
 
 export interface User {/** ... **/}
 
@@ -548,9 +548,9 @@ export const UserDetail = component({
     email: model.required<string>(),
     makeAdmin: output<void>(),
     children: fragment<void>(),
-    directives: forward<HTMLElement>(),     
+    behaviours: directives<HTMLElement>(),
   },
-  script: ({ user, email, makeAdmin, children, directives }) => {
+  script: ({ user, email, makeAdmin, children, behaviours }) => {
     // ...
 
     return (...);
@@ -593,23 +593,23 @@ export const ButtonConsumer = component({
 });
 
 // -- button in @mylib/button --------------------
-import { component, input, computed, fragment, forward } from '@angular/core';
+import { component, input, computed, fragment, directives } from '@angular/core';
 import { HTMLButtonAttributes } from '@angular/core/elements';
 
 export const Button = component<HTMLButtonAttributes>({
   props: {
     style: input<string>(''),
     children: fragment<void>(),
-    directives: forward<HTMLButtonElement>(),
+    behaviours: directives<HTMLButtonElement>(),
   },
-  script: ({ style, children, directives }, { rest }) => {
+  script: ({ style, children, behaviours }, { rest }) => {
     const innerStyle = computed(() => `${style()}; color: red;`);
 
     /**
      * {...rest} spreads remaining attributes like type, class, etc.
      */
     return (
-      <button {...directives()} {...rest} style={innerStyle()}>
+      <button {...behaviours()} {...rest} style={innerStyle()}>
         @render(children())
       </button>
     );
@@ -845,7 +845,7 @@ export const Counter = component({
 - `template reference variables`: likely replaced by `ref`,
 - `queries`: if `ref` covers the use case, they may no longer be needed; if they remain, it would be good to limit their DI capabilities — specifically, preventing `read` of providers from the injector tree (see [`viewChild abuses`](https://stackblitz.com/edit/stackblitz-starters-wkkqtd9j)),
 - multiple `directives` on the same element: similarly, it would be good to prevent directives from injecting each other when applied to the same element (see [`ngModel hijacking`](https://stackblitz.com/edit/stackblitz-starters-ezryrmmy)); instead, interaction should be an explicit template operation using a `ref` passed as an `input`,
-- in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`directives`, `children`).
+- in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`behaviours`, `children`).
 
 ### Unresolved points
 - other decorator properties: in this proposal, components and directives expose only `providers` and `script` entries. However, `@Component` and `@Directive` have many more properties, some of which (like `preserveWhitespaces`) should probably remain. They are not covered here to avoid scope creep;
