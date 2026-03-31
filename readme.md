@@ -512,16 +512,16 @@ export const Button = component({
      * Readonly signal provided by ng (not bindable directly)
      * Name reserved to ng
      */
-    behaviours: directives<HTMLButtonElement>(),
+    attachments: directives<HTMLButtonElement>(),
   },
-  script: ({ children, disabled, click, behaviours }) => {
+  script: ({ children, disabled, click, attachments }) => {
     // ...
 
     /**
      * Compile-time unrolling + type checking
      */
     return (
-      <button {...behaviours()} disabled={disabled()} on:click={() => click.emit()}>
+      <button {...attachments()} disabled={disabled()} on:click={() => click.emit()}>
         @render(children())
       </button>
     );
@@ -583,9 +583,9 @@ export const UserDetail = component({
     email: model.required<string>(),
     makeAdmin: output<void>(),
     children: fragment<void>(),
-    behaviours: directives<HTMLElement>(),
+    attachments: directives<HTMLElement>(),
   },
-  script: ({ user, email, makeAdmin, children, behaviours }) => {
+  script: ({ user, email, makeAdmin, children, attachments }) => {
     // ...
 
     return (...);
@@ -634,16 +634,16 @@ export const Button = component<HTMLButtonAttributes>({
   props: {
     style: input<string>(''),
     children: fragment<void>(),
-    behaviours: directives<HTMLButtonElement>(),
+    attachments: directives<HTMLButtonElement>(),
   },
-  script: ({ style, children, behaviours }, { rest }) => {
+  script: ({ style, children, attachments }, { rest }) => {
     const innerStyle = computed(() => `${style()}; color: red;`);
 
     /**
      * {...rest} spreads remaining attributes like type, class, etc.
      */
     return (
-      <button {...behaviours()} {...rest} style={innerStyle()}>
+      <button {...attachments()} {...rest} style={innerStyle()}>
         @render(children())
       </button>
     );
@@ -837,7 +837,7 @@ export const Counter = component({
 - `template reference variables`: likely replaced by `ref`,
 - `queries`: if `ref` covers the use case, they may no longer be needed; if they remain, it would be good to limit their DI capabilities — specifically, preventing `read` of providers from the injector tree (see [`viewChild abuses`](https://stackblitz.com/edit/stackblitz-starters-wkkqtd9j)),
 - multiple `directives` on the same element: similarly, it would be good to prevent directives from injecting each other when applied to the same element (see [`ngModel hijacking`](https://stackblitz.com/edit/stackblitz-starters-ezryrmmy)); instead, interaction should be an explicit template operation using a `ref` passed as an `input`,
-- in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`behaviours`, `children`).
+- in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`attachments`, `children`).
 
 ### Notes
 - other decorator properties: in this proposal, components and directives expose only `providers` and `script` entries. However, `@Component` and `@Directive` have many more properties, some of which (like `preserveWhitespaces`) should probably remain. They are not covered here to avoid scope creep;

@@ -23,7 +23,7 @@ app/
 │   ├── currency.ng                derivation with LOCALE_ID + CurrencyCodeToken
 │   └── filter.ng                  derivation with SearchConfigToken
 ├── components/
-│   ├── button.ng                  behaviours, HTMLButtonAttributes, children
+│   ├── button.ng                  attachments, HTMLButtonAttributes, children
 │   ├── icon-button.ng             Props<T>, component wrapping
 │   ├── badge.ng                   simple display component
 │   ├── card.ng                    children fragment
@@ -248,7 +248,7 @@ export const filter = derivation({
 ---
 
 ## `app/components/button.ng`
-A component with `behaviours` (directives spread), `children` fragment, and native element wrapping via `HTMLButtonAttributes`.
+A component with `attachments` (directives spread), `children` fragment, and native element wrapping via `HTMLButtonAttributes`.
 
 ```ts
 import { component, input, output, fragment, directives } from '@angular/core';
@@ -260,11 +260,11 @@ export const Button = component<HTMLButtonAttributes>({
     variant: input<'primary' | 'ghost'>('primary'),
     click: output<void>(),
     children: fragment<void>(),
-    behaviours: directives<HTMLButtonElement>(),
+    attachments: directives<HTMLButtonElement>(),
   },
-  script: ({ disabled, variant, click, children, behaviours }, { rest }) => (
+  script: ({ disabled, variant, click, children, attachments }, { rest }) => (
     <button
-      {...behaviours()}
+      {...attachments()}
       {...rest}
       class:primary={variant() === 'primary'}
       class:ghost={variant() === 'ghost'}
@@ -652,7 +652,7 @@ export const AppPage = component({
 | Inputs hoisted to `providers` | `catalog-page.ng` (`currencyCode` → `CurrencyCodeToken`) |
 | `children` fragment (implicit) | `card.ng`, `button.ng` |
 | Named/typed fragment + `@fragment` inline | `product-list.ng`, `catalog-page.ng` |
-| `behaviours` + `directives` spread | `button.ng` |
+| `attachments` + `directives` spread | `button.ng` |
 | `Props<typeof T>` + `{...rest}` component wrapping | `icon-button.ng` |
 | `HTMLButtonAttributes` + `{...rest}` native wrapping | `button.ng` |
 | Dynamic components | `app-page.ng` |
