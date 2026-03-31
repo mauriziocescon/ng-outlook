@@ -460,7 +460,7 @@ export const ButtonConsumer = component({
 });
 
 // -- button in @mylib/button --------------------
-import { component, input, output, fragment, attachments } from '@angular/core';
+import { component, input, output, fragment, forward } from '@angular/core';
 
 export const Button = component({
   props: {
@@ -473,7 +473,7 @@ export const Button = component({
      * Readonly signal provided by ng (not bindable directly)
      * Name reserved to ng
      */
-    directives: attachments<HTMLButtonElement>(),
+    directives: forward<HTMLButtonElement>(),
   },
   script: ({ children, disabled, click, directives }) => {
     // ...
@@ -538,7 +538,7 @@ export const UserDetailWrapper = component<Props<UserDetail>>({
 });
 
 // -- UserDetail -----------------------------------
-import { component, input, model, output, fragment, attachments } from '@angular/core';
+import { component, input, model, output, fragment, forward } from '@angular/core';
 
 export interface User {/** ... **/}
 
@@ -548,7 +548,7 @@ export const UserDetail = component({
     email: model.required<string>(),
     makeAdmin: output<void>(),
     children: fragment<void>(),
-    directives: attachments<HTMLElement>(),     
+    directives: forward<HTMLElement>(),     
   },
   script: ({ user, email, makeAdmin, children, directives }) => {
     // ...
@@ -593,14 +593,14 @@ export const ButtonConsumer = component({
 });
 
 // -- button in @mylib/button --------------------
-import { component, input, computed, fragment, attachments } from '@angular/core';
+import { component, input, computed, fragment, forward } from '@angular/core';
 import { HTMLButtonAttributes } from '@angular/core/elements';
 
 export const Button = component<HTMLButtonAttributes>({
   props: {
     style: input<string>(''),
     children: fragment<void>(),
-    directives: attachments<HTMLButtonElement>(),
+    directives: forward<HTMLButtonElement>(),
   },
   script: ({ style, children, directives }, { rest }) => {
     const innerStyle = computed(() => `${style()}; color: red;`);
