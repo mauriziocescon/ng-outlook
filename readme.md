@@ -848,6 +848,7 @@ export const Counter = component({
 - `@let`: likely obsolete and no longer needed,
 - `directives` attached to the host (components): no longer possible, but directives can be passed in and spread onto elements,
 - `directive` types: since `host` is not injected anymore, static type checking could be introduced, allowing directives to be applied only to compatible elements,
+- `template reference variables`: likely replaced by `ref`,
 - `queries`: if `ref` covers the use case, they may no longer be needed; if they remain, it would be good to limit their DI capabilities — specifically, preventing `read` of providers from the injector tree (see [`viewChild abuses`](https://stackblitz.com/edit/stackblitz-starters-wkkqtd9j)),
 - multiple `directives` on the same element: similarly, it would be good to prevent directives from injecting each other when applied to the same element (see [`ngModel hijacking`](https://stackblitz.com/edit/stackblitz-starters-ezryrmmy)); instead, interaction should be an explicit template operation using a `ref` passed as an `input`,
 - in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`directives`, `children`).
