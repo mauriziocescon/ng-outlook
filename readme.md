@@ -6,7 +6,7 @@ Points:
     - `*.ng` files with template DSL (see [`.ng files proposal`](https://github.com/mauriziocescon/ng-outlook/blob/main/why-ng-files.md)),
     - `component`: a `script` with scoped logic that returns a `template`,
     - `directive`: a `script` that can change the appearance or behavior of DOM elements,
-    - `composable`: a factory for template-scoped state that requires DI,
+    - `derivation`: a factory for template-scoped computed values that requires DI,
     - `fragment`: a way to capture some markup in the form of a function,
 2. ts expressions with `{}`: bindings + text interpolation,
 3. extra bindings for DOM elements: `bind:`, `on:`, `model:`, `class:`, `style:`, `animate:`,
@@ -236,31 +236,29 @@ export const tooltip = directive<HTMLElement>({
 });
 ```
 
-## Template-scope `@const` constants and composables
-`@const` defines a template-scoped constant created once per view lifecycle. When the right-hand side is a `@composable(...)`, ng additionally establishes an injection context before calling its `script`:
+## Template-scope `@const` constants and derivations
+`@const` defines a template-scoped constant created once per view lifecycle. When the right-hand side is a `@derivation(...)`, ng additionally establishes an injection context before calling its `script`:
 ```ts
-import { component, composable, linkedSignal, computed, inject, input } from '@angular/core';
+import { component, derivation, computed, inject, input } from '@angular/core';
 import { Item, PriceManager } from '@mylib/item';
 
-const simulation = composable({
+const simulation = derivation({
   props: {
     /**
-     * Only inputs are allowed: a composable has no DOM host,
+     * Only inputs are allowed: a derivation has no DOM host,
      * so there is no surface to emit outputs or sync models against
      */
     qty: input.required<number>(),
+    item: input.required<Item>(),
   },
-  script: ({ qty }) => {
+  /**
+   * script always returns Signal<T> (e.g. computed)
+   */
+  script: ({ qty, item }) => {
     const priceManager = inject(PriceManager);
-    const value = linkedSignal(() => qty());
-    
-    return {
-      value: value.asReadonly(),
-      decrease: () => value.update(c => c - 1),
-      increase: () => value.update(c => c + 1),
-      price: computed(/** ... **/),
-    };
-  },  
+
+    return computed(() => priceManager.computePrice(item(), qty()));
+  },
 });
 
 export const PriceSimulator = component({
@@ -269,21 +267,17 @@ export const PriceSimulator = component({
   },
   script: ({ items }) => {
     /**
-     * Any composable can be used directly in the template
+     * Any derivation can be used directly in the template
      *
-     * s shares the @for embedded view scope and is created once,
+     * price shares the @for embedded view scope and is created once,
      * following its lifecycle
      */
     return (
       @for (item of items(); track item.id) {
-        @const s = @simulation({qty: 0});
-      
+        @const price = @simulation({qty: 1, item: item});
+
         <h5>{item.desc}</h5>
-        <button on:click={() => s.decrease()}>-</button>
-        <div>Quantity: {s.value()}</div>
-        <button on:click={() => s.increase()}>+</button>
-        <hr />
-        <div>Price: {s.price()}</div>
+        <div>Price: {price()}</div>
       }
     );
   },
@@ -843,7 +837,7 @@ export const Counter = component({
 - `ng-template` (`let-*` shorthands + `ngTemplateGuard_*`): likely replaced by `fragments`,
 - structural directives: likely replaced by `fragments`,
 - `Ng**Outlet` + `ng-container`: likely replaced by the new primitives,
-- `pipes`: replaced by composables — composables cover the same transform use case but also support stateful patterns (reactive state, methods, DI),
+- `pipes`: replaced by derivations — derivations cover the same transform use case and also support DI,
 - `event delegation`: not explicitly considered, but it could fit as "special attributes" (`onClick`, ...) similarly to [Solid events](https://docs.solidjs.com/concepts/components/event-handlers),
 - `@let`: likely obsolete and no longer needed,
 - `directives` attached to the host (components): no longer possible, but directives can be passed in and spread onto elements,
