@@ -17,6 +17,8 @@ Points:
 8. DI enhancements, 
 9. Final considerations (`!important`).
 
+**Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
+
 ## Components
 Component structure and element bindings:
 ```ts
@@ -660,6 +662,15 @@ const Child = component({
     const text = signal('');
     const _internal = signal(0); // private: not listed in exports
 
+    /**
+     * Angular DSL — not JSX. script() return shapes:
+     *   - component, no exports:  returns template DSL directly (concise arrow)
+     *   - component with exports: returns { template, exports }
+     *   - directive:              returns the exports object directly (no template)
+     *
+     * The return type drives ref type inference in all three cases —
+     * no function-body scanning required.
+     */
     return {
       template: (...),
 
@@ -712,7 +723,7 @@ export const Parent = component({
     return (
       <div
         #el
-        @ripple=#rpl
+        @ripple
         @tooltip(message={'something'})=#tlp>
           Something
       </div>
