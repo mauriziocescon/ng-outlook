@@ -843,7 +843,7 @@ export const Counter = component({
 - multiple `directives` on the same element: similarly, it would be good to prevent directives from injecting each other when applied to the same element (see [`ngModel hijacking`](https://stackblitz.com/edit/stackblitz-starters-ezryrmmy)); instead, interaction should be an explicit template operation using a `ref` passed as an `input`,
 - in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`behaviours`, `children`).
 
-### Unresolved points
+### Notes
 - other decorator properties: in this proposal, components and directives expose only `providers` and `script` entries. However, `@Component` and `@Directive` have many more properties, some of which (like `preserveWhitespaces`) should probably remain. They are not covered here to avoid scope creep;
 - `providers` defined at the `directive` level: the added value is unclear, but the confusion they generate is well-documented; it is uncertain whether this concept remains meaningful;
 - name-matching shorthand for passing signals (as in Svelte or Vue): works when the local variable name matches the prop name; the compiler infers the binding type from the variable's type (`Signal<T>` → auto-called for inputs, `WritableSignal<T>` → passed as-is for models, `() => void` → passed as-is for outputs); falls back to explicit form when names differ or the expression is not a single identifier;
@@ -854,12 +854,13 @@ export const Counter = component({
 // shorthand — requires local variable names to match prop names
 <User {user} {age} {gender} model:{address} on:{userChange} />
 ```
-- there is no obvious way to conditionally apply directives;
+- directives support a built-in `when` reserved prop (framework-owned, like `children` and `behaviours` on components) to conditionally apply them; `when` cannot be used as a directive input name;
 ```ts
-// maybe using another ()?
-
-<Button ( use:tooltip(message={tooltipMsg()}) && {enabled()} )>
-  Click / Hover me
+<Button
+  use:ripple()
+  use:tooltip(message={tooltipMsg()} when={enabled()})
+  on:click={doSomething}>
+    Click / Hover me
 </Button>
 ```
 - inputs and outputs can be reassigned inside the script:
