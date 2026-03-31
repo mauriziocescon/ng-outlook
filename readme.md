@@ -9,7 +9,7 @@ Points:
     - `derivation`: a factory for template-scoped computed values that requires DI,
     - `fragment`: a way to capture some markup in the form of a function,
 2. ts expressions with `{}`: bindings + text interpolation,
-3. extra bindings for DOM elements: `bind:`, `on:`, `model:`, `class:`, `style:`, `animate:`,
+3. extra bindings for DOM elements: `bind:`, `on:`, `model:`, `class:`, `style:`, `animate:`, `use:`,
 4. hostless components + ts lexical scoping for templates,
 5. component inputs: lifted up + immediately available in the script,
 6. composition with fragments, directives and spread syntax,
@@ -184,7 +184,7 @@ export const TextSearch = component({
     function doSomething() {/** ... **/}
 
     /**
-     * Encapsulation of directive data: @directive(...)
+     * Encapsulation of directive data: use:directive(...)
      * Any directive can be used directly in the template
      */
     return (
@@ -192,7 +192,7 @@ export const TextSearch = component({
         type="text"
         model:value={text}
         on:input={valueChange}
-        @tooltip(message={message()} on:dismiss={doSomething}) />
+        use:tooltip(message={message()} on:dismiss={doSomething}) />
 
       <p>Value: {text()}</p>
     );
@@ -212,7 +212,7 @@ export const tooltip = directive<HTMLElement>({
    * host: typed as HTMLElement (from the generic);
    * usable only in afterNextRender or similar
    *
-   * Directive scripts return their exports directly — there is
+   * Directive scripts return their expose directly — there is
    * no template to return. The returned object is the public
    * interface accessible via ref; everything else in script()
    * is private.
@@ -237,7 +237,7 @@ export const tooltip = directive<HTMLElement>({
 ```
 
 ## Template-scope `@const` constants and derivations
-`@const` defines a template-scoped constant created once per view lifecycle. When the right-hand side is a `@derivation(...)`, ng additionally establishes an injection context before calling its `script`:
+`@const` defines a template-scoped constant created once per view lifecycle. When the right-hand side is a `derivation(...)`, ng additionally establishes an injection context before calling its `script`:
 ```ts
 import { component, derivation, computed, inject, input } from '@angular/core';
 import { Item, PriceManager } from '@mylib/item';
@@ -274,7 +274,7 @@ export const PriceSimulator = component({
      */
     return (
       @for (item of items(); track item.id) {
-        @const price = @simulation({qty: 1, item: item});
+        @const price = simulation({qty: 1, item: item});
 
         <h5>{item.desc}</h5>
         <div>Price: {price()}</div>
@@ -449,14 +449,14 @@ export const ButtonConsumer = component({
     
     return (
       <Button
-        @ripple()
-        @tooltip(message={tooltipMsg()})
+        use:ripple()
+        use:tooltip(message={tooltipMsg()})
         disabled={!valid()}
         on:click={doSomething}>
           Click / Hover me
       </Button>
     );
-  },  
+  },
 });
 
 // -- button in @mylib/button --------------------
@@ -582,8 +582,8 @@ export const ButtonConsumer = component({
         type="button"
         style="background-color: cyan"
         class={valid() ? 'global-css-valid' : ''}
-        @ripple()
-        @tooltip(message={tooltipMsg()})
+        use:ripple()
+        use:tooltip(message={tooltipMsg()})
         disabled={!valid()}
         on:click={doSomething}>
           Click / Hover me
@@ -645,7 +645,7 @@ export const Dashboard = component({
 ```
 
 ## Template ref
-Retrieving runtime references to elements, components and directives. Declare a `ref(Type)` in the script and assign it via `ref={signal}` in the template to get a `Signal<exports | undefined>` accessible anywhere — template expressions, `afterNextRender`, reactive expressions, and event handlers. The ref resolves after `afterNextRender`; before that it is `undefined`.
+Retrieving runtime references to elements, components and directives. Declare a `ref(Type)` in the script and assign it via `ref={signal}` in the template to get a `Signal<expose | undefined>` accessible anywhere — template expressions, `afterNextRender`, reactive expressions, and event handlers. The ref resolves after `afterNextRender`; before that it is `undefined`.
 ```ts
 import { component, ref, refMany, signal, afterNextRender } from '@angular/core';
 import { ripple } from '@mylib/ripple';
@@ -654,13 +654,13 @@ import { tooltip } from '@mylib/tooltip';
 const Child = component({
   script: () => {
     const text = signal('');
-    const _internal = signal(0); // private: not listed in exports
+    const _internal = signal(0); // private: not listed in expose
 
     /**
      * Angular DSL — not JSX. script() return shapes:
-     *   - component, no exports:  returns template DSL directly (concise arrow)
-     *   - component with exports: returns { template, exports }
-     *   - directive:              returns the exports object directly (no template)
+     *   - component, no expose:  returns template DSL directly (concise arrow)
+     *   - component with expose: returns { template, expose }
+     *   - directive:             returns the expose object directly (no template)
      *
      * The return type drives ref type inference in all three cases —
      * no function-body scanning required.
@@ -669,7 +669,7 @@ const Child = component({
       template: (...),
 
       /**
-       * exports is the component's public interface.
+       * expose is the component's public interface.
        *
        * Only what is listed here is accessible via ref —
        * everything else in script() is private and inaccessible
@@ -678,7 +678,7 @@ const Child = component({
        * ref does not pierce the injector — providers inside Child
        * are not accessible from the parent via ref.
        */
-      exports: {
+      expose: {
         text: text.asReadonly(),
       },
     };
@@ -690,16 +690,16 @@ export const Parent = component({
     /**
      * Type inference:
      *
-     * Native elements — no exports to infer from,
+     * Native elements — no expose to infer from,
      * so the type must be provided explicitly:
      *   ref<HTMLDivElement>()  →  Signal<HTMLDivElement | undefined>
      *
-     * Components — type inferred from script().exports:
+     * Components — type inferred from script().expose:
      *   ref(Child)   →  Signal<{ text: Signal<string> } | undefined>
      *
      * Directives — type inferred from what script() returns
      * (directive scripts have no template; their return value
-     * is the exports object directly):
+     * is the expose object directly):
      *   ref(tooltip) →  Signal<{ toggle: () => void } | undefined>
      *
      * Multiple refs of the same type (e.g. inside @for):
@@ -726,8 +726,8 @@ export const Parent = component({
     return (
       <div
         ref={el}
-        @ripple()
-        @tooltip(message={'something'} ref={tlp})>
+        use:ripple()
+        use:tooltip(message={'something'} ref={tlp})>
           Something
       </div>
 
@@ -863,7 +863,7 @@ export const Counter = component({
 ```ts
 // maybe using another ()?
 
-<Button ( @tooltip(message={tooltipMsg()}) && {enabled()} )>
+<Button ( use:tooltip(message={tooltipMsg()}) && {enabled()} )>
   Click / Hover me
 </Button>
 ```
