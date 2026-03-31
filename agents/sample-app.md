@@ -18,7 +18,7 @@ app/
 ├── tokens.ts                      injectionToken examples
 ├── directives/
 │   ├── tooltip.ng                 directive (DOM enhancement)
-│   └── highlight.ng               directive with `when`
+│   └── highlight.ng               directive with `:when`
 ├── derivations/
 │   ├── currency.ng                derivation with LOCALE_ID + CurrencyCodeToken
 │   └── filter.ng                  derivation with SearchConfigToken
@@ -163,7 +163,7 @@ export const tooltip = directive<HTMLElement>({
 ---
 
 ## `app/directives/highlight.ng`
-A directive using the `when` reserved prop to conditionally apply itself.
+A directive using the `:when` modifier to conditionally apply itself.
 
 ```ts
 import { directive, input, afterRenderEffect } from '@angular/core';
@@ -182,9 +182,9 @@ export const highlight = directive<HTMLElement>({
 });
 ```
 
-Usage with `when`:
+Usage with `:when`:
 ```ts
-<p use:highlight(color={'cyan'} when={isHighlighted()})>Some text</p>
+<p use:highlight(color={'cyan'}):when={isHighlighted()}>Some text</p>
 ```
 
 ---
@@ -390,10 +390,10 @@ export const SearchBar = component({
 ---
 
 ## `app/components/product-card.ng`
-Uses `@derive` for price formatting, `use:tooltip`, `use:highlight` with `when`, and exposes a `flash` method via `ref`.
+Uses `@derive` for price formatting, `use:tooltip` with `:ref`, `use:highlight` with `:when`, and exposes a `flash` method.
 
 ```ts
-import { component, signal, input, output } from '@angular/core';
+import { component, signal, input, output, ref } from '@angular/core';
 import { tooltip } from '../directives/tooltip.ng';
 import { highlight } from '../directives/highlight.ng';
 import { currency } from '../derivations/currency.ng';
@@ -407,16 +407,18 @@ export const ProductCard = component({
   },
   script: ({ product, cartQty, addToCart }) => {
     const flashing = signal(false);
+    // :ref captures the directive instance → Signal<{ show, hide } | undefined>
+    const tlp = ref(tooltip);
 
     return {
       template: (
         @derive price = currency({ value: product().price });
 
         <div class:in-cart={cartQty() > 0}>
-          <h3 use:tooltip(message={product().description})>
+          <h3 use:tooltip(message={product().description}):ref={tlp}>
             {product().name}
           </h3>
-          <p use:highlight(color={'lightyellow'} when={cartQty() > 0})>
+          <p use:highlight(color={'lightyellow'}):when={cartQty() > 0}>
             {price()}
           </p>
           <small>In cart: {cartQty()}</small>
@@ -644,7 +646,8 @@ export const AppPage = component({
 | `bind:` / `on:` / `model:` / `class:` / `use:` | `search-bar.ng`, `product-card.ng`, `catalog-page.ng` |
 | Lexical scoping (`enum`, `const`) | `catalog-page.ng` |
 | `directive` | `tooltip.ng`, `highlight.ng` |
-| `directive` with `when` | `product-card.ng` (`use:highlight`) |
+| `:when` on `use:` binding | `product-card.ng` (`use:highlight`) |
+| `:ref` on `use:` binding | `product-card.ng` (`use:tooltip`) |
 | `derivation` + `@derive` | `currency.ng`, `filter.ng`, `product-card.ng`, `catalog-page.ng` |
 | Inputs hoisted to `providers` | `catalog-page.ng` (`currencyCode` → `CurrencyCodeToken`) |
 | `children` fragment (implicit) | `card.ng`, `button.ng` |
