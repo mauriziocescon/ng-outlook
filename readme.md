@@ -207,8 +207,13 @@ export const tooltip = directive<HTMLElement>({
     dismiss: output<void>(),
   },
   /**
-   * host: typed as HTMLElement (from the generic); 
+   * host: typed as HTMLElement (from the generic);
    * usable only in afterNextRender or similar
+   *
+   * Directive scripts return their exports directly — there is
+   * no template to return. The returned object is the public
+   * interface accessible via ref; everything else in script()
+   * is private.
    */
   script: ({ message, dismiss }, { host }) => {
     const destroyRef = inject(DestroyRef);
@@ -217,10 +222,14 @@ export const tooltip = directive<HTMLElement>({
     afterRenderEffect(() => {
       // something with host
     });
-    
+
     destroyRef.onDestroy(() => {
       // cleanup logic
     });
+
+    return {
+      toggle: () => { /** ... **/ },
+    };
   },
 });
 ```
@@ -649,43 +658,54 @@ import { tooltip } from '@mylib/tooltip';
 const Child = component({
   script: () => {
     const text = signal('');
-    
+    const _internal = signal(0); // private: not listed in exports
+
     return {
       template: (...),
-      
+
       /**
-       * Can define an object that
-       * any ref can use to interact
-       * with the component
-       * (public interface)
+       * exports is the component's public interface.
+       * 
+       * Only what is listed here is accessible via ref —
+       * everything else in script() is private and inaccessible
+       * from outside (including _internal above).
+       *
+       * Template-only lookup: cannot retrieve providers defined
+       * in the Child component tree via ref.
        */
       exports: {
         text: text.asReadonly(),
       },
     };
-  },  
+  },
 });
 
 export const Parent = component({
   script: () => {
-    // readonly signal
-    const el = ref<HTMLDivElement>('el');
-
     /**
-     * 1. Can only use what's returned by Child.script().exports
-     * 2. Template-only lookup: cannot retrieve providers
-     *    defined in the Child component tree
+     * Type inference:
+     *
+     * Native elements — no exports to infer from,
+     * so the type must be provided explicitly:
+     *   ref<HTMLDivElement>('el')  →  Signal<HTMLDivElement | undefined>
+     *
+     * Components — type inferred from script().exports:
+     *   ref('child')  →  Signal<{ text: Signal<string> } | undefined>
+     *
+     * Directives — type inferred from what script() returns
+     * (directive scripts have no template; their return value
+     * is the exports object directly):
+     *   ref('tlp')  →  Signal<{ toggle: () => void } | undefined>
      */
+    const el = ref<HTMLDivElement>('el');
     const child = ref('child');
-
-    // using what's returned by tooltip.script
-    const tlp = ref<{ toggle: () => void }>('tlp');
+    const tlp = ref('tlp');
     const many = signal<{ text: Signal<string> }[]>([]);
 
     afterNextRender(() => {
       // something with refs
     });
-    
+
     /**
      * ref: Can bind to a function as well (runs at view creation)
      */
@@ -696,15 +716,15 @@ export const Parent = component({
         @tooltip(message={'something'})=#tlp>
           Something
       </div>
-    
+
       <Child #child />
-      
+
       <Child ref={(c) => many.update(v => [...v, c])} />
       <Child ref={(c) => many.update(v => [...v, c])} />
-    
-      <button on:click={() => tlp().toggle()}>Toggle tlp</button>
+
+      <button on:click={() => tlp()?.toggle()}>Toggle tlp</button>
     );
-  },  
+  },
 });
 ```
 
