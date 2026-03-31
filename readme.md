@@ -804,7 +804,7 @@ export const Counter = component({
 ### Notes
 - other decorator properties: in this proposal, components and directives expose only `providers` and `script` entries. However, `@Component` and `@Directive` have many more properties, some of which (like `preserveWhitespaces`) should probably remain. They are not covered here to avoid scope creep;
 - `providers` defined at the `directive` level: the added value is unclear, but the confusion they generate is well-documented; it is uncertain whether this concept remains meaningful;
-- name-matching shorthand for passing signals (as in Svelte or Vue): works when the local variable name matches the prop name; the compiler infers the binding type from the variable's type (`Signal<T>` → auto-called for inputs, `WritableSignal<T>` → passed as-is for models, `() => void` → passed as-is for outputs); falls back to explicit form when names differ or the expression is not a single identifier;
+- name-matching shorthand for passing signals (as in Svelte or Vue): when a local variable name matches the prop name, the binding type is inferred from its signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs; falls back to explicit form when names differ or the expression is not a single identifier;
 ```ts
 // explicit form — always works
 <User user={user()} age={age()} gender={gender()} model:address={address} on:userChange={userChange} />
@@ -812,7 +812,7 @@ export const Counter = component({
 // shorthand — requires local variable names to match prop names
 <User {user} {age} {gender} model:{address} on:{userChange} />
 ```
-- directives support a built-in `when` reserved prop (framework-owned, like `children` and `behaviours` on components) to conditionally apply them; `when` cannot be used as a directive input name;
+- `when` is a built-in reserved prop on directives (framework-owned, like `children` and `behaviours` on components) for conditional application; it cannot be used as a directive input name;
 ```ts
 <Button
   use:ripple()
