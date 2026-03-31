@@ -531,8 +531,8 @@ export const Button = component({
 
 Wrapping components and forwarding inputs and outputs:
 ```ts
-import { component, signal, input, computed, Props } from '@angular/core';
-import { UserDetail, User } from './user-detail.ng';
+import { component, signal, input, computed } from '@angular/core';
+import { UserDetail, User, UserDetailProps } from './user-detail.ng';
 
 export const UserDetailConsumer = component({
   script: () => {
@@ -550,8 +550,7 @@ export const UserDetailConsumer = component({
   },  
 });
 
-// Props<typeof UserDetail>: defines the full set of props rest is typed against
-export const UserDetailWrapper = component<Props<typeof UserDetail>>({
+export const UserDetailWrapper = component<UserDetailProps>({
   props: {
     user: input<User>(),
   },
@@ -573,7 +572,7 @@ export const UserDetailWrapper = component<Props<typeof UserDetail>>({
 });
 
 // -- UserDetail -----------------------------------
-import { component, input, model, output, fragment, directives } from '@angular/core';
+import { component, input, model, output, fragment, directives, Props } from '@angular/core';
 
 export interface User {/** ... **/}
 
@@ -591,6 +590,8 @@ export const UserDetail = component({
     return (...);
   },
 });
+
+export type UserDetailProps = Props<typeof UserDetail>;
 ```
 
 Wrapping native elements and forwarding attributes and event listeners:

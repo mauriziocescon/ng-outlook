@@ -251,7 +251,7 @@ export const filter = derivation({
 A component with `behaviours` (directives spread), `children` fragment, and native element wrapping via `HTMLButtonAttributes`.
 
 ```ts
-import { component, input, output, fragment, directives } from '@angular/core';
+import { component, input, output, fragment, directives, Props } from '@angular/core';
 import { HTMLButtonAttributes } from '@angular/core/elements';
 
 export const Button = component<HTMLButtonAttributes>({
@@ -279,18 +279,20 @@ export const Button = component<HTMLButtonAttributes>({
     .ghost { background: transparent; border: 1px solid currentColor; }
   `,
 });
+
+export type ButtonProps = Props<typeof Button>;
 ```
 
 ---
 
 ## `app/components/icon-button.ng`
-Wraps `Button` using `Props<typeof T>` and `{...rest}` forwarding.
+Wraps `Button` using `ButtonProps` and `{...rest}` forwarding.
 
 ```ts
-import { component, input, Props } from '@angular/core';
-import { Button } from './button.ng';
+import { component, input } from '@angular/core';
+import { Button, ButtonProps } from './button.ng';
 
-export const IconButton = component<Props<typeof Button>>({
+export const IconButton = component<ButtonProps>({
   props: {
     icon: input.required<string>(),
     label: input.required<string>(),
@@ -653,7 +655,7 @@ export const AppPage = component({
 | `children` fragment (implicit) | `card.ng`, `button.ng` |
 | Named/typed fragment + `@fragment` inline | `product-list.ng`, `catalog-page.ng` |
 | `behaviours` + `directives` spread | `button.ng` |
-| `Props<typeof T>` + `{...rest}` component wrapping | `icon-button.ng` |
+| Named props type export + `{...rest}` component wrapping | `icon-button.ng` |
 | `HTMLButtonAttributes` + `{...rest}` native wrapping | `button.ng` |
 | Dynamic components | `app-page.ng` |
 | `ref` + `refMany` + `afterNextRender` | `search-bar.ng` (internal), `catalog-page.ng` |
