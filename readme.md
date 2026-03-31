@@ -212,7 +212,7 @@ export const tooltip = directive<HTMLElement>({
    * host: typed as HTMLElement (from the generic);
    * usable only in afterNextRender or similar
    *
-   * Directive scripts return their exports directly — there is
+   * Directive scripts return their expose directly — there is
    * no template to return. The returned object is the public
    * interface accessible via ref; everything else in script()
    * is private.
@@ -645,7 +645,7 @@ export const Dashboard = component({
 ```
 
 ## Template ref
-Retrieving runtime references to elements, components and directives. Declare a `ref(Type)` in the script and assign it via `ref={signal}` in the template to get a `Signal<exports | undefined>` accessible anywhere — template expressions, `afterNextRender`, reactive expressions, and event handlers. The ref resolves after `afterNextRender`; before that it is `undefined`.
+Retrieving runtime references to elements, components and directives. Declare a `ref(Type)` in the script and assign it via `ref={signal}` in the template to get a `Signal<expose | undefined>` accessible anywhere — template expressions, `afterNextRender`, reactive expressions, and event handlers. The ref resolves after `afterNextRender`; before that it is `undefined`.
 ```ts
 import { component, ref, refMany, signal, afterNextRender } from '@angular/core';
 import { ripple } from '@mylib/ripple';
@@ -654,13 +654,13 @@ import { tooltip } from '@mylib/tooltip';
 const Child = component({
   script: () => {
     const text = signal('');
-    const _internal = signal(0); // private: not listed in exports
+    const _internal = signal(0); // private: not listed in expose
 
     /**
      * Angular DSL — not JSX. script() return shapes:
-     *   - component, no exports:  returns template DSL directly (concise arrow)
-     *   - component with exports: returns { template, exports }
-     *   - directive:              returns the exports object directly (no template)
+     *   - component, no expose:  returns template DSL directly (concise arrow)
+     *   - component with expose: returns { template, expose }
+     *   - directive:             returns the expose object directly (no template)
      *
      * The return type drives ref type inference in all three cases —
      * no function-body scanning required.
@@ -669,7 +669,7 @@ const Child = component({
       template: (...),
 
       /**
-       * exports is the component's public interface.
+       * expose is the component's public interface.
        *
        * Only what is listed here is accessible via ref —
        * everything else in script() is private and inaccessible
@@ -678,7 +678,7 @@ const Child = component({
        * ref does not pierce the injector — providers inside Child
        * are not accessible from the parent via ref.
        */
-      exports: {
+      expose: {
         text: text.asReadonly(),
       },
     };
@@ -690,16 +690,16 @@ export const Parent = component({
     /**
      * Type inference:
      *
-     * Native elements — no exports to infer from,
+     * Native elements — no expose to infer from,
      * so the type must be provided explicitly:
      *   ref<HTMLDivElement>()  →  Signal<HTMLDivElement | undefined>
      *
-     * Components — type inferred from script().exports:
+     * Components — type inferred from script().expose:
      *   ref(Child)   →  Signal<{ text: Signal<string> } | undefined>
      *
      * Directives — type inferred from what script() returns
      * (directive scripts have no template; their return value
-     * is the exports object directly):
+     * is the expose object directly):
      *   ref(tooltip) →  Signal<{ toggle: () => void } | undefined>
      *
      * Multiple refs of the same type (e.g. inside @for):
