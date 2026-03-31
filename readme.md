@@ -236,8 +236,8 @@ export const tooltip = directive<HTMLElement>({
 });
 ```
 
-## Template-scope `@const` constants and derivations
-`@const` defines a template-scoped constant created once per view lifecycle. When the right-hand side is a `derivation(...)`, ng additionally establishes an injection context before calling its `script`:
+## Template-scope derivations with `@derive`
+`@derive` creates a template-scoped reactive computation, establishing an injection context before calling the derivation's `script`. It follows the lifecycle of the enclosing view:
 ```ts
 import { component, derivation, computed, inject, input } from '@angular/core';
 import { Item, PriceManager } from '@mylib/item';
@@ -267,14 +267,14 @@ export const PriceSimulator = component({
   },
   script: ({ items }) => {
     /**
-     * Any derivation can be used directly in the template
+     * Any derivation can be used directly in the template via @derive
      *
      * price shares the @for embedded view scope and is created once,
      * following its lifecycle
      */
     return (
       @for (item of items(); track item.id) {
-        @const price = simulation({qty: 1, item: item});
+        @derive price = simulation({qty: 1, item: item});
 
         <h5>{item.desc}</h5>
         <div>Price: {price()}</div>
@@ -835,7 +835,7 @@ export const Counter = component({
 - `Ng**Outlet` + `ng-container`: likely replaced by the new primitives,
 - `pipes`: replaced by derivations — derivations cover the same transform use case and also support DI,
 - `event delegation`: not explicitly considered, but it could fit as "special attributes" (`onClick`, ...) similarly to [Solid events](https://docs.solidjs.com/concepts/components/event-handlers),
-- `@let`: likely obsolete and no longer needed,
+- `@let`: unchanged,
 - `directives` attached to the host (components): no longer possible, but directives can be passed in and spread onto elements,
 - `directive` types: since `host` is not injected anymore, static type checking could be introduced, allowing directives to be applied only to compatible elements,
 - `template reference variables`: likely replaced by `ref`,

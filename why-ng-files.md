@@ -85,7 +85,7 @@ export const ItemsPage = component({
                 
                 <hr />                
                 
-                @const price = currency({value: i.price, currencyCode: 'EUR'});
+                @derive price = currency({value: i.price, currencyCode: 'EUR'});
                 <p>Price: {price()}</p>
               </VStack>
             </HStack>
