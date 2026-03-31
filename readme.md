@@ -9,7 +9,7 @@ Points:
     - `derivation`: a factory for template-scoped computed values that requires DI,
     - `fragment`: a way to capture some markup in the form of a function,
 2. ts expressions with `{}`: bindings + text interpolation,
-3. extra bindings for DOM elements: `bind:`, `on:`, `model:`, `class:`, `style:`, `animate:`,
+3. extra bindings for DOM elements: `bind:`, `on:`, `model:`, `class:`, `style:`, `animate:`, `use:`,
 4. hostless components + ts lexical scoping for templates,
 5. component inputs: lifted up + immediately available in the script,
 6. composition with fragments, directives and spread syntax,
@@ -184,7 +184,7 @@ export const TextSearch = component({
     function doSomething() {/** ... **/}
 
     /**
-     * Encapsulation of directive data: @use:directive(...)
+     * Encapsulation of directive data: use:directive(...)
      * Any directive can be used directly in the template
      */
     return (
@@ -192,7 +192,7 @@ export const TextSearch = component({
         type="text"
         model:value={text}
         on:input={valueChange}
-        @use:tooltip(message={message()} on:dismiss={doSomething}) />
+        use:tooltip(message={message()} on:dismiss={doSomething}) />
 
       <p>Value: {text()}</p>
     );
@@ -449,8 +449,8 @@ export const ButtonConsumer = component({
     
     return (
       <Button
-        @use:ripple()
-        @use:tooltip(message={tooltipMsg()})
+        use:ripple()
+        use:tooltip(message={tooltipMsg()})
         disabled={!valid()}
         on:click={doSomething}>
           Click / Hover me
@@ -582,8 +582,8 @@ export const ButtonConsumer = component({
         type="button"
         style="background-color: cyan"
         class={valid() ? 'global-css-valid' : ''}
-        @use:ripple()
-        @use:tooltip(message={tooltipMsg()})
+        use:ripple()
+        use:tooltip(message={tooltipMsg()})
         disabled={!valid()}
         on:click={doSomething}>
           Click / Hover me
@@ -726,8 +726,8 @@ export const Parent = component({
     return (
       <div
         ref={el}
-        @use:ripple()
-        @use:tooltip(message={'something'} ref={tlp})>
+        use:ripple()
+        use:tooltip(message={'something'} ref={tlp})>
           Something
       </div>
 
@@ -863,7 +863,7 @@ export const Counter = component({
 ```ts
 // maybe using another ()?
 
-<Button ( @use:tooltip(message={tooltipMsg()}) && {enabled()} )>
+<Button ( use:tooltip(message={tooltipMsg()}) && {enabled()} )>
   Click / Hover me
 </Button>
 ```

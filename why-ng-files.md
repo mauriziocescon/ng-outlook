@@ -81,7 +81,7 @@ export const ItemsPage = component({
               <Img url={i.imgUrl} />
               <VStack>
                 <Title title={i.title} />
-                <Description @use:tooltip(message={i.title}) description={i.description} />
+                <Description use:tooltip(message={i.title}) description={i.description} />
                 
                 <hr />                
                 
