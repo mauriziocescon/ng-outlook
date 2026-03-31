@@ -551,7 +551,6 @@ export const UserDetail = component({
 
     return (...);
   },
-  
 });
 ```
 
@@ -641,7 +640,7 @@ export const Dashboard = component({
 ```
 
 ## Template ref
-Retrieving runtime references to elements, components and directives. Declare a `ref(Type)` in the script and assign it via `ref={signal}` in the template to get a `Signal<expose | undefined>` accessible anywhere — template expressions, `afterNextRender`, reactive expressions, and event handlers. The ref resolves after `afterNextRender`; before that it is `undefined`.
+Declare a `ref(Type)` in the script and assign it via `ref={signal}` in the template to get a `Signal<expose | undefined>`. Refs resolve after `afterNextRender`; before that they are `undefined`.
 ```ts
 import { component, ref, refMany, signal, afterNextRender } from '@angular/core';
 import { ripple } from '@mylib/ripple';
@@ -650,30 +649,11 @@ import { tooltip } from '@mylib/tooltip';
 const Child = component({
   script: () => {
     const text = signal('');
-    const _internal = signal(0); // private: not listed in expose
+    const _internal = signal(0); // not exposed
 
-    /**
-     * Angular DSL — not JSX. script() return shapes:
-     *   - component, no expose:  returns template DSL directly (concise arrow)
-     *   - component with expose: returns { template, expose }
-     *   - directive:             returns the expose object directly (no template)
-     *
-     * The return type drives ref type inference in all three cases —
-     * no function-body scanning required.
-     */
     return {
       template: (...),
-
-      /**
-       * expose is the component's public interface.
-       *
-       * Only what is listed here is accessible via ref —
-       * everything else in script() is private and inaccessible
-       * from outside (including _internal above).
-       *
-       * ref does not pierce the injector — providers inside Child
-       * are not accessible from the parent via ref.
-       */
+      // expose: component's public interface — only these are accessible via ref
       expose: {
         text: text.asReadonly(),
       },
@@ -683,42 +663,19 @@ const Child = component({
 
 export const Parent = component({
   script: () => {
-    /**
-     * Type inference:
-     *
-     * Native elements — no expose to infer from,
-     * so the type must be provided explicitly:
-     *   ref<HTMLDivElement>()  →  Signal<HTMLDivElement | undefined>
-     *
-     * Components — type inferred from script().expose:
-     *   ref(Child)   →  Signal<{ text: Signal<string> } | undefined>
-     *
-     * Directives — type inferred from what script() returns
-     * (directive scripts have no template; their return value
-     * is the expose object directly):
-     *   ref(tooltip) →  Signal<{ toggle: () => void } | undefined>
-     *
-     * Multiple refs of the same type (e.g. inside @for):
-     *   refMany(Child) →  Signal<{ text: Signal<string> }[]>
-     */
+    // Native element: type explicit → Signal<HTMLDivElement | undefined>
     const el = ref<HTMLDivElement>();
+    // Component: type inferred from expose → Signal<{ text: Signal<string> } | undefined>
     const child = ref(Child);
+    // Directive: type inferred from script() return → Signal<{ toggle: () => void } | undefined>
     const tlp = ref(tooltip);
+    // Multiple instances (e.g. inside @for) → Signal<{ text: Signal<string> }[]>
     const many = refMany(Child);
 
     afterNextRender(() => {
-      // refs resolve here; el, child, tlp are Signal<T | undefined>
-      // many is Signal<T[]> — populated for each ref={many} instance
+      // refs resolve here
     });
 
-    /**
-     * ref={signal}: assigns the element/component/directive instance
-     *   to the signal; undefined before afterNextRender or when
-     *   conditionally removed from the DOM.
-     *
-     * ref={many}: appends each instance to the array signal;
-     *   use for dynamic lists (e.g. inside @for).
-     */
     return (
       <div
         ref={el}
