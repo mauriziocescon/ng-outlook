@@ -642,25 +642,27 @@ export const Dashboard = component({
 ## Template ref
 Retrieving runtime references to elements, components and directives:
 ```ts
-import { component, ref, Signal, signal, afterNextRender, exports } from '@angular/core';
+import { component, ref, Signal, signal, afterNextRender } from '@angular/core';
 import { ripple } from '@mylib/ripple';
 import { tooltip } from '@mylib/tooltip';
 
 const Child = component({
   script: () => {
     const text = signal('');
-
-    /**
-     * Can define an object that
-     * any ref can use to interact
-     * with the component
-     * (public interface)
-     */
-    exports({
-      text: text.asReadonly(),
-    });
     
-    return (...);
+    return {
+      template: (...),
+      
+      /**
+       * Can define an object that
+       * any ref can use to interact
+       * with the component
+       * (public interface)
+       */
+      exports: {
+        text: text.asReadonly(),
+      },
+    };
   },  
 });
 
@@ -670,7 +672,7 @@ export const Parent = component({
     const el = ref<HTMLDivElement>('el');
 
     /**
-     * 1. Can only use what's returned by Child.exports
+     * 1. Can only use what's returned by Child.script().exports
      * 2. Template-only lookup: cannot retrieve providers
      *    defined in the Child component tree
      */
