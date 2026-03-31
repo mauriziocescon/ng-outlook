@@ -209,7 +209,7 @@ export const tooltip = directive<HTMLElement>({
     dismiss: output<void>(),
   },
   /**
-   * host: typed as HTMLElement (from the generic);
+   * host: typed as Signal<HTMLElement> (from the generic);
    * usable only in afterNextRender or similar
    *
    * Directive scripts return their expose directly — there is
@@ -222,7 +222,8 @@ export const tooltip = directive<HTMLElement>({
     const renderer = inject(Renderer2);
 
     afterRenderEffect(() => {
-      // something with host
+      const hostEl: HTMLElement = host();
+      // something with hostEl
     });
 
     destroyRef.onDestroy(() => {
