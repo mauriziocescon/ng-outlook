@@ -20,12 +20,12 @@ Points:
 **Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
 
 ## Component structure and bindings
-`script` runs once on init; `props` are destructured and available immediately:
+`script` runs once on init; `bindings` are destructured and available immediately:
 ```ts
 import { component, signal, linkedSignal, input, output } from '@angular/core';
 
 export const TextSearch = component({
-  props: {
+  bindings: {
     value: input.required<string>(),
     valueChange: output<string>(),
   },
@@ -84,7 +84,7 @@ export const UserDetailConsumer = component({
     /**
      * ⚠️ Must provide all required inputs / models ⚠️
      * 
-     * Cannot duplicate prop names: only one
+     * Cannot duplicate binding names: only one
      * ‼️ <UserDetail user={...} user={...} model:user={...} /> ‼️
      * ‼️ <UserDetail on:makeAdmin={...} on:makeAdmin={...} /> ‼️
      * 
@@ -111,25 +111,25 @@ export interface User {/** ... **/}
 export const UserDetail = component({
   /**
    * Mental model:
-   * 
-   * <UserDetail 
+   *
+   * <UserDetail
    *   style="..."
    *   user={user()}
-   *   model:email={email} 
+   *   model:email={email}
    *   on:makeAdmin={makeAdmin} />
-   * 
+   *
    * function UserDetail({
-   *   style: '...', 
+   *   style: '...',
    *   user: computedInput(() => user(), {transform: ...}),
    *   email: computedInput(() => email()),
    *   'on:emailChange': (v: string) => {email.set(v)},
    *   'on:makeAdmin': () => {makeAdmin()},
    * }) {...}
    */
-  props: {
+  bindings: {
     user: input.required<User>(),
     email: model<string>(),
-    makeAdmin: output<void>(),    
+    makeAdmin: output<void>(),
   },
   script: ({ user, email, makeAdmin }) => {
     // ...      
@@ -196,7 +196,7 @@ import { directive, input, output, inject, DestroyRef, Renderer2, afterRenderEff
 
 // HTMLElement: constrains which host elements this directive can be attached to
 export const tooltip = directive<HTMLElement>({
-  props: {
+  bindings: {
     message: input.required<string>(),
     dismiss: output<void>(),
   },
@@ -217,7 +217,7 @@ export const tooltip = directive<HTMLElement>({
 ```
 
 ## Binding shorthands
-- **Name-matching**: omit the value when the local variable name matches the prop; binding type inferred from the signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs.
+- **Name-matching**: omit the value when the local variable name matches the binding; type inferred from the signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs.
 - **`:when`**: conditionally applies a `use:` binding; sits outside the directive's inputs and cannot clash with them.
 
 ```ts
@@ -260,7 +260,7 @@ import { component, derivation, computed, inject, input } from '@angular/core';
 import { Item, PriceManager } from '@mylib/item';
 
 const simulation = derivation({
-  props: {
+  bindings: {
     /**
      * Only inputs are allowed: a derivation has no DOM host,
      * so there is no surface to emit outputs or sync models against
@@ -279,7 +279,7 @@ const simulation = derivation({
 });
 
 export const PriceSimulator = component({
-  props: {
+  bindings: {
     items: input.required<Item[]>(),
   },
   script: ({ items }) => {
@@ -319,8 +319,8 @@ class CounterStore {
 }
 
 export const Counter = component({
-  props: {
-    c: input.required<number>(),    
+  bindings: {
+    c: input.required<number>(),
   },
   script: () => {
     const store = inject(CounterStore);
@@ -367,7 +367,7 @@ export const MenuConsumer = component({
 import { component, fragment } from '@angular/core';
 
 export const Menu = component({
-  props: {
+  bindings: {
     /**
      * children = fragment<void>()
      *
@@ -393,7 +393,7 @@ export const Menu = component({
 });
 
 export const MenuItem = component({
-  props: {
+  bindings: {
     children: fragment<void>(),
   },
   script: ({ children }) => (
@@ -436,7 +436,7 @@ export const MenuConsumer = component({
 import { component, input, fragment } from '@angular/core';
 
 export const Menu = component({
-  props: {
+  bindings: {
     items: input.required<{ id: string, desc: string }[]>(),
     menuItem: fragment<[{ id: string, desc: string }]>(),
   },
@@ -480,7 +480,7 @@ export const ButtonConsumer = component({
 import { component, input, output, fragment, directives } from '@angular/core';
 
 export const Button = component({
-  props: {
+  bindings: {
     children: fragment<void>(),
     disabled: input<boolean>(false),
     click: output<void>(),
@@ -509,7 +509,7 @@ export const Button = component({
 
 Wrapping components and forwarding inputs and outputs:
 ```ts
-import { component, signal, input, computed, Props } from '@angular/core';
+import { component, signal, input, computed, Bindings } from '@angular/core';
 import { UserDetail, User } from './user-detail.ng';
 
 export const UserDetailConsumer = component({
@@ -528,9 +528,9 @@ export const UserDetailConsumer = component({
   },  
 });
 
-// Props<typeof UserDetail>: defines the full set of props rest is typed against
-export const UserDetailWrapper = component<Props<typeof UserDetail>>({
-  props: {
+// Bindings<typeof UserDetail>: defines the full set of bindings rest is typed against
+export const UserDetailWrapper = component<Bindings<typeof UserDetail>>({
+  bindings: {
     user: input<User>(),
   },
   /**
@@ -542,7 +542,7 @@ export const UserDetailWrapper = component<Props<typeof UserDetail>>({
     const other = computed(() => /** something depending on user or a default value **/);
     
     /**
-     * Compile-time unrolling (UserDetail props): no real runtime spread + strict types
+     * Compile-time unrolling (UserDetail bindings): no real runtime spread + strict types
      */
     return (
       <UserDetail {...rest} user={other()} />
@@ -556,7 +556,7 @@ import { component, input, model, output, fragment, directives } from '@angular/
 export interface User {/** ... **/}
 
 export const UserDetail = component({
-  props: {
+  bindings: {
     user: input.required<User>(),
     email: model.required<string>(),
     makeAdmin: output<void>(),
@@ -609,7 +609,7 @@ import { component, input, computed, fragment, directives } from '@angular/core'
 import { HTMLButtonAttributes } from '@angular/core/elements';
 
 export const Button = component<HTMLButtonAttributes>({
-  props: {
+  bindings: {
     style: input<string>(''),
     children: fragment<void>(),
     attachments: directives<HTMLButtonElement>(),
@@ -632,8 +632,8 @@ export const Button = component<HTMLButtonAttributes>({
 Dynamic components:
 ```ts
 import { component, signal, computed } from '@angular/core';
-import { AdminPanel } from './admin-panel.ng';   // props: { user: input.required<User>() }
-import { GuestPanel } from './guest-panel.ng';   // props: { message: input.required<string>() }
+import { AdminPanel } from './admin-panel.ng';   // bindings: { user: input.required<User>() }
+import { GuestPanel } from './guest-panel.ng';   // bindings: { message: input.required<string>() }
 
 export const Dashboard = component({
   script: () => {
@@ -644,9 +644,9 @@ export const Dashboard = component({
 
     /**
      * {panel()} as a tag: panel() returns typeof AdminPanel | typeof GuestPanel,
-     * so props are type-checked against the union — no untyped inputs bag
+     * so bindings are type-checked against the union — no untyped inputs bag
      *
-     * ⚠️ Only props shared by both components can be safely passed ⚠️
+     * ⚠️ Only bindings shared by both components can be safely passed ⚠️
      */
     return (
       <button on:click={() => isAdmin.update(v => !v)}>Toggle role</button>
@@ -777,8 +777,8 @@ const multiToken = injectionToken('desc', {
 class Store {}
 
 export const Counter = component({
-  props: {
-    initialValue: input<number>(),    
+  bindings: {
+    initialValue: input<number>(),
   },
   script: () => {
     const rootCounter = inject(rootToken);

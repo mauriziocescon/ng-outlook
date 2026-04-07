@@ -21,7 +21,7 @@ export interface Item {
 }
 
 const tooltip = directive<HTMLElement>({
-  props: {
+  bindings: {
     message: input.required<string>(),
   },
   script: ({ message }, { host }) => {
@@ -38,7 +38,7 @@ const tooltip = directive<HTMLElement>({
 });
 
 const currency = derivation({
-  props: {
+  bindings: {
     value: input.required<number | undefined>(),
     currencyCode: input<string>(),
   },
@@ -50,7 +50,7 @@ const currency = derivation({
 });
 
 const List = component({
-  props: {
+  bindings: {
     items: input.required<Item[]>(),
     item: fragment<[Item]>(),
   },
