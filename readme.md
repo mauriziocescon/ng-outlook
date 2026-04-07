@@ -789,10 +789,11 @@ Improved ergonomics for types and tokens:
 import { component, inject, provide, injectionToken, input, signal } from '@angular/core';
 
 /**
- * Not provided in root by default: the token
- * must be provided somewhere
- * 
- * factory defines a default implementation and type
+ * Not provided in root by default: throws if not provided
+ * in the injector tree.
+ *
+ * factory = default factory used by the provide(compToken)
+ * shorthand — not a fallback
  */
 const compToken = injectionToken('desc', {
   factory: () => {
@@ -831,7 +832,8 @@ const rootToken = injectionToken('desc', {
 });
 
 /**
- * multi
+ * multi: factory used only by the provide(multiToken)
+ * shorthand — not a root default entry
  */
 const multiToken = injectionToken('desc', {
   multi: true,
@@ -858,7 +860,7 @@ export const Counter = component({
     // provide compToken at Counter level using the default factory
     provide(compToken),
     
-    // multi
+    // multi: default factory called once per provide(multiToken)
     provide(multiToken),
     provide(multiToken),
     provide({ token: multiToken, useFactory: () => 10 }),
