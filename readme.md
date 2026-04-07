@@ -681,7 +681,7 @@ export const Button = component<HTMLButtonAttributes>({
 });
 ```
 
-Dynamic components:
+Dynamic components — without a shared contract (`ComponentType`, no generic), DI is the only safe channel; use `providers` on the host to bridge data. With a contract, bindings are type-checked against it:
 ```ts
 import { component, signal, computed } from '@angular/core';
 import { AdminPanel } from './admin-panel.ng';   // bindings: { user: input.required<User>() }
