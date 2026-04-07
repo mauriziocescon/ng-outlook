@@ -692,7 +692,7 @@ export const Dashboard = component({
     const isAdmin = signal(false);
     const user = signal<User>(/** ... **/);
 
-    const panel = computed(() => isAdmin() ? AdminPanel : GuestPanel);
+    const Panel = computed(() => isAdmin() ? AdminPanel : GuestPanel);
 
     /**
      * {panel()} as a tag: panel() returns typeof AdminPanel | typeof GuestPanel,
@@ -703,7 +703,7 @@ export const Dashboard = component({
     return {
       template: (
         <button on:click={() => isAdmin.update(v => !v)}>Toggle role</button>
-        <{panel()} user={user()} />
+        <{Panel()} user={user()} />
       ),
     };
   },
