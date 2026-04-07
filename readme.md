@@ -19,21 +19,16 @@ Points:
 
 **Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
 
-## Components
-Component structure and element bindings:
+## Component structure and bindings
+`script` runs once on init; `props` are destructured and available immediately:
 ```ts
 import { component, signal, linkedSignal, input, output } from '@angular/core';
 
 export const TextSearch = component({
-  /**
-   * By the time script is called,
-   * inputs are populated with parent data
-   */
   props: {
     value: input.required<string>(),
     valueChange: output<string>(),
   },
-  // Runs once on init
   script: ({ value, valueChange }) => {
     const text = linkedSignal(() => value());
     const isDanger = signal(false);
@@ -74,7 +69,7 @@ export const TextSearch = component({
 });
 ```
 
-Component bindings:
+Any component can be used in the template; `bind:`, `model:`, and `on:` behave the same as for native elements:
 ```ts
 import { component, signal } from '@angular/core';
 import { UserDetail, User } from './user-detail.ng';
@@ -87,9 +82,6 @@ export const UserDetailConsumer = component({
     function makeAdmin() {/** ... **/}
 
     /**
-     * Any component can be used directly in the template
-     * bind:, model:, on: behave the same as for native elements
-     * 
      * ⚠️ Must provide all required inputs / models ⚠️
      * 
      * Cannot duplicate prop names: only one
