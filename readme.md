@@ -772,6 +772,37 @@ export const Parent = component({
 });
 ```
 
+Refs can be passed as inputs — keeping component interactions explicit and visible at the template level:
+```ts
+import { component, ref, input, Signal } from '@angular/core';
+import { Child } from './child.ng'; // expose: { text: Signal<string> }
+
+const Sibling = component({
+  bindings: {
+    childRef: input.required<{ text: Signal<string> } | undefined>(),
+  },
+  setup: ({ childRef }) => ({
+    template: (
+      <button on:click={() => childRef()?.text()}>Show text</button>
+    ),
+  }),
+});
+
+export const Parent = component({
+  setup: () => {
+    const child = ref(Child);
+
+    return {
+      // who talks to whom is visible in the template
+      template: (
+        <Child ref={child} />
+        <Sibling childRef={child()} />
+      ),
+    };
+  },
+});
+```
+
 ## DI enhancements
 Improved ergonomics for types and tokens:
 ```ts
