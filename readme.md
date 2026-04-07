@@ -735,7 +735,6 @@ const Child = component({
   },
 });
 
-// ref passed as input: who talks to whom is visible in the template
 const Sibling = component({
   bindings: {
     childRef: input.required<{ text: Signal<string> } | undefined>(),
