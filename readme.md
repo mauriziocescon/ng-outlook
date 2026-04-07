@@ -218,7 +218,6 @@ export const tooltip = directive<HTMLElement>({
 
 ## Binding shorthands
 - **Name-matching**: omit the value when the local variable name matches the prop; binding type inferred from the signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs.
-- **`:ref`**: captures a directive instance from a `use:` binding; equivalent to `ref={signal}` on elements and components.
 - **`:when`**: conditionally applies a `use:` binding; sits outside the directive's inputs and cannot clash with them.
 
 ```ts
@@ -660,7 +659,7 @@ export const Dashboard = component({
 ## Expose and Template ref
 Components expose their public surface via the `expose` key returned alongside `template`; everything else in `script()` is private. Directives return the expose object directly — `script()` has no template. The `host` parameter is typed as `Signal<HTMLElement>` (constrained by the directive's generic) and resolves in `afterNextRender` or similar.
 
-`ref` gives typed access to native elements, component expose objects, and directive instances. A `ref(Type)` resolves to a `Signal<expose | undefined>` bound via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` bindings; `refMany` collects multiple instances into `Signal<expose[]>`. Refs resolve after `afterNextRender`.
+`ref` gives typed access to native elements, component expose objects, and directive instances. A `ref(Type)` resolves to a `Signal<expose | undefined>` bound via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` bindings (captures the directive instance, equivalent to `ref={signal}` on elements and components); `refMany` collects multiple instances into `Signal<expose[]>`. Refs resolve after `afterNextRender`.
 
 ```ts
 import { component, ref, refMany, signal, afterNextRender } from '@angular/core';
