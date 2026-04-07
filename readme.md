@@ -875,4 +875,5 @@ Pros:
 - no `splitProps` drama 😅.
 
 Cons:
+- noticeable repetition in how bindings are declared and consumed,
 - creates a wider gap from plain TypeScript.
