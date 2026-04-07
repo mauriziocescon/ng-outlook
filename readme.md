@@ -346,6 +346,10 @@ export const Counter = component({
       ),
     };
   },
+  /**
+   * Only inputs are allowed: no surface to emit outputs 
+   * or sync models against
+   */
   providers: ({ c }) => [
     provide({ token: CounterStore, useFactory: () => new CounterStore(c) }),
   ],
