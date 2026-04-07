@@ -685,7 +685,7 @@ Dynamic components:
 ```ts
 import { component, signal, computed } from '@angular/core';
 import { AdminPanel } from './admin-panel.ng';   // bindings: { user: input.required<User>() }
-import { GuestPanel } from './guest-panel.ng';   // bindings: { message: input.required<string>() }
+import { GuestPanel } from './guest-panel.ng';   // bindings: { user: input.required<User>() }
 
 export const Dashboard = component({
   setup: () => {
