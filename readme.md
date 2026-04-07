@@ -812,7 +812,8 @@ const compToken = injectionToken('desc', {
 });
 
 /**
- * Root provider: no need to provide it
+ * Root provider: factory invoked once at root scope —
+ * no need to provide it explicitly
  */
 const rootToken = injectionToken('desc', {
   level: 'root',
