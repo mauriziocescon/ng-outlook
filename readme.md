@@ -713,10 +713,10 @@ export const Dashboard = component({
 ## Expose and Template ref
 `expose` defines the public interface — the only part of `setup()` accessible via `ref`. Components return it alongside `template`; directives return it directly (no template). The directive's `host` is `Signal<HTMLElement>` (constrained by the generic) and resolves in `afterNextRender`.
 
-`ref(Type)` → `Signal<expose | undefined>`, bound via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` bindings. `refMany(Type)` → `Signal<expose[]>` for multiple instances. Both resolve after `afterNextRender`.
+`ref(Type)` → `Signal<expose | undefined>`, bound via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` bindings. `refMany(Type)` → `Signal<expose[]>` for multiple instances. Both resolve after `afterNextRender`. Refs can also be passed as inputs — keeping component interactions explicit and visible at the template level.
 
 ```ts
-import { component, ref, refMany, signal, afterNextRender } from '@angular/core';
+import { component, ref, refMany, signal, input, afterNextRender, Signal } from '@angular/core';
 import { ripple } from '@mylib/ripple';
 import { tooltip } from '@mylib/tooltip';
 
@@ -733,6 +733,18 @@ const Child = component({
       },
     };
   },
+});
+
+// ref passed as input: who talks to whom is visible in the template
+const Sibling = component({
+  bindings: {
+    childRef: input.required<{ text: Signal<string> } | undefined>(),
+  },
+  setup: ({ childRef }) => ({
+    template: (
+      <button on:click={() => childRef()?.text()}>Show text</button>
+    ),
+  }),
 });
 
 export const Parent = component({
@@ -760,43 +772,12 @@ export const Parent = component({
         </div>
 
         <Child ref={child} />
-        <button on:click={() => child()?.text()}>Show text</button>
+        <Sibling childRef={child()} />
 
         <Child ref={many} />
         <Child ref={many} />
 
         <button on:click={() => tlp()?.toggle()}>Toggle tlp</button>
-      ),
-    };
-  },
-});
-```
-
-Refs can be passed as inputs — keeping component interactions explicit and visible at the template level:
-```ts
-import { component, ref, input, Signal } from '@angular/core';
-import { Child } from './child.ng'; // expose: { text: Signal<string> }
-
-const Sibling = component({
-  bindings: {
-    childRef: input.required<{ text: Signal<string> } | undefined>(),
-  },
-  setup: ({ childRef }) => ({
-    template: (
-      <button on:click={() => childRef()?.text()}>Show text</button>
-    ),
-  }),
-});
-
-export const Parent = component({
-  setup: () => {
-    const child = ref(Child);
-
-    return {
-      // who talks to whom is visible in the template
-      template: (
-        <Child ref={child} />
-        <Sibling childRef={child()} />
       ),
     };
   },
