@@ -24,7 +24,7 @@ app/
 │   └── filter.ng                  derivation with SearchConfigToken
 ├── components/
 │   ├── button.ng                  attachments, HTMLButtonAttributes, children
-│   ├── icon-button.ng             Props<T>, component wrapping
+│   ├── icon-button.ng             Bindings<T>, component wrapping
 │   ├── badge.ng                   simple display component
 │   ├── card.ng                    children fragment
 │   ├── search-bar.ng              model:, ref expose
@@ -131,11 +131,11 @@ A directive that attaches a tooltip to any DOM element.
 import { directive, input, output, inject, DestroyRef, afterRenderEffect } from '@angular/core';
 
 export const tooltip = directive<HTMLElement>({
-  props: {
+  bindings: {
     message: input.required<string>(),
     dismiss: output<void>(),
   },
-  script: ({ message, dismiss }, { host }) => {
+  setup: ({ message, dismiss }, { host }) => {
     const destroyRef = inject(DestroyRef);
     let tooltipEl: HTMLElement | null = null;
 
@@ -169,10 +169,10 @@ A directive using the `:when` modifier to conditionally apply itself.
 import { directive, input, afterRenderEffect } from '@angular/core';
 
 export const highlight = directive<HTMLElement>({
-  props: {
+  bindings: {
     color: input<string>('yellow'),
   },
-  script: ({ color }, { host }) => {
+  setup: ({ color }, { host }) => {
     afterRenderEffect(() => {
       host().style.backgroundColor = color(); // host is Signal<HTMLElement>
     });
@@ -197,11 +197,11 @@ import { derivation, input, inject, computed, LOCALE_ID } from '@angular/core';
 import { CurrencyCodeToken } from '../tokens';
 
 export const currency = derivation({
-  props: {
+  bindings: {
     value: input.required<number>(),
     code: input<string>(),
   },
-  script: ({ value, code }) => {
+  setup: ({ value, code }) => {
     const locale = inject(LOCALE_ID);
     const defaultCode = inject(CurrencyCodeToken);
 
@@ -226,11 +226,11 @@ import { Product } from '../product';
 import { SearchConfigToken } from '../tokens';
 
 export const filter = derivation({
-  props: {
+  bindings: {
     items: input.required<Product[]>(),
     query: input<string>(''),
   },
-  script: ({ items, query }) => {
+  setup: ({ items, query }) => {
     const config = inject(SearchConfigToken);
 
     return computed(() => {
@@ -255,24 +255,26 @@ import { component, input, output, fragment, directives } from '@angular/core';
 import { HTMLButtonAttributes } from '@angular/core/elements';
 
 export const Button = component<HTMLButtonAttributes>({
-  props: {
+  bindings: {
     disabled: input<boolean>(false),
     variant: input<'primary' | 'ghost'>('primary'),
     click: output<void>(),
     children: fragment<void>(),
     attachments: directives<HTMLButtonElement>(),
   },
-  script: ({ disabled, variant, click, children, attachments }, { rest }) => (
-    <button
-      {...attachments()}
-      {...rest}
-      class:primary={variant() === 'primary'}
-      class:ghost={variant() === 'ghost'}
-      disabled={disabled()}
-      on:click={() => click.emit()}>
-        @render(children())
-    </button>
-  ),
+  setup: ({ disabled, variant, click, children, attachments }, { rest }) => ({
+    template: (
+      <button
+        {...attachments()}
+        {...rest}
+        class:primary={variant() === 'primary'}
+        class:ghost={variant() === 'ghost'}
+        disabled={disabled()}
+        on:click={() => click.emit()}>
+          @render(children())
+      </button>
+    ),
+  }),
   style: `
     button { padding: 6px 14px; border-radius: 4px; cursor: pointer; }
     .primary { background: #0070f3; color: white; border: none; }
@@ -284,22 +286,24 @@ export const Button = component<HTMLButtonAttributes>({
 ---
 
 ## `app/components/icon-button.ng`
-Wraps `Button` using `Props<typeof Button>` and `{...rest}` forwarding.
+Wraps `Button` using `Bindings<typeof Button>` and `{...rest}` forwarding.
 
 ```ts
-import { component, input, Props } from '@angular/core';
+import { component, input, Bindings } from '@angular/core';
 import { Button } from './button.ng';
 
-export const IconButton = component<Props<typeof Button>>({
-  props: {
+export const IconButton = component<Bindings<typeof Button>>({
+  bindings: {
     icon: input.required<string>(),
     label: input.required<string>(),
   },
-  script: ({ icon, label }, { rest }) => (
-    <Button {...rest}>
-      {icon()} {label()}
-    </Button>
-  ),
+  setup: ({ icon, label }, { rest }) => ({
+    template: (
+      <Button {...rest}>
+        {icon()} {label()}
+      </Button>
+    ),
+  }),
 });
 ```
 
@@ -312,14 +316,16 @@ A simple count badge. Hidden when count is zero.
 import { component, input } from '@angular/core';
 
 export const Badge = component({
-  props: {
+  bindings: {
     count: input.required<number>(),
   },
-  script: ({ count }) => (
-    @if (count() > 0) {
-      <span class="badge">{count()}</span>
-    }
-  ),
+  setup: ({ count }) => ({
+    template: (
+      @if (count() > 0) {
+        <span class="badge">{count()}</span>
+      }
+    ),
+  }),
   style: `
     .badge { background: #e00; color: white; border-radius: 999px; padding: 2px 8px; font-size: .75rem; }
   `,
@@ -335,15 +341,17 @@ A clickable container component with an implicit `children` fragment.
 import { component, output, fragment } from '@angular/core';
 
 export const Card = component({
-  props: {
+  bindings: {
     click: output<void>(),
     children: fragment<void>(),
   },
-  script: ({ click, children }) => (
-    <div class="card" on:click={() => click.emit()}>
-      @render(children())
-    </div>
-  ),
+  setup: ({ click, children }) => ({
+    template: (
+      <div class="card" on:click={() => click.emit()}>
+        @render(children())
+      </div>
+    ),
+  }),
   style: `
     .card { border: 1px solid #ddd; border-radius: 8px; padding: 16px; cursor: pointer; }
     .card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.12); }
@@ -360,10 +368,10 @@ Two-way binding with `model:`. Uses `ref` internally to auto-focus the input, an
 import { component, model, ref, afterNextRender } from '@angular/core';
 
 export const SearchBar = component({
-  props: {
+  bindings: {
     query: model<string>(''),
   },
-  script: ({ query }) => {
+  setup: ({ query }) => {
     const inputEl = ref<HTMLInputElement>();
 
     afterNextRender(() => {
@@ -400,12 +408,12 @@ import { currency } from '../derivations/currency.ng';
 import { Product } from '../product';
 
 export const ProductCard = component({
-  props: {
+  bindings: {
     product: input.required<Product>(),
     cartQty: input<number>(0),
     addToCart: output<Product>(),
   },
-  script: ({ product, cartQty, addToCart }) => {
+  setup: ({ product, cartQty, addToCart }) => {
     const flashing = signal(false);
     // :ref captures the directive instance → Signal<{ show, hide } | undefined>
     const tlp = ref(tooltip);
@@ -452,21 +460,23 @@ import { component, input, fragment } from '@angular/core';
 import { Product } from '../product';
 
 export const ProductList = component({
-  props: {
+  bindings: {
     items: input.required<Product[]>(),
     item: fragment<[Product]>(),
   },
-  script: ({ items, item }) => (
-    @if (items().length === 0) {
-      <p>No products found.</p>
-    } @else {
-      <div class="grid">
-        @for (p of items(); track p.id) {
-          @render(item(p))
-        }
-      </div>
-    }
-  ),
+  setup: ({ items, item }) => ({
+    template: (
+      @if (items().length === 0) {
+        <p>No products found.</p>
+      } @else {
+        <div class="grid">
+          @for (p of items(); track p.id) {
+            @render(item(p))
+          }
+        </div>
+      }
+    ),
+  }),
   style: `.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }`,
 });
 ```
@@ -480,12 +490,14 @@ Minimal admin view — used as one branch of a dynamic component switch.
 import { component } from '@angular/core';
 
 export const AdminPage = component({
-  script: () => (
-    <div>
-      <h2>Admin Panel</h2>
-      <p>Manage your catalog here.</p>
-    </div>
-  ),
+  setup: () => ({
+    template: (
+      <div>
+        <h2>Admin Panel</h2>
+        <p>Manage your catalog here.</p>
+      </div>
+    ),
+  }),
 });
 ```
 
@@ -519,11 +531,11 @@ enum SortOrder { Asc = 'asc', Desc = 'desc' }
 const PAGE_TITLE = 'Product Catalog';
 
 export const CatalogPage = component({
-  props: {
-    // Input hoisted to providers: available before script() runs
+  bindings: {
+    // Input hoisted to providers: available before setup() runs
     currencyCode: input<string>('USD'),
   },
-  script: () => {
+  setup: () => {
     const cart = inject(CartStore);
     const handlers = inject(AnalyticsHandlerToken); // array (multi token)
 
@@ -543,46 +555,48 @@ export const CatalogPage = component({
       cards().forEach(c => c.flash());
     }
 
-    return (
-      <h1>{PAGE_TITLE}</h1>
+    return {
+      template: (
+        <h1>{PAGE_TITLE}</h1>
 
-      <div style="display: flex; gap: 8px; align-items: center;">
-        <SearchBar {query} ref={searchBar} />
-        <Button variant={'ghost'} on:click={() => searchBar()?.clear()}>Clear</Button>
-        <Badge count={cart.count()} />
-      </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <SearchBar {query} ref={searchBar} />
+          <Button variant={'ghost'} on:click={() => searchBar()?.clear()}>Clear</Button>
+          <Badge count={cart.count()} />
+        </div>
 
-      <div style="display: flex; gap: 8px; margin: 8px 0;">
-        <Button
-          use:ripple()
-          variant={'ghost'}
-          on:click={() => sort.set(SortOrder.Asc)}>
-            A → Z
-        </Button>
-        <Button
-          use:ripple()
-          variant={'ghost'}
-          on:click={() => sort.set(SortOrder.Desc)}>
-            Z → A
-        </Button>
-        <IconButton icon={'✨'} label={'Flash all'} on:click={flashAll} />
-      </div>
+        <div style="display: flex; gap: 8px; margin: 8px 0;">
+          <Button
+            use:ripple()
+            variant={'ghost'}
+            on:click={() => sort.set(SortOrder.Asc)}>
+              A → Z
+          </Button>
+          <Button
+            use:ripple()
+            variant={'ghost'}
+            on:click={() => sort.set(SortOrder.Desc)}>
+              Z → A
+          </Button>
+          <IconButton icon={'✨'} label={'Flash all'} on:click={flashAll} />
+        </div>
 
-      @derive filtered = filter({ items: PRODUCTS, query: query() });
+        @derive filtered = filter({ items: PRODUCTS, query: query() });
 
-      @fragment item(p: Product) {
-        <ProductCard
-          ref={cards}
-          product={p}
-          cartQty={cart.qty(p.id)}
-          on:addToCart={(prod) => cart.add(prod)} />
-      }
+        @fragment item(p: Product) {
+          <ProductCard
+            ref={cards}
+            product={p}
+            cartQty={cart.qty(p.id)}
+            on:addToCart={(prod) => cart.add(prod)} />
+        }
 
-      <ProductList items={filtered()} {item} />
-    );
+        <ProductList items={filtered()} {item} />
+      ),
+    };
   },
   providers: ({ currencyCode }) => [
-    // currencyCode is a Signal<string> — available here before script() runs
+    // currencyCode is a Signal<string> — available here before setup() runs
     provide({ token: CurrencyCodeToken, useFactory: () => currencyCode }),
     provide(AnalyticsHandlerToken),
     provide({ token: AnalyticsHandlerToken, useFactory: () => (e: string) => fetch('/api/analytics', { method: 'POST', body: e }) }),
@@ -603,28 +617,30 @@ import { CartStore } from '../cart.store';
 import { ThemeToken } from '../tokens';
 
 export const AppPage = component({
-  script: () => {
+  setup: () => {
     const theme = inject(ThemeToken);
     const isAdmin = signal(false);
 
     // panel() returns typeof CatalogPage | typeof AdminPage
-    // props are type-checked against the union
+    // bindings are type-checked against the union
     const panel = computed(() => isAdmin() ? AdminPage : CatalogPage);
 
-    return (
-      <div class:dark={theme() === 'dark'}>
-        <nav>
-          <button on:click={() => isAdmin.update(v => !v)}>
-            {isAdmin() ? 'Go to catalog' : 'Go to admin'}
-          </button>
-          <button on:click={() => theme.update(t => t === 'light' ? 'dark' : 'light')}>
-            Toggle theme
-          </button>
-        </nav>
+    return {
+      template: (
+        <div class:dark={theme() === 'dark'}>
+          <nav>
+            <button on:click={() => isAdmin.update(v => !v)}>
+              {isAdmin() ? 'Go to catalog' : 'Go to admin'}
+            </button>
+            <button on:click={() => theme.update(t => t === 'light' ? 'dark' : 'light')}>
+              Toggle theme
+            </button>
+          </nav>
 
-        <{panel()} currencyCode={'EUR'} />
-      </div>
-    );
+          <{panel()} currencyCode={'EUR'} />
+        </div>
+      ),
+    };
   },
   providers: () => [
     provide({ token: CartStore, useFactory: () => new CartStore() }),
@@ -642,7 +658,7 @@ export const AppPage = component({
 
 | Concept | File(s) |
 |---|---|
-| `component` (props, script, style) | all component files |
+| `component` (bindings, setup, style) | all component files |
 | `bind:` / `on:` / `model:` / `class:` / `use:` | `search-bar.ng`, `product-card.ng`, `catalog-page.ng` |
 | Lexical scoping (`enum`, `const`) | `catalog-page.ng` |
 | `directive` | `tooltip.ng`, `highlight.ng` |
@@ -653,7 +669,7 @@ export const AppPage = component({
 | `children` fragment (implicit) | `card.ng`, `button.ng` |
 | Named/typed fragment + `@fragment` inline | `product-list.ng`, `catalog-page.ng` |
 | `attachments` + `directives` spread | `button.ng` |
-| `Props<typeof T>` + `{...rest}` component wrapping | `icon-button.ng` |
+| `Bindings<typeof T>` + `{...rest}` component wrapping | `icon-button.ng` |
 | `HTMLButtonAttributes` + `{...rest}` native wrapping | `button.ng` |
 | Dynamic components | `app-page.ng` |
 | `ref` + `refMany` + `afterNextRender` | `search-bar.ng` (internal), `catalog-page.ng` |

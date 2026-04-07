@@ -3,8 +3,8 @@
 
 Using:
 - Angular Signal Forms (https://github.com/angular/angular/tree/main/packages/forms/signals)
-- The proposed new authoring format described in readme.md and why-ng-forms.md
- 
+- The proposed new authoring format described in readme.md and why-ng-files.md
+
 Could you create a few form-related components that integrate seamlessly with this setup?
 
 A couple of medium-complexity components is sufficient. Use only modern Angular and keep CSS to a minimum.
@@ -28,7 +28,7 @@ Handles `text`, `email`, `password`, and `search` variants. Also usable standalo
 import { component, input, model, directives } from '@angular/core';
 
 export const TextInput = component({
-  props: {
+  bindings: {
     // ── Component-specific ───────────────────────────────────────────────────
     label:       input<string>(''),
     placeholder: input<string>(''),
@@ -41,16 +41,18 @@ export const TextInput = component({
     // They are spread onto the inner <input> so formField runs on the native element.
     attachments: directives<HTMLInputElement>(),
   },
-  script: ({ label, placeholder, type, value, attachments }) => (
-    <label>
-      @if (label()) { <span>{label()}</span> }
-      <input
-        {...attachments()}
-        type={type()}
-        placeholder={placeholder()}
-        model:value={value} />
-    </label>
-  ),
+  setup: ({ label, placeholder, type, value, attachments }) => ({
+    template: (
+      <label>
+        @if (label()) { <span>{label()}</span> }
+        <input
+          {...attachments()}
+          type={type()}
+          placeholder={placeholder()}
+          model:value={value} />
+      </label>
+    ),
+  }),
   style: `
     label { display: flex; flex-direction: column; gap: 4px; }
     span { font-size: .9rem; font-weight: 500; }
@@ -68,20 +70,22 @@ export const TextInput = component({
 import { component, input, model, directives } from '@angular/core';
 
 export const CheckboxInput = component({
-  props: {
+  bindings: {
     label:   input.required<string>(),
     checked: model<boolean>(false),
     attachments: directives<HTMLInputElement>(),
   },
-  script: ({ label, checked, attachments }) => (
-    <label class="row">
-      <input
-        {...attachments()}
-        type="checkbox"
-        model:checked={checked} />
-      <span>{label()}</span>
-    </label>
-  ),
+  setup: ({ label, checked, attachments }) => ({
+    template: (
+      <label class="row">
+        <input
+          {...attachments()}
+          type="checkbox"
+          model:checked={checked} />
+        <span>{label()}</span>
+      </label>
+    ),
+  }),
   style: `
     .row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
     input { width: 16px; height: 16px; cursor: pointer; }
@@ -124,11 +128,11 @@ const signupSchema = schema<SignupModel>((p) => {
 });
 
 export const SignupForm = component({
-  script: () => {
+  setup: () => {
     const model = signal<SignupModel>({ email: '', password: '', acceptTerms: false });
 
     /**
-     * script() runs in an injection context, so form() resolves the injector
+     * setup() runs in an injection context, so form() resolves the injector
      * automatically — no inject(Injector) or explicit { injector } option needed.
      *
      * The submit action is defined here so formRoot can call it automatically.
@@ -141,54 +145,56 @@ export const SignupForm = component({
       },
     });
 
-    return (
-      /**
-       * use:formRoot(field={f}) is applied to the native <form> element directly
-       * (not forwarded via attachments — <form> is not a wrapper component).
-       * No on:submit handler needed; formRoot owns the submit lifecycle.
-       */
-      <form use:formRoot(field={f})>
-
+    return {
+      template: (
         /**
-         * use:formField(field={f.email}) is collected by TextInput's attachments
-         * and spread onto the inner <input>. The directive runs on the native
-         * element: it syncs the value and marks touched on blur.
-         *
-         * Errors are read from FieldState in this template — no coupling
-         * between TextInput and @angular/forms/signals.
+         * use:formRoot(field={f}) is applied to the native <form> element directly
+         * (not forwarded via attachments — <form> is not a wrapper component).
+         * No on:submit handler needed; formRoot owns the submit lifecycle.
          */
-        <div class="field">
-          <TextInput
-            label="Email"
-            type="email"
-            use:formField(field={f.email}) />
-          @if (f.email().touched() && f.email().errors().length > 0) {
-            <span class="error">{f.email().errors()[0].message ?? f.email().errors()[0].kind}</span>
-          }
-        </div>
+        <form use:formRoot(field={f})>
 
-        <div class="field">
-          <TextInput
-            label="Password"
-            type="password"
-            use:formField(field={f.password}) />
-          @if (f.password().touched() && f.password().errors().length > 0) {
-            <span class="error">{f.password().errors()[0].message ?? f.password().errors()[0].kind}</span>
-          }
-        </div>
+          /**
+           * use:formField(field={f.email}) is collected by TextInput's attachments
+           * and spread onto the inner <input>. The directive runs on the native
+           * element: it syncs the value and marks touched on blur.
+           *
+           * Errors are read from FieldState in this template — no coupling
+           * between TextInput and @angular/forms/signals.
+           */
+          <div class="field">
+            <TextInput
+              label="Email"
+              type="email"
+              use:formField(field={f.email}) />
+            @if (f.email().touched() && f.email().errors().length > 0) {
+              <span class="error">{f.email().errors()[0].message ?? f.email().errors()[0].kind}</span>
+            }
+          </div>
 
-        <div class="field">
-          <CheckboxInput
-            label="I accept the terms"
-            use:formField(field={f.acceptTerms}) />
-          @if (f.acceptTerms().touched() && f.acceptTerms().errors().length > 0) {
-            <span class="error">{f.acceptTerms().errors()[0].message ?? f.acceptTerms().errors()[0].kind}</span>
-          }
-        </div>
+          <div class="field">
+            <TextInput
+              label="Password"
+              type="password"
+              use:formField(field={f.password}) />
+            @if (f.password().touched() && f.password().errors().length > 0) {
+              <span class="error">{f.password().errors()[0].message ?? f.password().errors()[0].kind}</span>
+            }
+          </div>
 
-        <button type="submit">Sign up</button>
-      </form>
-    );
+          <div class="field">
+            <CheckboxInput
+              label="I accept the terms"
+              use:formField(field={f.acceptTerms}) />
+            @if (f.acceptTerms().touched() && f.acceptTerms().errors().length > 0) {
+              <span class="error">{f.acceptTerms().errors()[0].message ?? f.acceptTerms().errors()[0].kind}</span>
+            }
+          </div>
+
+          <button type="submit">Sign up</button>
+        </form>
+      ),
+    };
   },
   style: `
     form { display: flex; flex-direction: column; gap: 16px; max-width: 360px; }
