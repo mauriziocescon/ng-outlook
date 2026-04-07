@@ -1,11 +1,11 @@
 ## Co-located templates in Angular via .ng files
 Since `tsx` grammar currently does not support Angular control flow or directives, the likely path forward involves a DSL combined with [Volar](https://volarjs.dev/), requiring `*.ng` files and a custom parser — similar in principle to what [ripple](https://www.ripple-ts.com/) has done. Assuming this setup (or something comparable), one could argue that losing the ability to keep the template as a separate file (e.g., via `templateUrl`) is a significant regression. That said, agents tend to prefer something similar in nature to React where
 - the template is part of the component definition,
-- the template is defined within the script's scope, with direct access to its variables,
+- the template is defined within the setup's scope, with direct access to its variables,
 - tooling has clear structural markers to work with,
-- provider declarations are kept separate from the script and template, while still allowing providers to depend on inputs — but not on variables defined inside the script.
+- provider declarations are kept separate from the setup and template, while still allowing providers to depend on inputs — but not on variables defined inside the setup.
 
-Note that the entire proposal preserves the concept of declaring inputs, outputs, and similar constructs at the component level, with Angular syncing them and enforcing strict type checking at build time. Additionally, the script runs only once, at component creation time.
+Note that the entire proposal preserves the concept of declaring inputs, outputs, and similar constructs at the component level, with Angular syncing them and enforcing strict type checking at build time. Additionally, the setup runs only once, at component creation time.
 
 ### Another example
 ```ts
@@ -21,10 +21,10 @@ export interface Item {
 }
 
 const tooltip = directive<HTMLElement>({
-  props: {
+  bindings: {
     message: input.required<string>(),
   },
-  script: ({ message }, { host }) => {
+  setup: ({ message }, { host }) => {
     const renderer = inject(Renderer2);
 
     afterRenderEffect(() => {
@@ -38,11 +38,11 @@ const tooltip = directive<HTMLElement>({
 });
 
 const currency = derivation({
-  props: {
+  bindings: {
     value: input.required<number | undefined>(),
     currencyCode: input<string>(),
   },
-  script: ({ value, currencyCode }) => {
+  setup: ({ value, currencyCode }) => {
     const localeId = inject(LOCALE_ID);
 
     return computed(/** ... **/);
@@ -50,15 +50,17 @@ const currency = derivation({
 });
 
 const List = component({
-  props: {
+  bindings: {
     items: input.required<Item[]>(),
     item: fragment<[Item]>(),
   },
-  script: ({ items, item }) => (
-    @for (i of items(); track i.id) {
-      @render(item(i))
-    }
-  ),
+  setup: ({ items, item }) => ({
+    template: (
+      @for (i of items(); track i.id) {
+        @render(item(i))
+      }
+    ),
+  }),
 });
 
 class ItemsStore {
@@ -66,33 +68,35 @@ class ItemsStore {
 }
 
 export const ItemsPage = component({
-  script: () => {
+  setup: () => {
     const store = inject(ItemsStore);
-  
+
     function goTo(item: Item) {
       // ..
     }
-    
-    return (
-      <List items={store.items()}>
-        @fragment item(i: Item) {
-          <Card on:click={() => goTo(i)}>
-            <HStack width={100}>
-              <Img url={i.imgUrl} />
-              <VStack>
-                <Title title={i.title} />
-                <Description use:tooltip(message={i.title}) description={i.description} />
-                
-                <hr />                
-                
-                @derive price = currency({value: i.price, currencyCode: 'EUR'});
-                <p>Price: {price()}</p>
-              </VStack>
-            </HStack>
-          </Card>
-        }
-      </List>
-    );
+
+    return {
+      template: (
+        <List items={store.items()}>
+          @fragment item(i: Item) {
+            <Card on:click={() => goTo(i)}>
+              <HStack width={100}>
+                <Img url={i.imgUrl} />
+                <VStack>
+                  <Title title={i.title} />
+                  <Description use:tooltip(message={i.title}) description={i.description} />
+
+                  <hr />
+
+                  @derive price = currency({value: i.price, currencyCode: 'EUR'});
+                  <p>Price: {price()}</p>
+                </VStack>
+              </HStack>
+            </Card>
+          }
+        </List>
+      ),
+    };
   },
   styleUrl: './items-page.css',
   providers: () => [
