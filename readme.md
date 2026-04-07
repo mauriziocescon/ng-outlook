@@ -657,9 +657,9 @@ export const Dashboard = component({
 ```
 
 ## Expose and Template ref
-Components expose their public surface via the `expose` key returned alongside `template`; everything else in `script()` is private. Directives return the expose object directly — `script()` has no template. The `host` parameter is typed as `Signal<HTMLElement>` (constrained by the directive's generic) and resolves in `afterNextRender` or similar.
+`expose` defines the public interface — the only part of `script()` accessible via `ref`. Components return it alongside `template`; directives return it directly (no template). The directive's `host` is `Signal<HTMLElement>` (constrained by the generic) and resolves in `afterNextRender`.
 
-`ref` gives typed access to native elements, component expose objects, and directive instances. A `ref(Type)` resolves to a `Signal<expose | undefined>` bound via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` bindings (captures the directive instance, equivalent to `ref={signal}` on elements and components); `refMany` collects multiple instances into `Signal<expose[]>`. Refs resolve after `afterNextRender`.
+`ref(Type)` → `Signal<expose | undefined>`, bound via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` bindings. `refMany(Type)` → `Signal<expose[]>` for multiple instances. Both resolve after `afterNextRender`.
 
 ```ts
 import { component, ref, refMany, signal, afterNextRender } from '@angular/core';
