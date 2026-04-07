@@ -13,27 +13,22 @@ Points:
 4. hostless components + ts lexical scoping for templates,
 5. component inputs: lifted up + immediately available in the script,
 6. composition with fragments, directives and spread syntax,
-7. template ref,
+7. expose and template ref,
 8. DI enhancements, 
-9. Final considerations (`!important`).
+9. final considerations (`!important`).
 
 **Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
 
-## Components
-Component structure and element bindings:
+## Component structure and bindings
+`script` runs once on init; `props` are destructured and available immediately:
 ```ts
 import { component, signal, linkedSignal, input, output } from '@angular/core';
 
 export const TextSearch = component({
-  /**
-   * By the time script is called,
-   * inputs are populated with parent data
-   */
   props: {
     value: input.required<string>(),
     valueChange: output<string>(),
   },
-  // Runs once on init
   script: ({ value, valueChange }) => {
     const text = linkedSignal(() => value());
     const isDanger = signal(false);
@@ -74,7 +69,7 @@ export const TextSearch = component({
 });
 ```
 
-Component bindings:
+Any component can be used in the template; `bind:`, `model:`, and `on:` behave the same as for native elements:
 ```ts
 import { component, signal } from '@angular/core';
 import { UserDetail, User } from './user-detail.ng';
@@ -87,9 +82,6 @@ export const UserDetailConsumer = component({
     function makeAdmin() {/** ... **/}
 
     /**
-     * Any component can be used directly in the template
-     * bind:, model:, on: behave the same as for native elements
-     * 
      * ⚠️ Must provide all required inputs / models ⚠️
      * 
      * Cannot duplicate prop names: only one
@@ -208,15 +200,6 @@ export const tooltip = directive<HTMLElement>({
     message: input.required<string>(),
     dismiss: output<void>(),
   },
-  /**
-   * host: typed as Signal<HTMLElement> (from the generic);
-   * usable only in afterNextRender or similar
-   *
-   * Directive scripts return their expose directly — there is
-   * no template to return. The returned object is the public
-   * interface accessible via ref; everything else in script()
-   * is private.
-   */
   script: ({ message, dismiss }, { host }) => {
     const destroyRef = inject(DestroyRef);
     const renderer = inject(Renderer2);
@@ -229,17 +212,12 @@ export const tooltip = directive<HTMLElement>({
     destroyRef.onDestroy(() => {
       // cleanup logic
     });
-
-    return {
-      toggle: () => { /** ... **/ },
-    };
   },
 });
 ```
 
 ## Binding shorthands
 - **Name-matching**: omit the value when the local variable name matches the prop; binding type inferred from the signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs.
-- **`:ref`**: captures a directive instance from a `use:` binding; equivalent to `ref={signal}` on elements and components.
 - **`:when`**: conditionally applies a `use:` binding; sits outside the directive's inputs and cannot clash with them.
 
 ```ts
@@ -678,8 +656,11 @@ export const Dashboard = component({
 });
 ```
 
-## Template ref
-Declare a `ref(Type)` in the script and assign it via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` directive bindings, to get a `Signal<expose | undefined>`. Refs resolve after `afterNextRender`; before that they are `undefined`.
+## Expose and Template ref
+`expose` defines the public interface — the only part of `script()` accessible via `ref`. Components return it alongside `template`; directives return it directly (no template). The directive's `host` is `Signal<HTMLElement>` (constrained by the generic) and resolves in `afterNextRender`.
+
+`ref(Type)` → `Signal<expose | undefined>`, bound via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` bindings. `refMany(Type)` → `Signal<expose[]>` for multiple instances. Both resolve after `afterNextRender`.
+
 ```ts
 import { component, ref, refMany, signal, afterNextRender } from '@angular/core';
 import { ripple } from '@mylib/ripple';
