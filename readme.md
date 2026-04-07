@@ -208,15 +208,6 @@ export const tooltip = directive<HTMLElement>({
     message: input.required<string>(),
     dismiss: output<void>(),
   },
-  /**
-   * host: typed as Signal<HTMLElement> (from the generic);
-   * usable only in afterNextRender or similar
-   *
-   * Directive scripts return their expose directly — there is
-   * no template to return. The returned object is the public
-   * interface accessible via ref; everything else in script()
-   * is private.
-   */
   script: ({ message, dismiss }, { host }) => {
     const destroyRef = inject(DestroyRef);
     const renderer = inject(Renderer2);
@@ -678,8 +669,10 @@ export const Dashboard = component({
 });
 ```
 
-## Template ref
+## Template ref and Expose
 Declare a `ref(Type)` in the script and assign it via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` directive bindings, to get a `Signal<expose | undefined>`. Refs resolve after `afterNextRender`; before that they are `undefined`.
+
+Directives have no template: `script()` returns the expose object directly — the returned object is the public interface accessible via `ref`; everything else in `script()` is private. The `host` parameter is typed as `Signal<HTMLElement>` (constrained by the directive's generic) and is usable only in `afterNextRender` or similar.
 ```ts
 import { component, ref, refMany, signal, afterNextRender } from '@angular/core';
 import { ripple } from '@mylib/ripple';
