@@ -13,9 +13,9 @@ Points:
 4. hostless components + ts lexical scoping for templates,
 5. component inputs: lifted up + immediately available in the script,
 6. composition with fragments, directives and spread syntax,
-7. template ref,
+7. expose and template ref,
 8. DI enhancements, 
-9. Final considerations (`!important`).
+9. final considerations (`!important`).
 
 **Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
 
@@ -220,10 +220,6 @@ export const tooltip = directive<HTMLElement>({
     destroyRef.onDestroy(() => {
       // cleanup logic
     });
-
-    return {
-      toggle: () => { /** ... **/ },
-    };
   },
 });
 ```
@@ -669,10 +665,11 @@ export const Dashboard = component({
 });
 ```
 
-## Template ref and Expose
-Declare a `ref(Type)` in the script and assign it via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` directive bindings, to get a `Signal<expose | undefined>`. Refs resolve after `afterNextRender`; before that they are `undefined`.
+## Expose and Template ref
+Components expose their public surface via the `expose` key returned alongside `template`; everything else in `script()` is private. Directives return the expose object directly — `script()` has no template. The `host` parameter is typed as `Signal<HTMLElement>` (constrained by the directive's generic) and resolves in `afterNextRender` or similar.
 
-Directives have no template: `script()` returns the expose object directly — the returned object is the public interface accessible via `ref`; everything else in `script()` is private. The `host` parameter is typed as `Signal<HTMLElement>` (constrained by the directive's generic) and is usable only in `afterNextRender` or similar.
+`ref` gives typed access to native elements, component expose objects, and directive instances. A `ref(Type)` resolves to a `Signal<expose | undefined>` bound via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` bindings; `refMany` collects multiple instances into `Signal<expose[]>`. Refs resolve after `afterNextRender`.
+
 ```ts
 import { component, ref, refMany, signal, afterNextRender } from '@angular/core';
 import { ripple } from '@mylib/ripple';
