@@ -437,17 +437,30 @@ export const MenuConsumer = component({
   setup: () => {
     const items = signal<Item[]>(/** ... **/);
 
-    /**
-     * menuItem inside <Menu></Menu> automatically becomes a fragment input
-     */
     return {
       template: (
-        @fragment menuItem(item: Item) {
-          <div class="my-menu-item">
-            <MyMenuItem>{item.desc}</MyMenuItem>
-          </div>
-        }
-        <Menu items={items()} menuItem={menuItem} />
+        /**
+         * Explicit form: @fragment declared outside the component tags,
+         * then passed as a named binding — equivalent to the inline form above.
+         *
+         * @fragment menuItem(item: Item) {
+         *  <div class="my-menu-item">
+         *    <MyMenuItem>{item.desc}</MyMenuItem>
+         *  </div>
+         * }
+         * <Menu items={items()} menuItem={menuItem} />
+         * 
+         * Inline form: @fragment declared inside the component tags is
+         * automatically passed as the matching fragment input — no explicit
+         * menuItem={menuItem} needed.
+         */
+        <Menu items={items()}>
+          @fragment menuItem(item: Item) {
+            <div class="my-menu-item">
+              <MyMenuItem>{item.desc}</MyMenuItem>
+            </div>
+          }
+        </Menu>
       ),
     };
   },
