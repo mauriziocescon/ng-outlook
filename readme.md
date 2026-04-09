@@ -681,35 +681,6 @@ export const Button = component<HTMLButtonAttributes>({
 });
 ```
 
-Dynamic components — without a shared contract (`ComponentType`, no generic), DI is the only safe channel; use `providers` on the host to bridge data. With a contract, bindings are type-checked against it:
-```ts
-import { component, signal, computed } from '@angular/core';
-import { AdminPanel } from './admin-panel.ng';   // bindings: { user: input.required<User>() }
-import { GuestPanel } from './guest-panel.ng';   // bindings: { user: input.required<User>() }
-
-export const Dashboard = component({
-  setup: () => {
-    const isAdmin = signal(false);
-    const user = signal<User>(/** ... **/);
-
-    const Panel = computed(() => isAdmin() ? AdminPanel : GuestPanel);
-
-    /**
-     * {panel()} as a tag: panel() returns typeof AdminPanel | typeof GuestPanel,
-     * so bindings are type-checked against the union — no untyped inputs bag
-     *
-     * ⚠️ Only bindings shared by both components can be safely passed ⚠️
-     */
-    return {
-      template: (
-        <button on:click={() => isAdmin.update(v => !v)}>Toggle role</button>
-        <{Panel()} user={user()} />
-      ),
-    };
-  },
-});
-```
-
 ## Expose and Template ref
 `expose` defines the public interface — the only part of `setup()` accessible via `ref`. Components return it alongside `template`; directives return it directly (no template). The directive's `host` is `Signal<HTMLElement>` (constrained by the generic) and resolves in `afterNextRender`.
 
