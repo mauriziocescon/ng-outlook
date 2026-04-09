@@ -399,7 +399,7 @@ export const Menu = component({
     /** ... **/
 
     /**
-     * No need to have an explicit anchor point like ng-container
+     * No ng-container needed; full form: @render(fragment(), { injector })
      */
     return {
       template: (
