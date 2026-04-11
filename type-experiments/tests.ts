@@ -25,10 +25,13 @@ import {
 } from './types';
 
 interface User { id: string; name: string; }
+interface Item { id: string; desc: string; }
 
-/**
- * TEST 1: Component with expose
- */
+// ────────────────────────────────────────────────────────────────
+// COMPONENT — expose & ref
+// ────────────────────────────────────────────────────────────────
+
+// Component with expose: ref infers the exposed interface
 const Child = component({
   setup: () => {
     const text = signal('');
@@ -36,21 +39,16 @@ const Child = component({
 
     return {
       template: '...',
-      expose: {
-        text: text.asReadonly(),
-      },
+      expose: { text: text.asReadonly() },
     };
   },
 });
 
 const childRef = ref(Child);
 const _childRefType: Ref<{ text: Signal<string> } | undefined> = childRef;
-// Signal<T> is assignable from Ref<T>
 const _childRefAsSignal: Signal<{ text: Signal<string> } | undefined> = childRef;
 
-/**
- * TEST 2: Component without expose
- */
+// Component without expose: ref resolves to undefined
 const NoExpose = component({
   setup: () => ({ template: '...' }),
 });
@@ -58,56 +56,97 @@ const NoExpose = component({
 const noExposeRef = ref(NoExpose);
 const _noExposeType: Ref<undefined> = noExposeRef;
 
-/**
- * TEST 3: Native element ref
- */
+// Native element ref
 const divRef = ref<HTMLDivElement>();
 const _divRefType: Ref<HTMLDivElement | undefined> = divRef;
 
-/**
- * TEST 4: Directive with expose — setup receives raw types
- */
-const tooltip = directive<HTMLElement>()({
+// refMany: collects multiple instances into an array
+const manyChildren = refMany(Child);
+const _manyType: Ref<{ text: Signal<string> }[]> = manyChildren;
+const _manyAsSignal: Signal<{ text: Signal<string> }[]> = manyChildren;
+
+// Refs are read-only — .set() must not exist
+// @ts-expect-error
+childRef.set({ text: signal('') });
+// @ts-expect-error
+divRef.set(document.createElement('div'));
+// @ts-expect-error
+manyChildren.set([]);
+
+// ────────────────────────────────────────────────────────────────
+// DIRECTIVE — host as ref, expose & ref
+// ────────────────────────────────────────────────────────────────
+
+// Directive with expose: host is ref<H>() in bindings
+const tooltip = directive({
   bindings: {
+    host: ref<HTMLElement>(),
     message: input.required<string>(),
     dismiss: output<void>(),
   },
-  setup: ({ message, dismiss }, { host }) => {
-    const _hostEl: Signal<HTMLElement> = host;
+  setup: ({ host, message, dismiss }) => {
+    const _hostEl: Ref<HTMLElement | undefined> = host;
     const _msg: string = message();
     dismiss.emit();
 
-    return {
-      toggle: () => { /** ... **/ },
-    };
+    return { toggle: () => {} };
   },
 });
 
 const tooltipRef = ref(tooltip);
 const _tooltipRefType: Ref<{ toggle: () => void } | undefined> = tooltipRef;
 
-/**
- * TEST 5: Directive without expose
- */
-const ripple = directive<HTMLElement>()({
-  setup: (_props, { host }) => {
-    const _hostEl: Signal<HTMLElement> = host;
+// @ts-expect-error
+tooltipRef.set({ toggle: () => {} });
+
+// Directive without expose
+const ripple = directive({
+  bindings: {
+    host: ref<HTMLElement>(),
+  },
+  setup: ({ host }) => {
+    const _hostEl: Ref<HTMLElement | undefined> = host;
   },
 });
 
 const rippleRef = ref(ripple);
 const _rippleRefType: Ref<undefined> = rippleRef;
 
-/**
- * TEST 6: refMany
- */
-const manyChildren = refMany(Child);
-const _manyType: Ref<{ text: Signal<string> }[]> = manyChildren;
-const _manyAsSignal: Signal<{ text: Signal<string> }[]> = manyChildren;
+// Host type constraint: narrows to specific element type
+const buttonOnly = directive({
+  bindings: {
+    host: ref<HTMLButtonElement>(),
+    label: input<string>(),
+  },
+  setup: ({ host, label }) => {
+    const _hostEl: Ref<HTMLButtonElement | undefined> = host;
+    const _l: string | undefined = label();
+  },
+});
 
-/**
- * TEST 7: Component with bindings — setup receives raw types
- */
+// ────────────────────────────────────────────────────────────────
+// COMPONENT — bindings (input, model, output, fragment, directives)
+// ────────────────────────────────────────────────────────────────
+
+// Setup receives raw Angular types: InputSignal, ModelSignal, OutputEmitterRef
+const UserDetail = component({
+  bindings: {
+    user: input.required<User>(),
+    email: model.required<string>(),
+    makeAdmin: output<void>(),
+    children: fragment<void>(),
+    attachments: directives<HTMLElement>(),
+  },
+  setup: ({ user, email, makeAdmin, children, attachments }) => {
+    const _u: User = user();
+    const _e: string = email();
+    email.set('new');
+    makeAdmin.emit();
+    return { template: '...' };
+  },
+});
+
+// Passing a ref as an input
 const Sibling = component({
   bindings: {
     childRef: input<{ text: Signal<string> } | undefined>(),
@@ -118,9 +157,10 @@ const Sibling = component({
   },
 });
 
-/**
- * TEST 8: Full Parent scenario from README
- */
+// ────────────────────────────────────────────────────────────────
+// COMPONENT — full parent scenario (refs across components)
+// ────────────────────────────────────────────────────────────────
+
 const Parent = component({
   setup: () => {
     const el = ref<HTMLDivElement>();
@@ -139,41 +179,14 @@ const Parent = component({
   },
 });
 
-/**
- * TEST 8b: Refs are read-only — .set() must not exist
- */
-// @ts-expect-error ref is not writable
-childRef.set({ text: signal('') });
-// @ts-expect-error ref is not writable
-divRef.set(document.createElement('div'));
-// @ts-expect-error ref is not writable
-tooltipRef.set({ toggle: () => {} });
-// @ts-expect-error refMany is not writable
-manyChildren.set([]);
+// ────────────────────────────────────────────────────────────────
+// COMPONENT — wrapper with Bindings<> and spread
+//
+// Bindings<> unwraps raw types to plain values:
+//   InputSignal<User> → User, ModelSignal<string> → string, etc.
+// The wrapper declares a subset of bindings and forwards the rest.
+// ────────────────────────────────────────────────────────────────
 
-/**
- * TEST 9: Standard component with real Angular bindings — setup receives raw types
- */
-const UserDetail = component({
-  bindings: {
-    user: input.required<User>(),
-    email: model.required<string>(),
-    makeAdmin: output<void>(),
-    children: fragment<void>(),
-    attachments: directives<HTMLElement>(),
-  },
-  setup: ({ user, email, makeAdmin, children, attachments }) => {
-    const _u: User = user();
-    const _e: string = email();
-    email.set('new');
-    makeAdmin.emit();
-    return { template: '...' };
-  },
-});
-
-/**
- * TEST 10: Wrapper component with spread — Bindings<> gives unwrapped types
- */
 const UserDetailWrapper = component<Bindings<typeof UserDetail>>({
   bindings: {
     user: input<User>(),
@@ -186,79 +199,111 @@ const UserDetailWrapper = component<Bindings<typeof UserDetail>>({
   },
 });
 
-/**
- * TEST 11: Directive host type constraint
- */
-const buttonOnly = directive<HTMLButtonElement>()({
-  bindings: {
-    label: input<string>(),
-  },
-  setup: ({ label }, { host }) => {
-    const _hostEl: Signal<HTMLButtonElement> = host;
-    const _l: string | undefined = label();
-  },
-});
-
-// ================================================================
-// NEGATIVE TESTS
-// ================================================================
-
-// rest should NOT contain user
-const _Neg1 = component<Bindings<typeof UserDetail>>({
-  bindings: {
-    user: input<User>(),
-  },
+// rest should NOT contain explicitly destructured keys
+const _NegRest = component<Bindings<typeof UserDetail>>({
+  bindings: { user: input<User>() },
   setup: ({ user, ...rest }) => {
-    // @ts-expect-error user is not in rest
+    // @ts-expect-error user was destructured, not in rest
     rest.user;
     return { template: '...' };
   },
 });
 
-// bindings should NOT accept keys outside T
-const _Neg2 = component<Bindings<typeof UserDetail>>({
+// bindings should NOT accept keys outside the target type
+const _NegExtra = component<Bindings<typeof UserDetail>>({
   bindings: {
     user: input<User>(),
     // @ts-expect-error nonsense is not in Bindings<typeof UserDetail>
     nonsense: input<string>(),
   },
-  setup: ({ user, ...rest }) => {
-    return { template: '...' };
-  },
+  setup: ({ user, ...rest }) => ({ template: '...' }),
 });
 
-// bindings should NOT accept wrong types
-const _Neg3 = component<Bindings<typeof UserDetail>>({
+// bindings should NOT accept wrong inner types
+const _NegWrongType = component<Bindings<typeof UserDetail>>({
   bindings: {
     // @ts-expect-error user should be BindingOf<User>, not InputSignal<string>
     user: input<string>(),
   },
-  setup: ({ user, ...rest }) => {
-    return { template: '...' };
+  setup: ({ user, ...rest }) => ({ template: '...' }),
+});
+
+// ────────────────────────────────────────────────────────────────
+// COMPONENT — style / styleUrl
+// ────────────────────────────────────────────────────────────────
+
+const StyledComp = component({
+  setup: () => ({ template: '...' }),
+  style: `.danger { color: red; }`,
+});
+
+const StyledUrlComp = component({
+  setup: () => ({ template: '...' }),
+  styleUrl: './my-comp.css',
+});
+
+// ────────────────────────────────────────────────────────────────
+// COMPONENT — providers receive only inputs (not models/outputs)
+// ────────────────────────────────────────────────────────────────
+
+class Store {}
+
+const Counter = component({
+  bindings: {
+    c: input.required<number>(),
+  },
+  setup: () => ({ template: '...' }),
+  providers: ({ c }) => {
+    const _cInput: InputSignal<number> = c;
+    return [provide({ token: Store, useFactory: () => new Store() })];
   },
 });
 
-/**
- * TEST 12: Derivation — only inputs, setup returns Signal<T>
- */
-interface Item { id: string; desc: string; }
+const WithMixed = component({
+  bindings: {
+    name: input.required<string>(),
+    age: input<number>(),
+    email: model<string>(),
+    save: output<void>(),
+  },
+  setup: ({ name, age, email, save }) => ({ template: '...' }),
+  providers: (inputs) => {
+    const _name: InputSignal<string> = inputs.name;
+    const _age: InputSignal<number | undefined> = inputs.age;
+    // @ts-expect-error email is a model, not an input
+    inputs.email;
+    // @ts-expect-error save is an output, not an input
+    inputs.save;
+    return [];
+  },
+});
+
+// ────────────────────────────────────────────────────────────────
+// DERIVATION — only inputs, setup returns Signal<T>
+// ────────────────────────────────────────────────────────────────
 
 const simulation = derivation({
   bindings: {
     qty: input.required<number>(),
     item: input.required<Item>(),
   },
-  setup: ({ qty, item }) => {
-    return computed(() => item().desc + ' x ' + qty());
-  },
+  setup: ({ qty, item }) => computed(() => item().desc + ' x ' + qty()),
 });
 
-// derivation result type is inferred
 const _simType: { readonly _result: string } = simulation;
 
-/**
- * TEST 13: Component-level injectionToken
- */
+// Derivation without bindings
+const simple = derivation({
+  setup: () => computed(() => 42),
+});
+
+const _simpleType: { readonly _result: number } = simple;
+
+// ────────────────────────────────────────────────────────────────
+// INJECTION TOKEN — component-level, root-level, multi
+// ────────────────────────────────────────────────────────────────
+
+// Component-level: must be provided explicitly
 const compToken = injectionToken('desc', {
   factory: () => {
     const counter = signal(0);
@@ -274,9 +319,7 @@ const _compTokenType: InjectionToken<{
   increase: () => void;
 }> = compToken;
 
-/**
- * TEST 14: Root-level injectionToken
- */
+// Root-level: factory invoked once at root scope
 const rootToken = injectionToken('desc', {
   level: 'root',
   factory: () => {
@@ -293,9 +336,7 @@ const _rootTokenType: InjectionToken<{
   decrease: () => void;
 }> = rootToken;
 
-/**
- * TEST 15: Multi injectionToken — type is T[]
- */
+// Multi: type becomes T[]
 const multiToken = injectionToken('desc', {
   multi: true,
   factory: () => Math.random(),
@@ -303,10 +344,9 @@ const multiToken = injectionToken('desc', {
 
 const _multiTokenType: InjectionToken<number[]> = multiToken;
 
-/**
- * TEST 16: provide — shorthand and object form
- */
-class Store {}
+// ────────────────────────────────────────────────────────────────
+// PROVIDE — shorthand and object form
+// ────────────────────────────────────────────────────────────────
 
 const _providers = [
   provide(compToken),
@@ -314,67 +354,3 @@ const _providers = [
   provide({ token: multiToken, useFactory: () => 10 }),
   provide({ token: Store, useFactory: () => new Store() }),
 ];
-
-/**
- * TEST 17: Component with providers receiving only inputs
- */
-const Counter = component({
-  bindings: {
-    c: input.required<number>(),
-  },
-  setup: () => {
-    return { template: '...' };
-  },
-  providers: ({ c }) => {
-    const _cInput: InputSignal<number> = c;
-    return [
-      provide({ token: Store, useFactory: () => new Store() }),
-    ];
-  },
-});
-
-/**
- * TEST 18: Component with style / styleUrl
- */
-const StyledComp = component({
-  setup: () => ({ template: '...' }),
-  style: `.danger { color: red; }`,
-});
-
-const StyledUrlComp = component({
-  setup: () => ({ template: '...' }),
-  styleUrl: './my-comp.css',
-});
-
-/**
- * TEST 19: Derivation without bindings
- */
-const simple = derivation({
-  setup: () => computed(() => 42),
-});
-
-const _simpleType: { readonly _result: number } = simple;
-
-/**
- * TEST 20: Component with providers — providers should NOT receive models/outputs
- */
-const WithMixed = component({
-  bindings: {
-    name: input.required<string>(),
-    age: input<number>(),
-    email: model<string>(),
-    save: output<void>(),
-  },
-  setup: ({ name, age, email, save }) => {
-    return { template: '...' };
-  },
-  providers: (inputs) => {
-    const _name: InputSignal<string> = inputs.name;
-    const _age: InputSignal<number | undefined> = inputs.age;
-    // @ts-expect-error email is a model, not an input — should not be in providers
-    inputs.email;
-    // @ts-expect-error save is an output, not an input — should not be in providers
-    inputs.save;
-    return [];
-  },
-});

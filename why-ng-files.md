@@ -20,11 +20,12 @@ export interface Item {
   price: number;
 }
 
-const tooltip = directive<HTMLElement>({
+const tooltip = directive({
   bindings: {
+    host: ref<HTMLElement>(),
     message: input.required<string>(),
   },
-  setup: ({ message }, { host }) => {
+  setup: ({ host, message }) => {
     const renderer = inject(Renderer2);
 
     afterRenderEffect(() => {
