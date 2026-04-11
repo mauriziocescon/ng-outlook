@@ -82,8 +82,11 @@ type BindingOf<V> =
 // ────────────────────────────────────────────────────────────────
 // 4. INSTANCE TYPES & SHARED HELPERS
 //
-// ComponentInstance and DirectiveInstance share the same shape
-// (bindings + _expose), so a single ExposeOf<T> works for both.
+// Both share _expose, but DirectiveInstance requires a `host`
+// binding (Ref<H | undefined>) — a directive must be attached
+// to a DOM element. ComponentInstance has no such constraint.
+//
+// A single ExposeOf<T> works for both thanks to structural match.
 //
 // InputsOnly<B> filters a bindings record to InputSignal keys
 // only (excluding ModelSignal, which extends InputSignal in
@@ -95,7 +98,7 @@ export type ComponentInstance<B, E = void> = {
   readonly _expose: E;
 };
 
-export type DirectiveInstance<B, E = void> = {
+export type DirectiveInstance<B extends { host: Ref<any> }, E = void> = {
   bindings: B;
   readonly _expose: E;
 };
@@ -154,11 +157,12 @@ export function component(config: any): any {
 //
 // Single-call, all generics inferred. The host element is declared
 // inside bindings as ref<H>() — no separate generic needed.
+// bindings is required and must include host: ref<H>().
 // setup receives raw binding types and returns the expose object.
 // ────────────────────────────────────────────────────────────────
 
-export function directive<B extends Record<string, BindingValue>, E = void>(config: {
-  bindings?: B;
+export function directive<B extends Record<string, BindingValue> & { host: Ref<any> }, E = void>(config: {
+  bindings: B;
   setup: (props: B) => E;
 }): DirectiveInstance<B, E> {
   return config as any;

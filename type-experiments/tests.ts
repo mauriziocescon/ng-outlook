@@ -124,6 +124,22 @@ const buttonOnly = directive({
   },
 });
 
+// Directive must have host binding
+const _NegNoHost = directive({
+  // @ts-expect-error missing host in bindings
+  bindings: {
+    message: input.required<string>(),
+  },
+  setup: ({ message }) => {},
+});
+
+// Directive must have host binding — empty bindings
+const _NegEmptyBindings = directive({
+  // @ts-expect-error missing host in bindings
+  bindings: {},
+  setup: () => {},
+});
+
 // ────────────────────────────────────────────────────────────────
 // COMPONENT — bindings (input, model, output, fragment, directives)
 // ────────────────────────────────────────────────────────────────
