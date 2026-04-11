@@ -1,10 +1,15 @@
 {
   "name": "ng-outlook",
   "version": "1.0.0",
+  "type": "module",
   "description": "Personal thoughts from a developer's perspective on the future of Angular (template level)",
   "author": "Maurizio Cescon <maurizio.cescon@gmail.com>",
   "homepage": "https://be.linkedin.com/in/mauriziocescon",
   "private": false,
+  "engines": {
+    "node": ">=24.13.0",
+    "npm": ">=11.6.2"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/mauriziocescon/ng-outlook"
@@ -14,5 +19,12 @@
       "type": "MIT",
       "url": "https://github.com/brentertz/scapegoat/blob/master/LICENSE-MIT"
     }
-  ]
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit --strict --target es2022 --moduleResolution bundler type-experiments/tests.ts"
+  },
+  "dependencies": {
+    "@angular/core": "^21.2.8",
+    "typescript": "^6.0.2"
+  }
 }

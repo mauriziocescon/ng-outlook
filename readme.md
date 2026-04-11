@@ -48,9 +48,6 @@ export const TextSearch = component({
      *
      * Can use multiple class: and style:
      * ✅ <span class="..." class:some-class={...} class:some-other-class={...}> ✅
-     *
-     * Can bind to non-existent attributes (ignored)
-     * ✅ <span nonsense={...} on:nonsense={...}> ✅
      */
     return {
       template: (
@@ -92,9 +89,6 @@ export const UserDetailConsumer = component({
      *
      * Shouldn't use 'on' prefix with input / model / output
      * ⚠️ <UserDetail onInput={...} model:onModel={...} on:onEvent={...} /> ⚠️
-     *
-     * Can bind to non-existent entries (ignored)
-     * ✅ <UserDetail nonsense={...} on:nonsense={...} /> ✅
      */
     return {
       template: (
@@ -580,11 +574,10 @@ export const UserDetailWrapper = component<Bindings<typeof UserDetail>>({
     user: input<User>(),
   },
   /**
-   * rest (destructuring syntax): captures everything that does not match
-   * the explicitly defined inputs / outputs / models / fragments / directives
-   * (like user). Components have no host, so { rest } is the only second-argument context.
+   * rest (spread syntax): captures everything that does not match
+   * the explicitly destructured bindings (like user)
    */
-  setup: ({ user }, { rest }) => {
+  setup: ({ user, ...rest }) => {
     const other = computed(() => /** something depending on user or a default value **/);
 
     /**
@@ -664,7 +657,7 @@ export const Button = component<HTMLButtonAttributes>({
     children: fragment<void>(),
     attachments: directives<HTMLButtonElement>(),
   },
-  setup: ({ style, children, attachments }, { rest }) => {
+  setup: ({ style, children, attachments, ...rest }) => {
     const innerStyle = computed(() => `${style()}; color: red;`);
 
     /**
