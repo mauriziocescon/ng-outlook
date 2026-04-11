@@ -1,6 +1,5 @@
 import {
   type Signal,
-  type WritableSignal,
   signal,
   computed,
   input,
@@ -11,6 +10,7 @@ import {
 
 import {
   type Bindings,
+  type Ref,
   component,
   directive,
   fragment,
@@ -39,7 +39,9 @@ const Child = component({
 });
 
 const childRef = ref(Child);
-const _childRefType: WritableSignal<{ text: Signal<string> } | undefined> = childRef;
+const _childRefType: Ref<{ text: Signal<string> } | undefined> = childRef;
+// Signal<T> is assignable from Ref<T>
+const _childRefAsSignal: Signal<{ text: Signal<string> } | undefined> = childRef;
 
 /**
  * TEST 2: Component without expose
@@ -49,13 +51,13 @@ const NoExpose = component({
 });
 
 const noExposeRef = ref(NoExpose);
-const _noExposeType: WritableSignal<undefined> = noExposeRef;
+const _noExposeType: Ref<undefined> = noExposeRef;
 
 /**
  * TEST 3: Native element ref
  */
 const divRef = ref<HTMLDivElement>();
-const _divRefType: WritableSignal<HTMLDivElement | undefined> = divRef;
+const _divRefType: Ref<HTMLDivElement | undefined> = divRef;
 
 /**
  * TEST 4: Directive with expose — setup receives raw types
@@ -77,7 +79,7 @@ const tooltip = directive<HTMLElement>()({
 });
 
 const tooltipRef = ref(tooltip);
-const _tooltipRefType: WritableSignal<{ toggle: () => void } | undefined> = tooltipRef;
+const _tooltipRefType: Ref<{ toggle: () => void } | undefined> = tooltipRef;
 
 /**
  * TEST 5: Directive without expose
@@ -89,13 +91,14 @@ const ripple = directive<HTMLElement>()({
 });
 
 const rippleRef = ref(ripple);
-const _rippleRefType: WritableSignal<undefined> = rippleRef;
+const _rippleRefType: Ref<undefined> = rippleRef;
 
 /**
  * TEST 6: refMany
  */
 const manyChildren = refMany(Child);
-const _manyType: WritableSignal<{ text: Signal<string> }[]> = manyChildren;
+const _manyType: Ref<{ text: Signal<string> }[]> = manyChildren;
+const _manyAsSignal: Signal<{ text: Signal<string> }[]> = manyChildren;
 
 /**
  * TEST 7: Component with bindings — setup receives raw types
@@ -130,6 +133,18 @@ const Parent = component({
     return { template: '...' };
   },
 });
+
+/**
+ * TEST 8b: Refs are read-only — .set() must not exist
+ */
+// @ts-expect-error ref is not writable
+childRef.set({ text: signal('') });
+// @ts-expect-error ref is not writable
+divRef.set(document.createElement('div'));
+// @ts-expect-error ref is not writable
+tooltipRef.set({ toggle: () => {} });
+// @ts-expect-error refMany is not writable
+manyChildren.set([]);
 
 /**
  * TEST 9: Standard component with real Angular bindings — setup receives raw types

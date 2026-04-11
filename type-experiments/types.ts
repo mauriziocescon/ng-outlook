@@ -1,6 +1,5 @@
 import {
   type Signal,
-  type WritableSignal,
   type InputSignal,
   type ModelSignal,
   OutputEmitterRef,
@@ -103,18 +102,28 @@ export function directive<H extends HTMLElement>() {
 
 /**
  * 5. REF UTILITIES
+ *
+ * Ref<T> extends Signal<T> (read-only to the consumer).
+ * The framework populates it internally; the user only reads.
+ * A branded symbol distinguishes Ref from plain Signal so the
+ * template compiler can validate ref={...} targets.
  */
+declare const REF_SLOT: unique symbol;
+
+export interface Ref<T> extends Signal<T> {
+  readonly [REF_SLOT]: true;
+}
 
 // Native element
-export function ref<H extends HTMLElement>(): WritableSignal<H | undefined>;
+export function ref<H extends HTMLElement>(): Ref<H | undefined>;
 // Component
 export function ref<C extends ComponentInstance<any, any>>(
   type: C
-): WritableSignal<ExposeOf<C> extends void ? undefined : ExposeOf<C> | undefined>;
+): Ref<ExposeOf<C> extends void ? undefined : ExposeOf<C> | undefined>;
 // Directive
 export function ref<D extends DirectiveInstance<any, any, any>>(
   type: D
-): WritableSignal<ExposeOfDirective<D> extends void ? undefined : ExposeOfDirective<D> | undefined>;
+): Ref<ExposeOfDirective<D> extends void ? undefined : ExposeOfDirective<D> | undefined>;
 
 export function ref(_type?: any): any {
   return {} as any;
@@ -123,11 +132,11 @@ export function ref(_type?: any): any {
 // Component
 export function refMany<C extends ComponentInstance<any, any>>(
   type: C
-): WritableSignal<ExposeOf<C> extends void ? never[] : ExposeOf<C>[]>;
+): Ref<ExposeOf<C> extends void ? never[] : ExposeOf<C>[]>;
 // Directive
 export function refMany<D extends DirectiveInstance<any, any, any>>(
   type: D
-): WritableSignal<ExposeOfDirective<D> extends void ? never[] : ExposeOfDirective<D>[]>;
+): Ref<ExposeOfDirective<D> extends void ? never[] : ExposeOfDirective<D>[]>;
 
 export function refMany(_type?: any): any {
   return {} as any;
