@@ -1,5 +1,6 @@
 import {
   type Signal,
+  type InputSignal,
   signal,
   computed,
   input,
@@ -11,12 +12,16 @@ import {
 import {
   type Bindings,
   type Ref,
+  type InjectionToken,
   component,
   directive,
+  derivation,
   fragment,
   directives,
   ref,
   refMany,
+  injectionToken,
+  provide,
 } from './types';
 
 interface User { id: string; name: string; }
@@ -230,5 +235,146 @@ const _Neg3 = component<Bindings<typeof UserDetail>>({
   },
   setup: ({ user, ...rest }) => {
     return { template: '...' };
+  },
+});
+
+/**
+ * TEST 12: Derivation — only inputs, setup returns Signal<T>
+ */
+interface Item { id: string; desc: string; }
+
+const simulation = derivation({
+  bindings: {
+    qty: input.required<number>(),
+    item: input.required<Item>(),
+  },
+  setup: ({ qty, item }) => {
+    return computed(() => item().desc + ' x ' + qty());
+  },
+});
+
+// derivation result type is inferred
+const _simType: { readonly _result: string } = simulation;
+
+/**
+ * TEST 13: Component-level injectionToken
+ */
+const compToken = injectionToken('desc', {
+  factory: () => {
+    const counter = signal(0);
+    return {
+      value: counter.asReadonly(),
+      increase: () => counter.update(v => v + 1),
+    };
+  },
+});
+
+const _compTokenType: InjectionToken<{
+  value: Signal<number>;
+  increase: () => void;
+}> = compToken;
+
+/**
+ * TEST 14: Root-level injectionToken
+ */
+const rootToken = injectionToken('desc', {
+  level: 'root',
+  factory: () => {
+    const counter = signal(0);
+    return {
+      value: counter.asReadonly(),
+      decrease: () => counter.update(v => v - 1),
+    };
+  },
+});
+
+const _rootTokenType: InjectionToken<{
+  value: Signal<number>;
+  decrease: () => void;
+}> = rootToken;
+
+/**
+ * TEST 15: Multi injectionToken — type is T[]
+ */
+const multiToken = injectionToken('desc', {
+  multi: true,
+  factory: () => Math.random(),
+});
+
+const _multiTokenType: InjectionToken<number[]> = multiToken;
+
+/**
+ * TEST 16: provide — shorthand and object form
+ */
+class Store {}
+
+const _providers = [
+  provide(compToken),
+  provide(multiToken),
+  provide({ token: multiToken, useFactory: () => 10 }),
+  provide({ token: Store, useFactory: () => new Store() }),
+];
+
+/**
+ * TEST 17: Component with providers receiving only inputs
+ */
+const Counter = component({
+  bindings: {
+    c: input.required<number>(),
+  },
+  setup: () => {
+    return { template: '...' };
+  },
+  providers: ({ c }) => {
+    const _cInput: InputSignal<number> = c;
+    return [
+      provide({ token: Store, useFactory: () => new Store() }),
+    ];
+  },
+});
+
+/**
+ * TEST 18: Component with style / styleUrl
+ */
+const StyledComp = component({
+  setup: () => ({ template: '...' }),
+  style: `.danger { color: red; }`,
+});
+
+const StyledUrlComp = component({
+  setup: () => ({ template: '...' }),
+  styleUrl: './my-comp.css',
+});
+
+/**
+ * TEST 19: Derivation without bindings
+ */
+const simple = derivation({
+  setup: () => computed(() => 42),
+});
+
+const _simpleType: { readonly _result: number } = simple;
+
+/**
+ * TEST 20: Component with providers — providers should NOT receive models/outputs
+ */
+const WithMixed = component({
+  bindings: {
+    name: input.required<string>(),
+    age: input<number>(),
+    email: model<string>(),
+    save: output<void>(),
+  },
+  setup: ({ name, age, email, save }) => {
+    return { template: '...' };
+  },
+  providers: (inputs) => {
+    const _name: InputSignal<string> = inputs.name;
+    const _age: InputSignal<number | undefined> = inputs.age;
+    // @ts-expect-error email is a model, not an input — should not be in providers
+    inputs.email;
+    // @ts-expect-error save is an output, not an input — should not be in providers
+    inputs.save;
+    return [];
   },
 });
