@@ -17,7 +17,7 @@ import {
   directives,
   ref,
   refMany,
-} from './types.js';
+} from './types';
 
 interface User { id: string; name: string; }
 
