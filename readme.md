@@ -684,9 +684,9 @@ export const Button = component({
 ```
 
 ## Expose and Template ref
-`expose` defines the public interface — the only part of `setup()` accessible via `ref`. Components return it alongside `template`; directives return it directly (no template). The directive's `host` is declared as `ref<HTMLElement>()` at the directive config level and is passed to setup as a second context argument. It resolves in `afterNextRender`.
+`expose` is the public interface of `setup()` for refs. Components return it with `template`; directives return it from `setup` (their host is provided via the second setup arg).
 
-`ref(Type)` → `Signal<expose | undefined>` and `refMany(Type)` → `Signal<expose[]>`. Without `expose`, they resolve to `Signal<undefined>` and `Signal<undefined[]>`. Bind with `ref={...}` (elements/components) or `:ref={...}` (`use:`), and read after `afterNextRender`.
+`ref(Type)` → `Signal<expose | undefined>`, `refMany(Type)` → `Signal<expose[]>`; without `expose`, they resolve to `Signal<undefined>` and `Signal<undefined[]>`. Bind with `ref={...}` (elements/components) or `:ref={...}` (`use:`), and read after `afterNextRender`.
 
 ```ts
 import { component, ref, refMany, signal, input, afterNextRender, Signal } from '@angular/core';
