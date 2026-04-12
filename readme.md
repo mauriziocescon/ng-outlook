@@ -551,7 +551,7 @@ export const Button = component({
 
 Wrapping components and forwarding inputs and outputs:
 ```ts
-import { component, signal, input, computed, Bindings } from '@angular/core';
+import { component, signal, input, computed } from '@angular/core';
 import { UserDetail, User } from './user-detail.ng';
 
 export const UserDetailConsumer = component({
@@ -573,16 +573,16 @@ export const UserDetailConsumer = component({
 });
 
 /**
- * Explicit opt-in via component<Bindings<typeof Target>>.
+ * Explicit opt-in via component.wrap<typeof Target>({ ... }).
  * Setup receives unwrapped plain values (not signals) so that
  * ...rest can be spread directly onto the target in the template —
  * the compiler handles the re-wiring.
  * This is intentionally different from the standard overload:
  * wrapper components forward bindings, they don't own them.
  */
-export const UserDetailWrapper = component<Bindings<typeof UserDetail>>({
+export const UserDetailWrapper = component.wrap<typeof UserDetail>({
   bindings: {
-    user: input<User>(),
+    user: input.required<User>(),
   },
   setup: ({ user, ...rest }) => {
     const other = computed(() => /** something depending on user or a default value **/);
@@ -619,7 +619,7 @@ export const UserDetail = component({
 });
 ```
 
-Wrapping native elements and forwarding attributes and event listeners:
+Wrapping native elements and forwarding selected attributes and event listeners:
 ```ts
 import { component, signal } from '@angular/core';
 import { Button } from '@mylib/button';
@@ -634,8 +634,8 @@ export const ButtonConsumer = component({
     function doSomething() {/** ... **/}
 
     /**
-     * Can pass down attributes (either static or bound) and event listeners
-     * Cannot have multiple style / class / ...
+     * Can pass down selected attributes (either static or bound)
+     * and event listeners
      */
     return {
       template: (
@@ -655,24 +655,33 @@ export const ButtonConsumer = component({
 });
 
 // -- button in @mylib/button --------------------
-import { component, input, computed, fragment, directives } from '@angular/core';
-import { HTMLButtonAttributes } from '@angular/core/elements';
+import { component, input, output, computed, fragment, directives } from '@angular/core';
 
-export const Button = component<HTMLButtonAttributes>({
+export const Button = component({
   bindings: {
+    type: input<'button' | 'submit' | 'reset'>('button'),
+    class: input<string>(''),
     style: input<string>(''),
+    disabled: input<boolean>(false),
+    click: output<void>(),
     children: fragment<void>(),
     attachments: directives<HTMLButtonElement>(),
   },
-  setup: ({ style, children, attachments, ...rest }) => {
+  setup: ({ type, class: className, style, disabled, click, children, attachments }) => {
     const innerStyle = computed(() => `${style()}; color: red;`);
 
     /**
-     * {...rest} spreads remaining attributes like type, class, etc.
+     * Forwards explicit bindings plus attached directives
      */
     return {
       template: (
-        <button {...attachments()} {...rest} style={innerStyle()}>
+        <button
+          {...attachments()}
+          type={type()}
+          class={className()}
+          style={innerStyle()}
+          disabled={disabled()}
+          on:click={() => click.emit()}>
           @render(children())
         </button>
       ),

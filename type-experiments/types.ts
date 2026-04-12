@@ -48,9 +48,9 @@ export interface Ref<T> extends Signal<T> {
 //   FragmentBinding<void> → void
 //   DirectivesBinding<HTMLElement> → HTMLElement
 //
-// BindingOf<V> — the inverse: given an unwrapped type V, which
-//   binding wrappers could hold it? Used by the wrapper component
-//   overload to type-check partial bindings against the full set.
+// Wrapper components preserve binding kind per key through
+// component.wrap<typeof Target>() with overrides constrained to
+// Partial<TargetBindings<Target>>.
 // ────────────────────────────────────────────────────────────────
 
 export type BindingValue =
@@ -68,13 +68,6 @@ type Unwrap<T> =
   T;
 
 type UnwrapBindings<T> = { [K in keyof T]: Unwrap<T[K]> };
-
-type BindingOf<V> =
-  | InputSignal<V> | InputSignal<V | undefined>
-  | ModelSignal<V> | ModelSignal<V | undefined>
-  | OutputEmitterRef<V>
-  | FragmentBinding<V>
-  | DirectivesBinding<V & HTMLElement>;
 
 // ────────────────────────────────────────────────────────────────
 // 4. INSTANCE TYPES & SHARED HELPERS
@@ -107,6 +100,9 @@ type ExposeOf<T> =
 export type Bindings<C> =
   C extends ComponentInstance<infer B, any> ? UnwrapBindings<B> : never;
 
+type TargetBindings<C extends ComponentInstance<any, any>> =
+  C extends ComponentInstance<infer B, any> ? B : never;
+
 type InputKeys<B> = {
   [K in keyof B]: B[K] extends ModelSignal<any> ? never
     : B[K] extends InputSignal<any> ? K
@@ -118,15 +114,15 @@ type InputsOnly<B> = Pick<B, InputKeys<B>>;
 // ────────────────────────────────────────────────────────────────
 // 5. COMPONENT
 //
-// Two overloads:
+// component(...) — standard mode:
+//   B inferred from bindings, setup receives Angular signal types
+//   (InputSignal, ModelSignal, OutputEmitterRef, …).
 //
-// Standard — B inferred from bindings, setup receives Angular
-//   signal types (InputSignal, ModelSignal, OutputEmitterRef, …).
-//
-// Wrapper — explicit opt-in via component<Bindings<typeof Target>>.
-//   Bindings are partial and type-checked against the target.
-//   Setup receives unwrapped plain values so that ...rest can be
-//   spread directly onto the target in the template — the compiler
+// component.wrap<typeof Target>(...) — wrapper mode:
+//   bindings are partial and type-checked against Target while
+//   preserving binding kind per key.
+//   setup receives unwrapped plain values so that ...rest can be
+//   spread directly onto Target in the template — the compiler
 //   handles the re-wiring. This is a deliberate trade-off: wrapper
 //   components forward bindings, they don't own them as signals.
 // ────────────────────────────────────────────────────────────────
@@ -140,18 +136,24 @@ export function component<B extends Record<string, BindingValue>, E = void>(conf
   styleUrl?: string;
 }): ComponentInstance<B, E>;
 
-// Wrapper (explicit opt-in — setup receives unwrapped values for spread)
-export function component<T extends Record<string, any>, E = void>(config: {
-  bindings: { [K in keyof T]?: BindingOf<T[K]> };
-  setup: (props: T) => { template: any; expose?: E } | { template: any };
-  providers?: (inputs: { [K in keyof T]?: T[K] }) => Provider[];
-  style?: string;
-  styleUrl?: string;
-}): ComponentInstance<{ [K in keyof T]: BindingOf<T[K]> }, E>;
-
 export function component(config: any): any {
   return config;
 }
+
+// Wrapper namespace helper (explicit opt-in via generic target)
+export namespace component {
+  export declare function wrap<C extends ComponentInstance<any, any>, E = void>(config:
+    TargetBindings<C> extends Record<string, BindingValue> ? {
+      bindings?: Partial<TargetBindings<C>>;
+      setup: (props: Bindings<C>) => { template: any; expose?: E } | { template: any };
+      providers?: (inputs: UnwrapBindings<InputsOnly<TargetBindings<C>>>) => Provider[];
+      style?: string;
+      styleUrl?: string;
+    } : never
+  ): ComponentInstance<TargetBindings<C>, E>;
+}
+
+(component as any).wrap = (config: any) => config;
 
 // ────────────────────────────────────────────────────────────────
 // 6. DIRECTIVE

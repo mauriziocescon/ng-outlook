@@ -13,7 +13,6 @@ import {
 
 import {
   type BindingValue,
-  type Bindings,
   type Ref,
   type InjectionToken,
   component,
@@ -98,18 +97,18 @@ const NoExpose = component({
 });
 
 // ────────────────────────────────────────────────────────────────
-// COMPONENT — wrapper with Bindings<> and spread
+// COMPONENT — wrapper with generic target and spread
 //
-// Explicit opt-in via component<Bindings<typeof Target>>.
+// Explicit opt-in via component.wrap<typeof Target>().
 // Setup receives unwrapped plain values (not signals) so that
 // ...rest can be spread directly onto the target in the template.
 // This is intentionally different from the standard overload:
 // wrapper components forward bindings, they don't own them.
 // ────────────────────────────────────────────────────────────────
 
-const UserDetailWrapper = component<Bindings<typeof UserDetail>>({
+const UserDetailWrapper = component.wrap<typeof UserDetail>({
   bindings: {
-    user: input<User>(),
+    user: input.required<User>(),
   },
   setup: ({ user, ...rest }) => {
     const _u: User = user;
@@ -120,8 +119,8 @@ const UserDetailWrapper = component<Bindings<typeof UserDetail>>({
 });
 
 // rest should NOT contain explicitly destructured keys
-const _NegRest = component<Bindings<typeof UserDetail>>({
-  bindings: { user: input<User>() },
+const _NegRest = component.wrap<typeof UserDetail>({
+  bindings: { user: input.required<User>() },
   setup: ({ user, ...rest }) => {
     // @ts-expect-error user was destructured, not in rest
     rest.user;
@@ -130,22 +129,31 @@ const _NegRest = component<Bindings<typeof UserDetail>>({
 });
 
 // bindings should NOT accept keys outside the target type
-const _NegExtra = component<Bindings<typeof UserDetail>>({
+const _NegExtra = component.wrap<typeof UserDetail>({
   bindings: {
-    user: input<User>(),
-    // @ts-expect-error nonsense is not in Bindings<typeof UserDetail>
+    user: input.required<User>(),
+    // @ts-expect-error nonsense is not in target bindings
     nonsense: input<string>(),
   },
   setup: ({ user, ...rest }) => ({ template: '...' }),
 });
 
 // bindings should NOT accept wrong inner types
-const _NegWrongType = component<Bindings<typeof UserDetail>>({
+const _NegWrongType = component.wrap<typeof UserDetail>({
   bindings: {
-    // @ts-expect-error user should be BindingOf<User>, not InputSignal<string>
-    user: input<string>(),
+    // @ts-expect-error user input type should be User
+    user: input.required<string>(),
   },
   setup: ({ user, ...rest }) => ({ template: '...' }),
+});
+
+// bindings should preserve target binding kind
+const _NegWrongKind = component.wrap<typeof UserDetail>({
+  bindings: {
+    // @ts-expect-error makeAdmin is an output on target, not an input
+    makeAdmin: input<void>(),
+  },
+  setup: ({ makeAdmin }) => ({ template: '...' }),
 });
 
 // ────────────────────────────────────────────────────────────────
@@ -180,6 +188,26 @@ const WithMixed = component({
     inputs.email;
     // @ts-expect-error save is an output, not an input
     inputs.save;
+    return [];
+  },
+});
+
+// Wrapper providers should receive inputs only (target-kind aware)
+const WrapperProviders = component.wrap<typeof UserDetail>({
+  bindings: {
+    user: input.required<User>(),
+  },
+  setup: ({ user, email, makeAdmin, children, attachments }) => ({ template: '...' }),
+  providers: (inputs) => {
+    const _user: User = inputs.user;
+    // @ts-expect-error email is model on target, excluded from wrapper providers
+    inputs.email;
+    // @ts-expect-error makeAdmin is output on target, excluded from wrapper providers
+    inputs.makeAdmin;
+    // @ts-expect-error children is fragment on target, excluded from wrapper providers
+    inputs.children;
+    // @ts-expect-error attachments is directives on target, excluded from wrapper providers
+    inputs.attachments;
     return [];
   },
 });
