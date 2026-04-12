@@ -1,107 +1,72 @@
-## Co-located templates in Angular via .ng files
-Since `tsx` grammar currently does not support Angular control flow or directives, the likely path forward involves a DSL combined with [Volar](https://volarjs.dev/), requiring `*.ng` files and a custom parser — similar in principle to what [ripple](https://www.ripple-ts.com/) has done. Assuming this setup (or something comparable), one could argue that losing the ability to keep the template as a separate file (e.g., via `templateUrl`) is a significant regression. That said, agents tend to prefer something similar in nature to React where
-- the template is part of the component definition,
-- the template is defined within the setup's scope, with direct access to its variables,
-- tooling has clear structural markers to work with,
-- provider declarations are kept separate from the setup and template, while still allowing providers to depend on inputs — but not on variables defined inside the setup.
+## Co-located templates in Angular via `.ng` files
 
-Note that the entire proposal preserves the concept of declaring inputs, outputs, and similar constructs at the component level, with Angular syncing them and enforcing strict type checking at build time. Interface conformance for bindings and expose is opt-in via `satisfies` — the same structural check that `implements` provides for classes. Additionally, the setup runs only once, at component creation time.
+`tsx` grammar does not support Angular control flow/directives today, so a realistic path for co-located templates is an Angular-specific DSL in `*.ng` files, backed by custom parsing/tooling (for example, Volar-style language support).
 
-### Another example
-```ts
-import { ... } from '@angular/core';
-import { Card, HStack, Img, VStack, Title, Description } from '@lib/card';
+This is not just a syntax preference. If Angular moves toward co-located templates, losing the option of separate templates (`templateUrl`) would be a real regression for some teams. The point of `.ng` files is to enable co-location without collapsing Angular's structural clarity into a loose runtime pattern.
 
-export interface Item {
-  id: string;
-  imgUrl: string;
-  title: string;
-  description: string;
-  price: number;
-}
+The design goal is to keep what works in Angular while improving authoring ergonomics:
+- template and setup live in the same lexical scope,
+- tooling and agents get stable structural markers (`component`, `directive`, `derivation`, `fragment`),
+- bindings remain explicit and statically typed,
+- provider declarations remain separate from setup/template logic,
+- providers can depend on inputs, but not on setup-local variables.
 
-const tooltip = directive({
-  host: ref<HTMLElement>(),
-  bindings: {
-    message: input.required<string>(),
-  },
-  setup: ({ message }, { host }) => {
-    const renderer = inject(Renderer2);
+This preserves Angular's explicit contract model:
+- `bindings` remain the canonical public API surface,
+- Angular performs synchronization/wiring,
+- strict checks happen at build time,
+- `setup` runs once at component creation.
 
-    afterRenderEffect(() => {
-      /** ... **/
-    });
+Interface conformance for `bindings` and `expose` stays opt-in via `satisfies`, mirroring structural checks similar to `implements` but without forcing inheritance-style patterns.
 
-    return {
-      /** ... **/
-    };
-  },
-});
+## Short Mode for Small Components (`defineBindings`)
 
-const currency = derivation({
-  bindings: {
-    value: input.required<number | undefined>(),
-    currencyCode: input<string>(),
-  },
-  setup: ({ value, currencyCode }) => {
-    const localeId = inject(LOCALE_ID);
+For small components, `bindings + setup` can feel repetitive. A short mode can reduce boilerplate while preserving the same compile-time guarantees.
 
-    return computed(/** ... **/);
-  },
-});
+### Intent
+Allow binding declaration inside `setup` via a compiler intrinsic (e.g. `defineBindings(...)`), then hoist it to the canonical component binding contract.
 
-const List = component({
-  bindings: {
-    items: input.required<Item[]>(),
-    item: fragment<[Item]>(),
-  },
-  setup: ({ items, item }) => ({
-    template: (
-      @for (i of items(); track i.id) {
-        @render(item(i))
-      }
-    ),
-  }),
-});
+### Scope
+Short mode is only for components that are not wrappers and do not use providers.
 
-class ItemsStore {
-  /** ... **/
-}
+Allowed:
+- `component({ setup })` + one top-level `defineBindings(...)` call.
 
-export const ItemsPage = component({
-  setup: () => {
-    const store = inject(ItemsStore);
+Not allowed:
+- `component.wrap<typeof Target>(...)`,
+- `providers` in the same component.
 
-    function goTo(item: Item) {
-      // ..
-    }
+### Compiler model
+`defineBindings(...)` is extraction syntax, not runtime behavior:
+- compiler extracts its object literal,
+- extracted bindings become the same canonical metadata as `bindings: { ... }`,
+- template/type checking/wiring behave exactly like explicit mode.
 
-    return {
-      template: (
-        <List items={store.items()}>
-          @fragment item(i: Item) {
-            <Card on:click={() => goTo(i)}>
-              <HStack width={100}>
-                <Img url={i.imgUrl} />
-                <VStack>
-                  <Title title={i.title} />
-                  <Description use:tooltip(message={i.title}) description={i.description} />
+### Mandatory compiler errors
+The compiler should error when:
+- `bindings` and `defineBindings(...)` are both used,
+- `defineBindings(...)` is called more than once,
+- `defineBindings(...)` is not top-level in `setup` (inside conditionals/loops/nested functions),
+- used in a wrapper component,
+- used in a component with `providers`,
+- destructured binding vars are reassigned,
+- duplicate binding keys exist,
+- framework-reserved binding names are explicitly declared (`children`, `attachments`),
+- `defineBindings` is aliased/imported from user code instead of recognized as compiler intrinsic.
 
-                  <hr />
+Optional stricter rule:
+- disallow `async setup` with `defineBindings(...)` (or require extraction before first `await`) to keep extraction deterministic.
 
-                  @derive price = currency({value: i.price, currencyCode: 'EUR'});
-                  <p>Price: {price()}</p>
-                </VStack>
-              </HStack>
-            </Card>
-          }
-        </List>
-      ),
-    };
-  },
-  styleUrl: './items-page.css',
-  providers: () => [
-    provide({ token: ItemsStore, useFactory: () => new ItemsStore() }),
-  ],
-});
-```
+### Trade-off summary
+This design intentionally splits use cases:
+- explicit mode remains the default for wrappers, providers, and advanced composition,
+- short mode is limited to simple components where boilerplate reduction matters most.
+
+The constraint set is deliberate:
+- contracts remain explicit after compiler extraction,
+- wrapper/provider invariants are not relaxed,
+- tooling and type-checking still operate on one canonical binding model.
+
+Net effect:
+- less authoring overhead in small components,
+- no semantic divergence in generated metadata or template checks.
