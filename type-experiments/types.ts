@@ -37,20 +37,9 @@ export interface Ref<T> extends Signal<T> {
 }
 
 // ────────────────────────────────────────────────────────────────
-// 3. BINDING VALUE & TYPE TRANSFORMERS
+// 3. BINDING VALUE
 //
 // BindingValue — union of everything that can appear in `bindings`.
-//
-// Unwrap<T> — extracts the inner type T from any binding wrapper.
-//   InputSignal<User>  → User
-//   ModelSignal<string> → string
-//   OutputEmitterRef<void> → void
-//   FragmentBinding<void> → void
-//   DirectivesBinding<HTMLElement> → HTMLElement
-//
-// Wrapper components preserve binding kind per key through
-// component.wrap<typeof Target>() with overrides constrained to
-// Partial<TargetBindings<Target>>.
 // ────────────────────────────────────────────────────────────────
 
 export type BindingValue =
@@ -59,15 +48,6 @@ export type BindingValue =
   | OutputEmitterRef<any>
   | FragmentBinding<any>
   | DirectivesBinding<any>;
-
-type Unwrap<T> =
-  T extends OutputEmitterRef<infer U> ? U :
-  T extends FragmentBinding<infer U> ? U :
-  T extends DirectivesBinding<infer U> ? U :
-  T extends Signal<infer U> ? U :
-  T;
-
-type UnwrapBindings<T> = { [K in keyof T]: Unwrap<T[K]> };
 
 // ────────────────────────────────────────────────────────────────
 // 4. INSTANCE TYPES & SHARED HELPERS
@@ -96,9 +76,6 @@ export type DirectiveInstance<H extends HTMLElement, B, E = void> = {
 
 type ExposeOf<T> =
   T extends { readonly _expose: infer E } ? E : never;
-
-export type Bindings<C> =
-  C extends ComponentInstance<infer B, any> ? UnwrapBindings<B> : never;
 
 type TargetBindings<C extends ComponentInstance<any, any>> =
   C extends ComponentInstance<infer B, any> ? B : never;
