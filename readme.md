@@ -874,5 +874,5 @@ Pros:
 - no `splitProps` drama 😅.
 
 Cons:
-- noticeable repetition in how bindings are declared and consumed,
+- noticeable repetition in how bindings are declared and consumed: increases boilerplate for small components but scales better for larger ones — `providers` reduce the need for threading inputs/outputs, and wrapper components (where the repetition is felt most) are a narrow use case,
 - not plain TypeScript.
