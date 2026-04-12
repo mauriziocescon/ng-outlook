@@ -1,33 +1,39 @@
 ## Co-located templates in Angular via `.ng` files
 
-`tsx` grammar does not support Angular control flow/directives today, so a realistic path for co-located templates is an Angular-specific DSL in `*.ng` files, backed by custom parsing/tooling (for example, Volar-style language support).
+`tsx` does not support Angular control flow/directives today, so co-located templates likely require an Angular DSL in `*.ng` files plus dedicated tooling/parser support.
 
-This is not just a syntax preference. If Angular moves toward co-located templates, losing the option of separate templates (`templateUrl`) would be a real regression for some teams. The point of `.ng` files is to enable co-location without collapsing Angular's structural clarity into a loose runtime pattern.
+This is not only syntax preference: if co-location becomes default, losing `templateUrl` would be a regression for some teams. The intent is co-location without weakening Angular's structural model.
 
-The design goal is to keep what works in Angular while improving authoring ergonomics:
+Key goals:
 - template and setup live in the same lexical scope,
 - tooling and agents get stable structural markers (`component`, `directive`, `derivation`, `fragment`),
 - bindings remain explicit and statically typed,
 - provider declarations remain separate from setup/template logic,
 - providers can depend on inputs, but not on setup-local variables.
 
-This preserves Angular's explicit contract model:
+This keeps the explicit contract model:
 - `bindings` remain the canonical public API surface,
 - Angular performs synchronization/wiring,
 - strict checks happen at build time,
 - `setup` runs once at component creation.
 
-Interface conformance for `bindings` and `expose` stays opt-in via `satisfies`, mirroring structural checks similar to `implements` but without forcing inheritance-style patterns.
+Interface conformance for `bindings` and `expose` stays opt-in via `satisfies`.
 
-## Short Mode for Small Components (`defineBindings`)
+## Short Mode for Small Components (`defineBindings`) — Proposal Only
 
-For small components, `bindings + setup` can feel repetitive. A short mode can reduce boilerplate while preserving the same compile-time guarantees.
+Exploratory only. Baseline remains explicit mode (`bindings` + `setup`).
 
-### Intent
-Allow binding declaration inside `setup` via a compiler intrinsic (e.g. `defineBindings(...)`), then hoist it to the canonical component binding contract.
+Intent: reduce boilerplate in simple components by allowing `defineBindings(...)` inside `setup`, then hoisting to the same canonical binding metadata.
 
-### Scope
-Short mode is only for components that are not wrappers and do not use providers.
+Benefits:
+- less repetition in small components,
+- bindings and template logic stay closer.
+
+Costs:
+- introduces a second authoring style,
+- requires strict compiler extraction rules and diagnostics.
+
+Scope (if adopted): only non-wrapper components without `providers`.
 
 Allowed:
 - `component({ setup })` + one top-level `defineBindings(...)` call.
@@ -36,13 +42,13 @@ Not allowed:
 - `component.wrap<typeof Target>(...)`,
 - `providers` in the same component.
 
-### Compiler model
+### Compiler model (if adopted)
 `defineBindings(...)` is extraction syntax, not runtime behavior:
 - compiler extracts its object literal,
 - extracted bindings become the same canonical metadata as `bindings: { ... }`,
 - template/type checking/wiring behave exactly like explicit mode.
 
-### Mandatory compiler errors
+### Mandatory compiler errors (if adopted)
 The compiler should error when:
 - `bindings` and `defineBindings(...)` are both used,
 - `defineBindings(...)` is called more than once,
@@ -58,15 +64,4 @@ Optional stricter rule:
 - disallow `async setup` with `defineBindings(...)` (or require extraction before first `await`) to keep extraction deterministic.
 
 ### Trade-off summary
-This design intentionally splits use cases:
-- explicit mode remains the default for wrappers, providers, and advanced composition,
-- short mode is limited to simple components where boilerplate reduction matters most.
-
-The constraint set is deliberate:
-- contracts remain explicit after compiler extraction,
-- wrapper/provider invariants are not relaxed,
-- tooling and type-checking still operate on one canonical binding model.
-
-Net effect:
-- less authoring overhead in small components,
-- no semantic divergence in generated metadata or template checks.
+This is a constrained convenience layer: explicit mode remains the default; short mode is opt-in for simple components. The gain is lower boilerplate, the cost is added format complexity.
