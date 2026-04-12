@@ -5,7 +5,7 @@ Since `tsx` grammar currently does not support Angular control flow or directive
 - tooling has clear structural markers to work with,
 - provider declarations are kept separate from the setup and template, while still allowing providers to depend on inputs — but not on variables defined inside the setup.
 
-Note that the entire proposal preserves the concept of declaring inputs, outputs, and similar constructs at the component level, with Angular syncing them and enforcing strict type checking at build time. Additionally, the setup runs only once, at component creation time.
+Note that the entire proposal preserves the concept of declaring inputs, outputs, and similar constructs at the component level, with Angular syncing them and enforcing strict type checking at build time. Interface conformance for bindings and expose is opt-in via `satisfies` — the same structural check that `implements` provides for classes. Additionally, the setup runs only once, at component creation time.
 
 ### Another example
 ```ts
