@@ -295,7 +295,7 @@ export const Button = component({
 ---
 
 ## `app/components/icon-button.ng`
-Wraps `Button` using `component.wrap<typeof Button>()` and `{...rest}` forwarding. The wrapper declares a subset of bindings and forwards the rest via spread.
+Wraps `Button` using `component.wrap<typeof Button>()` and `{...rest}` forwarding. Wrapper `setup` receives wrapped bindings, so local bindings are read via signal calls.
 
 ```ts
 import { component, input } from '@angular/core';
@@ -309,7 +309,7 @@ export const IconButton = component.wrap<typeof Button>({
   setup: ({ icon, label, ...rest }) => ({
     template: (
       <Button {...rest}>
-        {icon} {label}
+        {icon()} {label()}
       </Button>
     ),
   }),

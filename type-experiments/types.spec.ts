@@ -156,10 +156,8 @@ const _highlightColor: InputSignal<string> | undefined = highlightRef()?.color;
 // COMPONENT — wrapper with generic target and spread
 //
 // Explicit opt-in via component.wrap<typeof Target>().
-// Setup receives unwrapped plain values (not signals) so that
-// ...rest can be spread directly onto the target in the template.
-// This is intentionally different from the standard overload:
-// wrapper components forward bindings, they don't own them.
+// setup receives wrapped bindings, same as standard components.
+// ...rest can still be spread directly onto the target in template.
 // ────────────────────────────────────────────────────────────────
 
 const UserDetailWrapper = component.wrap<typeof UserDetail>({
@@ -167,9 +165,14 @@ const UserDetailWrapper = component.wrap<typeof UserDetail>({
     user: input.required<User>(),
   },
   setup: ({ user, ...rest }) => {
-    const _u: User = user;
-    const _r: { email: string; makeAdmin: void; children: void; attachments: HTMLElement } = rest;
-    const other = computed(() => user);
+    const _u: User = user();
+    const _r: {
+      email: ModelSignal<string>;
+      makeAdmin: OutputEmitterRef<void>;
+      children: { readonly __fragment: void };
+      attachments: { readonly __directives: HTMLElement };
+    } = rest;
+    const other = computed(() => user());
     return { template: '...' };
   },
 });
@@ -255,7 +258,7 @@ const WrapperProviders = component.wrap<typeof UserDetail>({
   },
   setup: ({ user, email, makeAdmin, children, attachments }) => ({ template: '...' }),
   providers: (inputs) => {
-    const _user: User = inputs.user;
+    const _user: InputSignal<User> = inputs.user;
     // @ts-expect-error email is model on target, excluded from wrapper providers
     inputs.email;
     // @ts-expect-error makeAdmin is output on target, excluded from wrapper providers

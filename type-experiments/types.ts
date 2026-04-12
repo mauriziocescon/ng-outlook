@@ -121,10 +121,9 @@ type InputsOnly<B> = Pick<B, InputKeys<B>>;
 // component.wrap<typeof Target>(...) — wrapper mode:
 //   bindings are partial and type-checked against Target while
 //   preserving binding kind per key.
-//   setup receives unwrapped plain values so that ...rest can be
-//   spread directly onto Target in the template — the compiler
-//   handles the re-wiring. This is a deliberate trade-off: wrapper
-//   components forward bindings, they don't own them as signals.
+//   setup receives binding wrappers (signals/outputs/etc.), matching
+//   the standard component mental model. Spread forwarding is still
+//   handled at compile time.
 // ────────────────────────────────────────────────────────────────
 
 // Standard
@@ -145,8 +144,8 @@ export namespace component {
   export declare function wrap<C extends ComponentInstance<any, any>, E = void>(config:
     TargetBindings<C> extends Record<string, BindingValue> ? {
       bindings?: Partial<TargetBindings<C>>;
-      setup: (props: Bindings<C>) => { template: any; expose?: E } | { template: any };
-      providers?: (inputs: UnwrapBindings<InputsOnly<TargetBindings<C>>>) => Provider[];
+      setup: (props: TargetBindings<C>) => { template: any; expose?: E } | { template: any };
+      providers?: (inputs: InputsOnly<TargetBindings<C>>) => Provider[];
       style?: string;
       styleUrl?: string;
     } : never

@@ -574,14 +574,14 @@ export const UserDetailConsumer = component({
 
 /**
  * Wrapper mode: component.wrap<typeof Target>({ ... }).
- * setup receives plain values so `...rest` can be forwarded.
+ * setup receives wrapped bindings (same as standard components).
  */
 export const UserDetailWrapper = component.wrap<typeof UserDetail>({
   bindings: {
     user: input.required<User>(),
   },
   setup: ({ user, ...rest }) => {
-    const other = computed(() => /** something depending on user or a default value **/);
+    const other = computed(() => /** something depending on user() or a default value **/);
 
     /**
      * Compile-time unrolling (UserDetail bindings): no real runtime spread + strict types
