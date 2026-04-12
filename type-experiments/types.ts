@@ -120,12 +120,15 @@ type InputsOnly<B> = Pick<B, InputKeys<B>>;
 //
 // Two overloads:
 //
-// Standard — B inferred from bindings, setup receives raw types
-//   (InputSignal, ModelSignal, OutputEmitterRef, …).
+// Standard — B inferred from bindings, setup receives Angular
+//   signal types (InputSignal, ModelSignal, OutputEmitterRef, …).
 //
-// Wrapper — T is explicit (unwrapped types from Bindings<>),
-//   bindings are partial and type-checked against T,
-//   setup receives plain T values for spread forwarding.
+// Wrapper — explicit opt-in via component<Bindings<typeof Target>>.
+//   Bindings are partial and type-checked against the target.
+//   Setup receives unwrapped plain values so that ...rest can be
+//   spread directly onto the target in the template — the compiler
+//   handles the re-wiring. This is a deliberate trade-off: wrapper
+//   components forward bindings, they don't own them as signals.
 // ────────────────────────────────────────────────────────────────
 
 // Standard
@@ -137,7 +140,7 @@ export function component<B extends Record<string, BindingValue>, E = void>(conf
   styleUrl?: string;
 }): ComponentInstance<B, E>;
 
-// Wrapper
+// Wrapper (explicit opt-in — setup receives unwrapped values for spread)
 export function component<T extends Record<string, any>, E = void>(config: {
   bindings: { [K in keyof T]?: BindingOf<T[K]> };
   setup: (props: T) => { template: any; expose?: E } | { template: any };

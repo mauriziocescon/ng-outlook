@@ -312,7 +312,7 @@ export const PriceSimulator = component({
 ```
 
 ## Inputs
-Inputs hoisted to the component level for use in provider initialization:
+Inputs hoisted to the component level for use in provider initialization (`providers` receives only inputs — not models or outputs):
 ```ts
 import { component, linkedSignal, input, WritableSignal, provide, inject } from '@angular/core';
 
@@ -572,15 +572,18 @@ export const UserDetailConsumer = component({
   },
 });
 
-// Bindings<typeof UserDetail>: defines the full set of bindings rest is typed against
+/**
+ * Explicit opt-in via component<Bindings<typeof Target>>.
+ * Setup receives unwrapped plain values (not signals) so that
+ * ...rest can be spread directly onto the target in the template —
+ * the compiler handles the re-wiring.
+ * This is intentionally different from the standard overload:
+ * wrapper components forward bindings, they don't own them.
+ */
 export const UserDetailWrapper = component<Bindings<typeof UserDetail>>({
   bindings: {
     user: input<User>(),
   },
-  /**
-   * rest (spread syntax): captures everything that does not match
-   * the explicitly destructured bindings (like user)
-   */
   setup: ({ user, ...rest }) => {
     const other = computed(() => /** something depending on user or a default value **/);
 
@@ -856,7 +859,8 @@ export const Counter = component({
 - `template reference variables`: likely replaced by `ref`,
 - `queries`: if `ref` covers the use case, they may no longer be needed; if they remain, it would be good to limit their DI capabilities — specifically, preventing `read` of providers from the injector tree (see [`viewChild abuses`](https://stackblitz.com/edit/stackblitz-starters-wkkqtd9j)),
 - multiple `directives` on the same element: similarly, it would be good to prevent directives from injecting each other when applied to the same element (see [`ngModel hijacking`](https://stackblitz.com/edit/stackblitz-starters-ezryrmmy)); instead, interaction should be an explicit template operation using a `ref` passed as an `input`,
-- in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`attachments`, `children`).
+- in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`attachments`, `children`);
+- `interface conformance`: opt-in via `satisfies` on `bindings` and `expose` — the same structural check that `implements` provides for classes.
 
 ### Notes
 - other decorator properties: in this proposal, components and directives expose only `providers` and `setup` entries. However, `@Component` and `@Directive` have many more properties, some of which (like `preserveWhitespaces`) should probably remain. They are not covered here to avoid scope creep;

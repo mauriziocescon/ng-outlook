@@ -100,9 +100,11 @@ const NoExpose = component({
 // ────────────────────────────────────────────────────────────────
 // COMPONENT — wrapper with Bindings<> and spread
 //
-// Bindings<> unwraps raw types to plain values:
-//   InputSignal<User> → User, ModelSignal<string> → string, etc.
-// The wrapper declares a subset of bindings and forwards the rest.
+// Explicit opt-in via component<Bindings<typeof Target>>.
+// Setup receives unwrapped plain values (not signals) so that
+// ...rest can be spread directly onto the target in the template.
+// This is intentionally different from the standard overload:
+// wrapper components forward bindings, they don't own them.
 // ────────────────────────────────────────────────────────────────
 
 const UserDetailWrapper = component<Bindings<typeof UserDetail>>({
