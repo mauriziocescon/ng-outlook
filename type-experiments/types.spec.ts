@@ -273,6 +273,57 @@ const WrapperProviders = component.wrap<typeof UserDetail>({
 });
 
 // ────────────────────────────────────────────────────────────────
+// COMPONENT — defineBindings (see authoring-format.md)
+//
+// Prototype only: validates authoring-time type inference parity.
+// Compiler constraints listed in authoring-format.md are intentionally
+// not enforced by TypeScript alone.
+// ────────────────────────────────────────────────────────────────
+
+const ShortModeParity = component({
+  setup: () => {
+    const { user, email, makeAdmin, children, attachments } = defineBindings({
+      user: input.required<User>(),
+      email: model.required<string>(),
+      makeAdmin: output<void>(),
+      children: fragment<void>(),
+      attachments: directives<HTMLElement>(),
+    });
+
+    const _u: User = user();
+    const _e: string = email();
+    email.set('next');
+    makeAdmin.emit();
+    const _c: void = children.__fragment;
+    const _a: HTMLElement = attachments.__directives;
+
+    return { template: '...' };
+  },
+});
+
+// Optional input parity
+const ShortModeOptional = component({
+  setup: () => {
+    const { count } = defineBindings({
+      count: input<number>(),
+    });
+
+    const _count: number | undefined = count();
+    return { template: '...' };
+  },
+});
+
+// Compiler-only diagnostics (documented in authoring-format.md):
+// - mixing `bindings` and defineBindings in one component
+// - multiple defineBindings calls
+// - defineBindings not top-level in setup
+// - using defineBindings in component.wrap
+// - using defineBindings in a component with providers
+// - duplicate binding keys
+// - declaring reserved framework names explicitly
+// - aliasing/importing defineBindings as userland symbol
+
+// ────────────────────────────────────────────────────────────────
 // DIRECTIVE — host as separate config, expose
 //
 // host is a top-level config property (not a binding) because it
@@ -315,6 +366,27 @@ const buttonOnly = directive({
     const _l: string | undefined = label();
   },
 });
+
+// ────────────────────────────────────────────────────────────────
+// DERIVATION — only inputs, setup returns Signal<T>
+// ────────────────────────────────────────────────────────────────
+
+const simulation = derivation({
+  bindings: {
+    qty: input.required<number>(),
+    item: input.required<Item>(),
+  },
+  setup: ({ qty, item }) => computed(() => item().desc + ' x ' + qty()),
+});
+
+const _simType: { readonly _result: string } = simulation;
+
+// Derivation without bindings
+const simple = derivation({
+  setup: () => computed(() => 42),
+});
+
+const _simpleType: { readonly _result: number } = simple;
 
 // ────────────────────────────────────────────────────────────────
 // REF UTILITIES — ref, refMany, read-only enforcement
@@ -398,27 +470,6 @@ const Parent = component({
 });
 
 // ────────────────────────────────────────────────────────────────
-// DERIVATION — only inputs, setup returns Signal<T>
-// ────────────────────────────────────────────────────────────────
-
-const simulation = derivation({
-  bindings: {
-    qty: input.required<number>(),
-    item: input.required<Item>(),
-  },
-  setup: ({ qty, item }) => computed(() => item().desc + ' x ' + qty()),
-});
-
-const _simType: { readonly _result: string } = simulation;
-
-// Derivation without bindings
-const simple = derivation({
-  setup: () => computed(() => 42),
-});
-
-const _simpleType: { readonly _result: number } = simple;
-
-// ────────────────────────────────────────────────────────────────
 // INJECTION TOKEN — component-level, root-level, multi
 // ────────────────────────────────────────────────────────────────
 
@@ -473,57 +524,6 @@ const _providers = [
   provide({ token: multiToken, useFactory: () => 10 }),
   provide({ token: Store, useFactory: () => new Store() }),
 ];
-
-// ────────────────────────────────────────────────────────────────
-// SHORT MODE IDEA — defineBindings (see authoring-format.md)
-//
-// Prototype only: validates authoring-time type inference parity.
-// Compiler constraints listed in authoring-format.md are intentionally
-// not enforced by TypeScript alone.
-// ────────────────────────────────────────────────────────────────
-
-const ShortModeParity = component({
-  setup: () => {
-    const { user, email, makeAdmin, children, attachments } = defineBindings({
-      user: input.required<User>(),
-      email: model.required<string>(),
-      makeAdmin: output<void>(),
-      children: fragment<void>(),
-      attachments: directives<HTMLElement>(),
-    });
-
-    const _u: User = user();
-    const _e: string = email();
-    email.set('next');
-    makeAdmin.emit();
-    const _c: void = children.__fragment;
-    const _a: HTMLElement = attachments.__directives;
-
-    return { template: '...' };
-  },
-});
-
-// Optional input parity
-const ShortModeOptional = component({
-  setup: () => {
-    const { count } = defineBindings({
-      count: input<number>(),
-    });
-
-    const _count: number | undefined = count();
-    return { template: '...' };
-  },
-});
-
-// Compiler-only diagnostics (documented in authoring-format.md):
-// - mixing `bindings` and defineBindings in one component
-// - multiple defineBindings calls
-// - defineBindings not top-level in setup
-// - using defineBindings in component.wrap
-// - using defineBindings in a component with providers
-// - duplicate binding keys
-// - declaring reserved framework names explicitly
-// - aliasing/importing defineBindings as userland symbol
 
 // ────────────────────────────────────────────────────────────────
 // INTERFACE CONFORMANCE — satisfies on bindings and expose

@@ -103,6 +103,11 @@ type InputsOnly<B> = Pick<B, InputKeys<B>>;
 //   compile-time operation: the compiler unrolls it into individual
 //   bindings on the target, re-wiring each wrapper to the
 //   corresponding target binding. No runtime object spread.
+//
+// defineBindings — alternative authoring shorthand
+//   (see authoring-format.md). This is a typed prototype only.
+//   The real behavior is compiler-driven extraction/hoisting,
+//   not runtime logic.
 // ────────────────────────────────────────────────────────────────
 
 // Standard
@@ -133,6 +138,8 @@ export namespace component {
 
 (component as any).wrap = (config: any) => config;
 
+export declare function defineBindings<B extends Record<string, BindingValue>>(bindings: B): B;
+
 // ────────────────────────────────────────────────────────────────
 // 6. DIRECTIVE
 //
@@ -158,7 +165,27 @@ export function directive<
 }
 
 // ────────────────────────────────────────────────────────────────
-// 7. REF UTILITIES
+// 7. DERIVATION
+//
+// Template-scoped reactive computation. Only InputSignal bindings
+// are allowed (no host, no outputs, no models — a derivation has
+// no DOM surface). setup must return Signal<T>.
+// ────────────────────────────────────────────────────────────────
+
+export type DerivationInstance<B, T> = {
+  bindings: B;
+  readonly _result: T;
+};
+
+export function derivation<B extends Record<string, InputSignal<any>>, T>(config: {
+  bindings?: B;
+  setup: (props: B) => Signal<T>;
+}): DerivationInstance<B, T> {
+  return config as any;
+}
+
+// ────────────────────────────────────────────────────────────────
+// 8. REF UTILITIES
 //
 // ref()  — single instance, resolves after afterNextRender.
 // refMany() — multiple instances (e.g. inside @for).
@@ -186,35 +213,6 @@ export function refMany<T extends ComponentInstance<any, any> | DirectiveInstanc
 export function refMany(_type?: any): any {
   return {} as any;
 }
-
-// ────────────────────────────────────────────────────────────────
-// 8. DERIVATION
-//
-// Template-scoped reactive computation. Only InputSignal bindings
-// are allowed (no host, no outputs, no models — a derivation has
-// no DOM surface). setup must return Signal<T>.
-// ────────────────────────────────────────────────────────────────
-
-export type DerivationInstance<B, T> = {
-  bindings: B;
-  readonly _result: T;
-};
-
-export function derivation<B extends Record<string, InputSignal<any>>, T>(config: {
-  bindings?: B;
-  setup: (props: B) => Signal<T>;
-}): DerivationInstance<B, T> {
-  return config as any;
-}
-
-// ────────────────────────────────────────────────────────────────
-// 8.1 SHORT MODE IDEA (see authoring-format.md)
-//
-// This is a typed prototype only. The real behavior is compiler-
-// driven extraction/hoisting, not runtime logic.
-// ────────────────────────────────────────────────────────────────
-
-export declare function defineBindings<B extends Record<string, BindingValue>>(bindings: B): B;
 
 // ────────────────────────────────────────────────────────────────
 // 9. INJECTION TOKEN
