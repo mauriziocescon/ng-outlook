@@ -876,7 +876,7 @@ Pros:
 - familiar enough,
 - not subject to typical single-file component (SFC) limitations,
 - enforces a strict structure,
-- AI agent-friendly: co-located templates with clear structural markers (`component`, `directive`, `derivation`, `fragment`) and lexical scoping give agents unambiguous context boundaries to reason about, generate, and refactor code,
+- AI agent-friendly,
 - no `splitProps` drama 😅.
 
 Cons:
