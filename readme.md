@@ -575,6 +575,11 @@ export const UserDetailConsumer = component({
 /**
  * Wrapper mode: component.wrap<typeof Target>({ ... }).
  * setup receives wrapped bindings (same as standard components).
+ *
+ * {...rest} is a compile-time operation: the compiler statically
+ * unrolls the spread into individual bindings on the target,
+ * re-wiring each binding wrapper (InputSignal, ModelSignal, etc.)
+ * to the corresponding target binding. No runtime object spread.
  */
 export const UserDetailWrapper = component.wrap<typeof UserDetail>({
   bindings: {
@@ -583,9 +588,6 @@ export const UserDetailWrapper = component.wrap<typeof UserDetail>({
   setup: ({ user, ...rest }) => {
     const other = computed(() => /** something depending on user() or a default value **/);
 
-    /**
-     * Compile-time unrolling (UserDetail bindings): no real runtime spread + strict types
-     */
     return {
       template: (
         <UserDetail {...rest} user={other()} />

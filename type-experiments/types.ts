@@ -122,8 +122,10 @@ type InputsOnly<B> = Pick<B, InputKeys<B>>;
 //   bindings are partial and type-checked against Target while
 //   preserving binding kind per key.
 //   setup receives binding wrappers (signals/outputs/etc.), matching
-//   the standard component mental model. Spread forwarding is still
-//   handled at compile time.
+//   the standard component mental model. {...rest} spread is a
+//   compile-time operation: the compiler unrolls it into individual
+//   bindings on the target, re-wiring each wrapper to the
+//   corresponding target binding. No runtime object spread.
 // ────────────────────────────────────────────────────────────────
 
 // Standard

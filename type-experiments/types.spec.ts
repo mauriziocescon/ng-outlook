@@ -157,7 +157,8 @@ const _highlightColor: InputSignal<string> | undefined = highlightRef()?.color;
 //
 // Explicit opt-in via component.wrap<typeof Target>().
 // setup receives wrapped bindings, same as standard components.
-// ...rest can still be spread directly onto the target in template.
+// {...rest} spread is compile-time: the compiler unrolls it into
+// individual bindings on the target. No runtime object spread.
 // ────────────────────────────────────────────────────────────────
 
 const UserDetailWrapper = component.wrap<typeof UserDetail>({
