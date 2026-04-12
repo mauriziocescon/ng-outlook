@@ -345,6 +345,13 @@ const manyChildren = refMany(Child);
 const _manyType: Ref<{ text: Signal<string> }[]> = manyChildren;
 const _manyAsSignal: Signal<{ text: Signal<string> }[]> = manyChildren;
 
+// refMany without expose
+const manyNoExpose = refMany(NoExpose);
+const _manyNoExposeType: Ref<undefined[]> = manyNoExpose;
+
+const manyRipple = refMany(ripple);
+const _manyRippleType: Ref<undefined[]> = manyRipple;
+
 // Refs are read-only — .set() must not exist
 // @ts-expect-error
 divRef.set(document.createElement('div'));

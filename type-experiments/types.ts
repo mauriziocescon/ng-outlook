@@ -203,7 +203,7 @@ export function ref(_type?: any): any {
 // Component or Directive (expose inferred)
 export function refMany<T extends ComponentInstance<any, any> | DirectiveInstance<any, any, any>>(
   type: T
-): Ref<ExposeOf<T> extends void ? never[] : ExposeOf<T>[]>;
+): Ref<ExposeOf<T> extends void ? undefined[] : ExposeOf<T>[]>;
 
 export function refMany(_type?: any): any {
   return {} as any;

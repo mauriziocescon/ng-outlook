@@ -573,12 +573,8 @@ export const UserDetailConsumer = component({
 });
 
 /**
- * Explicit opt-in via component.wrap<typeof Target>({ ... }).
- * Setup receives unwrapped plain values (not signals) so that
- * ...rest can be spread directly onto the target in the template —
- * the compiler handles the re-wiring.
- * This is intentionally different from the standard overload:
- * wrapper components forward bindings, they don't own them.
+ * Wrapper mode: component.wrap<typeof Target>({ ... }).
+ * setup receives plain values so `...rest` can be forwarded.
  */
 export const UserDetailWrapper = component.wrap<typeof UserDetail>({
   bindings: {
@@ -633,10 +629,7 @@ export const ButtonConsumer = component({
 
     function doSomething() {/** ... **/}
 
-    /**
-     * Can pass down selected attributes (either static or bound)
-     * and event listeners
-     */
+    // Pass selected attributes and events.
     return {
       template: (
         <Button
@@ -670,9 +663,7 @@ export const Button = component({
   setup: ({ type, class: className, style, disabled, click, children, attachments }) => {
     const innerStyle = computed(() => `${style()}; color: red;`);
 
-    /**
-     * Forwards explicit bindings plus attached directives
-     */
+    // Forward explicit bindings + attached directives.
     return {
       template: (
         <button
@@ -693,7 +684,7 @@ export const Button = component({
 ## Expose and Template ref
 `expose` defines the public interface — the only part of `setup()` accessible via `ref`. Components return it alongside `template`; directives return it directly (no template). The directive's `host` is declared as `ref<HTMLElement>()` at the directive config level and is passed to setup as a second context argument. It resolves in `afterNextRender`.
 
-`ref(Type)` → `Signal<expose | undefined>`, bound via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` bindings. `refMany(Type)` → `Signal<expose[]>` for multiple instances. Both resolve after `afterNextRender`. Refs can also be passed as inputs — keeping component interactions explicit and visible at the template level.
+`ref(Type)` → `Signal<expose | undefined>` and `refMany(Type)` → `Signal<expose[]>`. Without `expose`, they resolve to `Signal<undefined>` and `Signal<undefined[]>`. Bind with `ref={...}` (elements/components) or `:ref={...}` (`use:`), and read after `afterNextRender`.
 
 ```ts
 import { component, ref, refMany, signal, input, afterNextRender, Signal } from '@angular/core';
