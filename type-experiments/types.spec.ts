@@ -1,6 +1,8 @@
 import {
   type Signal,
   type InputSignal,
+  type ModelSignal,
+  type OutputEmitterRef,
   signal,
   computed,
   input,
@@ -10,6 +12,7 @@ import {
 } from '@angular/core';
 
 import {
+  type BindingValue,
   type Bindings,
   type Ref,
   type InjectionToken,
@@ -373,3 +376,164 @@ const _providers = [
   provide({ token: multiToken, useFactory: () => 10 }),
   provide({ token: Store, useFactory: () => new Store() }),
 ];
+
+// ────────────────────────────────────────────────────────────────
+// INTERFACE CONFORMANCE — satisfies on bindings and expose
+//
+// Opt-in structural check, same as class implements:
+// the developer chooses to add satisfies, TS validates the shape.
+//
+// satisfies applies excess-property checking on object literals,
+// so the interface must cover all keys in the object — or use
+// an intersection with Record<string, BindingValue> to allow
+// extra keys.
+// ────────────────────────────────────────────────────────────────
+
+// -- Bindings conformance: component --------------
+
+interface Sortable {
+  sortKey: InputSignal<string>;
+  sortDirection: InputSignal<'asc' | 'desc'>;
+}
+
+// Exact match: all bindings are in the interface
+const SortableTable = component({
+  bindings: {
+    sortKey: input.required<string>(),
+    sortDirection: input.required<'asc' | 'desc'>(),
+  } satisfies Sortable,
+  setup: ({ sortKey, sortDirection }) => ({ template: '...' }),
+});
+
+// Extra bindings: interface + Record allows additional keys
+const SortableTableExtra = component({
+  bindings: {
+    sortKey: input.required<string>(),
+    sortDirection: input.required<'asc' | 'desc'>(),
+    pageSize: input<number>(),
+  } satisfies Sortable & Record<string, BindingValue>,
+  setup: ({ sortKey, sortDirection, pageSize }) => ({ template: '...' }),
+});
+
+// -- Bindings conformance: multiple interfaces ----
+
+interface Paginated {
+  page: InputSignal<number>;
+  pageSize: InputSignal<number>;
+}
+
+const SortablePaginatedTable = component({
+  bindings: {
+    sortKey: input.required<string>(),
+    sortDirection: input.required<'asc' | 'desc'>(),
+    page: input.required<number>(),
+    pageSize: input.required<number>(),
+  } satisfies Sortable & Paginated,
+  setup: ({ sortKey, sortDirection, page, pageSize }) => ({ template: '...' }),
+});
+
+// -- Bindings conformance: directive --------------
+
+interface Dismissable {
+  message: InputSignal<string>;
+  dismiss: OutputEmitterRef<void>;
+}
+
+const dismissableTooltip = directive({
+  host: ref<HTMLElement>(),
+  bindings: {
+    message: input.required<string>(),
+    dismiss: output<void>(),
+  } satisfies Dismissable,
+  setup: ({ message, dismiss }, { host }) => {},
+});
+
+// -- Bindings conformance: derivation -------------
+
+interface QuantityBound {
+  qty: InputSignal<number>;
+  item: InputSignal<Item>;
+}
+
+const quantityDerivation = derivation({
+  bindings: {
+    qty: input.required<number>(),
+    item: input.required<Item>(),
+  } satisfies QuantityBound,
+  setup: ({ qty, item }) => computed(() => qty() * 2),
+});
+
+// -- Expose conformance: component ----------------
+
+interface Toggleable {
+  toggle: () => void;
+  isOpen: Signal<boolean>;
+}
+
+const Accordion = component({
+  setup: () => {
+    const open = signal(false);
+
+    return {
+      template: '...',
+      expose: {
+        toggle: () => open.update(v => !v),
+        isOpen: open.asReadonly(),
+      } satisfies Toggleable,
+    };
+  },
+});
+
+// ref infers expose correctly through satisfies
+const accordionRef = ref(Accordion);
+const _accordionRefType: Ref<Toggleable | undefined> = accordionRef;
+
+// -- Expose conformance: directive ----------------
+
+const toggleDirective = directive({
+  host: ref<HTMLElement>(),
+  setup: (_props, { host }) => {
+    const open = signal(false);
+
+    return {
+      toggle: () => open.update(v => !v),
+      isOpen: open.asReadonly(),
+    } satisfies Toggleable;
+  },
+});
+
+const toggleDirRef = ref(toggleDirective);
+const _toggleDirRefType: Ref<Toggleable | undefined> = toggleDirRef;
+
+// -- Negative: missing key in bindings ------------
+
+const _NegMissingKey = component({
+  bindings: {
+    sortKey: input.required<string>(),
+    // @ts-expect-error sortDirection is missing from Sortable
+  } satisfies Sortable,
+  setup: ({ sortKey }) => ({ template: '...' }),
+});
+
+// -- Negative: wrong type in bindings -------------
+
+const _NegWrongBindingType = component({
+  bindings: {
+    sortKey: input.required<string>(),
+    // @ts-expect-error sortDirection should be InputSignal<'asc' | 'desc'>, not InputSignal<number>
+    sortDirection: input<number>(),
+  } satisfies Sortable,
+  setup: ({ sortKey, sortDirection }) => ({ template: '...' }),
+});
+
+// -- Negative: missing key in expose --------------
+
+const _NegMissingExpose = component({
+  setup: () => ({
+    template: '...',
+    expose: {
+      toggle: () => {},
+      // @ts-expect-error isOpen is missing from Toggleable
+    } satisfies Toggleable,
+  }),
+});
