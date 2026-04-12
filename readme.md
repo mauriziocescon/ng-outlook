@@ -197,18 +197,16 @@ export const TextSearch = component({
 import { directive, ref, input, output, inject, DestroyRef, Renderer2, afterRenderEffect } from '@angular/core';
 
 export const tooltip = directive({
+  /**
+   * Host element constraint, resolved by the framework.
+   * Determines which elements this directive can be applied to.
+   */
+  host: ref<HTMLElement>(),
   bindings: {
-    /**
-     * Ref to the host element, constrained to HTMLElement.
-     *
-     * Ref provided by ng (not bindable directly)
-     * Name reserved to ng
-     */
-    host: ref<HTMLElement>(),
     message: input.required<string>(),
     dismiss: output<void>(),
   },
-  setup: ({ host, message, dismiss }) => {
+  setup: ({ message, dismiss }, { host }) => {
     const destroyRef = inject(DestroyRef);
     const renderer = inject(Renderer2);
 
@@ -681,7 +679,7 @@ export const Button = component<HTMLButtonAttributes>({
 ```
 
 ## Expose and Template ref
-`expose` defines the public interface — the only part of `setup()` accessible via `ref`. Components return it alongside `template`; directives return it directly (no template). The directive's `host` is declared as `ref<HTMLElement>()` in bindings — a framework-provided, non-bindable reserved name — and resolves in `afterNextRender`.
+`expose` defines the public interface — the only part of `setup()` accessible via `ref`. Components return it alongside `template`; directives return it directly (no template). The directive's `host` is declared as `ref<HTMLElement>()` at the directive config level and is passed to setup as a second context argument. It resolves in `afterNextRender`.
 
 `ref(Type)` → `Signal<expose | undefined>`, bound via `ref={signal}` on elements and components, or `:ref={signal}` on `use:` bindings. `refMany(Type)` → `Signal<expose[]>` for multiple instances. Both resolve after `afterNextRender`. Refs can also be passed as inputs — keeping component interactions explicit and visible at the template level.
 
@@ -854,11 +852,11 @@ export const Counter = component({
 - `event delegation`: not explicitly considered, but it could fit as "special attributes" (`onClick`, ...) similarly to [Solid events](https://docs.solidjs.com/concepts/components/event-handlers),
 - `@let`: unchanged,
 - `directives` attached to the host (components): no longer possible, but directives can be passed in and spread onto elements,
-- `directive` types: since `host` is declared as a typed `ref` in bindings, static type checking is built in — directives can only be applied to compatible elements,
+- `directive` types: since `host` is declared as a typed `ref` at the directive config level, static type checking is built in — directives can only be applied to compatible elements,
 - `template reference variables`: likely replaced by `ref`,
 - `queries`: if `ref` covers the use case, they may no longer be needed; if they remain, it would be good to limit their DI capabilities — specifically, preventing `read` of providers from the injector tree (see [`viewChild abuses`](https://stackblitz.com/edit/stackblitz-starters-wkkqtd9j)),
 - multiple `directives` on the same element: similarly, it would be good to prevent directives from injecting each other when applied to the same element (see [`ngModel hijacking`](https://stackblitz.com/edit/stackblitz-starters-ezryrmmy)); instead, interaction should be an explicit template operation using a `ref` passed as an `input`,
-- in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`host`, `attachments`, `children`).
+- in general, the practice of injecting components or directives into each other should be restricted, as it introduces indirection and complexity; the trade-off is that some Angular-reserved names are necessary (`attachments`, `children`).
 
 ### Notes
 - other decorator properties: in this proposal, components and directives expose only `providers` and `setup` entries. However, `@Component` and `@Directive` have many more properties, some of which (like `preserveWhitespaces`) should probably remain. They are not covered here to avoid scope creep;

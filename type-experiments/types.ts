@@ -27,7 +27,7 @@ export declare function directives<T extends HTMLElement>(): DirectivesBinding<T
 // with a branded symbol so the template compiler can distinguish
 // ref targets from regular signals.
 //
-// Also used as a directive host binding: host: ref<HTMLElement>().
+// Also used as the directive host declaration: host: ref<H>().
 // ────────────────────────────────────────────────────────────────
 
 declare const REF_SLOT: unique symbol;
@@ -47,7 +47,6 @@ export interface Ref<T> extends Signal<T> {
 //   OutputEmitterRef<void> → void
 //   FragmentBinding<void> → void
 //   DirectivesBinding<HTMLElement> → HTMLElement
-//   Ref<HTMLElement | undefined> → HTMLElement | undefined
 //
 // BindingOf<V> — the inverse: given an unwrapped type V, which
 //   binding wrappers could hold it? Used by the wrapper component
@@ -59,8 +58,7 @@ export type BindingValue =
   | ModelSignal<any>
   | OutputEmitterRef<any>
   | FragmentBinding<any>
-  | DirectivesBinding<any>
-  | Ref<any>;
+  | DirectivesBinding<any>;
 
 type Unwrap<T> =
   T extends OutputEmitterRef<infer U> ? U :
@@ -76,17 +74,16 @@ type BindingOf<V> =
   | ModelSignal<V> | ModelSignal<V | undefined>
   | OutputEmitterRef<V>
   | FragmentBinding<V>
-  | DirectivesBinding<V & HTMLElement>
-  | Ref<V>;
+  | DirectivesBinding<V & HTMLElement>;
 
 // ────────────────────────────────────────────────────────────────
 // 4. INSTANCE TYPES & SHARED HELPERS
 //
-// Both share _expose, but DirectiveInstance requires a `host`
-// binding (Ref<H | undefined>) — a directive must be attached
-// to a DOM element. ComponentInstance has no such constraint.
+// ComponentInstance has bindings + expose.
+// DirectiveInstance adds a host element type (H) — a directive
+// must be attached to a DOM element.
 //
-// A single ExposeOf<T> works for both thanks to structural match.
+// ExposeOf<T> works for both thanks to structural match on _expose.
 //
 // InputsOnly<B> filters a bindings record to InputSignal keys
 // only (excluding ModelSignal, which extends InputSignal in
@@ -98,7 +95,8 @@ export type ComponentInstance<B, E = void> = {
   readonly _expose: E;
 };
 
-export type DirectiveInstance<B extends { host: Ref<any> }, E = void> = {
+export type DirectiveInstance<H extends HTMLElement, B, E = void> = {
+  readonly _host: H;
   bindings: B;
   readonly _expose: E;
 };
@@ -155,16 +153,24 @@ export function component(config: any): any {
 // ────────────────────────────────────────────────────────────────
 // 6. DIRECTIVE
 //
-// Single-call, all generics inferred. The host element is declared
-// inside bindings as ref<H>() — no separate generic needed.
-// bindings is required and must include host: ref<H>().
-// setup receives raw binding types and returns the expose object.
+// Single-call, all generics inferred:
+//   H from host, B from bindings, E from setup return.
+//
+// host is a separate config property — not a binding — because
+// it is framework-provided context, not something the consumer
+// can bind to. setup receives bindings as the first argument and
+// { host } as the second.
 // ────────────────────────────────────────────────────────────────
 
-export function directive<B extends Record<string, BindingValue> & { host: Ref<any> }, E = void>(config: {
-  bindings: B;
-  setup: (props: B) => E;
-}): DirectiveInstance<B, E> {
+export function directive<
+  H extends HTMLElement,
+  B extends Record<string, BindingValue>,
+  E = void,
+>(config: {
+  host: Ref<H | undefined>;
+  bindings?: B;
+  setup: (props: B, context: { host: Ref<H | undefined> }) => E;
+}): DirectiveInstance<H, B, E> {
   return config as any;
 }
 
@@ -181,7 +187,7 @@ export function directive<B extends Record<string, BindingValue> & { host: Ref<a
 // Native element
 export function ref<H extends HTMLElement>(): Ref<H | undefined>;
 // Component or Directive (expose inferred)
-export function ref<T extends ComponentInstance<any, any> | DirectiveInstance<any, any>>(
+export function ref<T extends ComponentInstance<any, any> | DirectiveInstance<any, any, any>>(
   type: T
 ): Ref<ExposeOf<T> extends void ? undefined : ExposeOf<T> | undefined>;
 
@@ -190,7 +196,7 @@ export function ref(_type?: any): any {
 }
 
 // Component or Directive (expose inferred)
-export function refMany<T extends ComponentInstance<any, any> | DirectiveInstance<any, any>>(
+export function refMany<T extends ComponentInstance<any, any> | DirectiveInstance<any, any, any>>(
   type: T
 ): Ref<ExposeOf<T> extends void ? never[] : ExposeOf<T>[]>;
 

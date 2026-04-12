@@ -180,20 +180,21 @@ const WithMixed = component({
 });
 
 // ────────────────────────────────────────────────────────────────
-// DIRECTIVE — host as ref, expose
+// DIRECTIVE — host as separate config, expose
 //
-// host: ref<H>() is required in bindings.
-// setup receives raw binding types and returns the expose object.
+// host is a top-level config property (not a binding) because it
+// is framework-provided context, not consumer-bindable.
+// setup receives bindings as first arg, { host } as second.
 // ────────────────────────────────────────────────────────────────
 
 // Directive with expose
 const tooltip = directive({
+  host: ref<HTMLElement>(),
   bindings: {
-    host: ref<HTMLElement>(),
     message: input.required<string>(),
     dismiss: output<void>(),
   },
-  setup: ({ host, message, dismiss }) => {
+  setup: ({ message, dismiss }, { host }) => {
     const _hostEl: Ref<HTMLElement | undefined> = host;
     const _msg: string = message();
     dismiss.emit();
@@ -202,42 +203,24 @@ const tooltip = directive({
   },
 });
 
-// Directive without expose
+// Directive without bindings
 const ripple = directive({
-  bindings: {
-    host: ref<HTMLElement>(),
-  },
-  setup: ({ host }) => {
+  host: ref<HTMLElement>(),
+  setup: (_props, { host }) => {
     const _hostEl: Ref<HTMLElement | undefined> = host;
   },
 });
 
 // Host type constraint: narrows to specific element type
 const buttonOnly = directive({
+  host: ref<HTMLButtonElement>(),
   bindings: {
-    host: ref<HTMLButtonElement>(),
     label: input<string>(),
   },
-  setup: ({ host, label }) => {
+  setup: ({ label }, { host }) => {
     const _hostEl: Ref<HTMLButtonElement | undefined> = host;
     const _l: string | undefined = label();
   },
-});
-
-// Directive must have host binding
-const _NegNoHost = directive({
-  // @ts-expect-error missing host in bindings
-  bindings: {
-    message: input.required<string>(),
-  },
-  setup: ({ message }) => {},
-});
-
-// Directive must have host binding — empty bindings
-const _NegEmptyBindings = directive({
-  // @ts-expect-error missing host in bindings
-  bindings: {},
-  setup: () => {},
 });
 
 // ────────────────────────────────────────────────────────────────

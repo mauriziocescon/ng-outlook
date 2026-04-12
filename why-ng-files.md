@@ -21,11 +21,11 @@ export interface Item {
 }
 
 const tooltip = directive({
+  host: ref<HTMLElement>(),
   bindings: {
-    host: ref<HTMLElement>(),
     message: input.required<string>(),
   },
-  setup: ({ host, message }) => {
+  setup: ({ message }, { host }) => {
     const renderer = inject(Renderer2);
 
     afterRenderEffect(() => {
