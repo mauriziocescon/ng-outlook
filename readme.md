@@ -870,8 +870,9 @@ Pros:
 - familiar enough,
 - not subject to typical single-file component (SFC) limitations,
 - enforces a strict structure,
+- AI agent-friendly: co-located templates with clear structural markers (`component`, `directive`, `derivation`, `fragment`) and lexical scoping give agents unambiguous context boundaries to reason about, generate, and refactor code,
 - no `splitProps` drama 😅.
 
 Cons:
 - noticeable repetition in how bindings are declared and consumed,
-- creates a wider gap from plain TypeScript.
+- not plain TypeScript.
