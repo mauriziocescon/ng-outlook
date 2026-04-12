@@ -1,7 +1,7 @@
 # Claude code
 ## Prompt:
 
-In readme.md and why-ng-files.md, I drafted a possible evolution of Angular's template syntax and proposed a new authoring format.
+In readme.md and authoring-format.md, I drafted a possible evolution of Angular's template syntax and proposed a new authoring format.
 
 Based on those files and current Angular best practices, could you create a sample application that showcases all the concepts introduced? Please keep CSS to a minimum and output everything in a single .md file.
 

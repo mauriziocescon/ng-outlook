@@ -3,7 +3,7 @@
 
 Using:
 - Angular Signal Forms (https://github.com/angular/angular/tree/main/packages/forms/signals)
-- The proposed new authoring format described in readme.md and why-ng-files.md
+- The proposed new authoring format described in readme.md and authoring-format.md
 
 Could you create a few form-related components that integrate seamlessly with this setup?
 

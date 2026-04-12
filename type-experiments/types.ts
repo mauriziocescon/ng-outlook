@@ -230,6 +230,15 @@ export function derivation<B extends Record<string, InputSignal<any>>, T>(config
 }
 
 // ────────────────────────────────────────────────────────────────
+// 8.1 SHORT MODE IDEA (see authoring-format.md)
+//
+// This is a typed prototype only. The real behavior is compiler-
+// driven extraction/hoisting, not runtime logic.
+// ────────────────────────────────────────────────────────────────
+
+export declare function defineBindings<B extends Record<string, BindingValue>>(bindings: B): B;
+
+// ────────────────────────────────────────────────────────────────
 // 9. INJECTION TOKEN
 //
 // Three flavours:
