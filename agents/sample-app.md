@@ -23,8 +23,8 @@ app/
 │   ├── currency.ng                derivation with LOCALE_ID + CurrencyCodeToken
 │   └── filter.ng                  derivation with SearchConfigToken
 ├── components/
-│   ├── button.ng                  attachments, HTMLButtonAttributes, children
-│   ├── icon-button.ng             Bindings<T>, component wrapping
+│   ├── button.ng                  attachments, explicit native bindings, children
+│   ├── icon-button.ng             component.wrap<typeof T>, component wrapping
 │   ├── badge.ng                   simple display component
 │   ├── card.ng                    children fragment
 │   ├── search-bar.ng              model:, ref expose
@@ -249,14 +249,15 @@ export const filter = derivation({
 ---
 
 ## `app/components/button.ng`
-A component with `attachments` (directives spread), `children` fragment, and native element wrapping via `HTMLButtonAttributes`. `...rest` is destructured from props — not from a second context argument.
+A component with `attachments` (directives spread), `children` fragment, and explicit native-element bindings.
 
 ```ts
 import { component, input, output, computed, fragment, directives } from '@angular/core';
-import { HTMLButtonAttributes } from '@angular/core/elements';
 
-export const Button = component<HTMLButtonAttributes>({
+export const Button = component({
   bindings: {
+    type: input<'button' | 'submit' | 'reset'>('button'),
+    class: input<string>(''),
     style: input<string>(''),
     disabled: input<boolean>(false),
     variant: input<'primary' | 'ghost'>('primary'),
@@ -264,14 +265,15 @@ export const Button = component<HTMLButtonAttributes>({
     children: fragment<void>(),
     attachments: directives<HTMLButtonElement>(),
   },
-  setup: ({ style, disabled, variant, click, children, attachments, ...rest }) => {
+  setup: ({ type, class: className, style, disabled, variant, click, children, attachments }) => {
     const innerStyle = computed(() => `${style()}; `);
 
     return {
       template: (
         <button
           {...attachments()}
-          {...rest}
+          type={type()}
+          class={className()}
           style={innerStyle()}
           class:primary={variant() === 'primary'}
           class:ghost={variant() === 'ghost'}
@@ -293,13 +295,13 @@ export const Button = component<HTMLButtonAttributes>({
 ---
 
 ## `app/components/icon-button.ng`
-Wraps `Button` using `Bindings<typeof Button>` and `{...rest}` forwarding. The wrapper declares a subset of bindings and forwards the rest via spread.
+Wraps `Button` using `component.wrap<typeof Button>()` and `{...rest}` forwarding. The wrapper declares a subset of bindings and forwards the rest via spread.
 
 ```ts
-import { component, input, Bindings } from '@angular/core';
+import { component, input } from '@angular/core';
 import { Button } from './button.ng';
 
-export const IconButton = component<Bindings<typeof Button>>({
+export const IconButton = component.wrap<typeof Button>({
   bindings: {
     icon: input.required<string>(),
     label: input.required<string>(),
@@ -307,7 +309,7 @@ export const IconButton = component<Bindings<typeof Button>>({
   setup: ({ icon, label, ...rest }) => ({
     template: (
       <Button {...rest}>
-        {icon()} {label()}
+        {icon} {label}
       </Button>
     ),
   }),
@@ -674,8 +676,8 @@ export const AppPage = component({
 | `children` fragment (implicit) | `card.ng`, `button.ng` |
 | Named/typed fragment + `@fragment` inline | `product-list.ng`, `catalog-page.ng` |
 | `attachments` + `directives` spread | `button.ng` |
-| `Bindings<typeof T>` + `{...rest}` component wrapping | `icon-button.ng` |
-| `HTMLButtonAttributes` + `{...rest}` native wrapping | `button.ng` |
+| `component.wrap<typeof T>` + `{...rest}` component wrapping | `icon-button.ng` |
+| Explicit native bindings + `attachments` forwarding | `button.ng` |
 | Dynamic components | `app-page.ng` |
 | `ref` + `refMany` + `afterNextRender` | `search-bar.ng` (internal), `catalog-page.ng` |
 | `expose` | `search-bar.ng`, `product-card.ng` |
