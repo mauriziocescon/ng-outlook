@@ -97,6 +97,61 @@ const NoExpose = component({
 });
 
 // ────────────────────────────────────────────────────────────────
+// COMPONENT — expose with inputs
+//
+// Inputs can be surfaced directly through expose, making them
+// accessible via ref. Since InputSignal<T> extends Signal<T>,
+// they are naturally read-only.
+// ────────────────────────────────────────────────────────────────
+
+const ExposedInput = component({
+  bindings: {
+    name: input.required<string>(),
+    age: input<number>(),
+  },
+  setup: ({ name, age }) => ({
+    template: '...',
+    expose: { name, age },
+  }),
+});
+
+const exposedInputRef = ref(ExposedInput);
+const _exposedName: InputSignal<string> | undefined = exposedInputRef()?.name;
+const _exposedAge: InputSignal<number | undefined> | undefined = exposedInputRef()?.age;
+
+// Mixed: inputs + local signals in expose
+const MixedExpose = component({
+  bindings: {
+    label: input.required<string>(),
+    count: model<number>(),
+  },
+  setup: ({ label, count }) => {
+    const doubled = computed(() => (count() ?? 0) * 2);
+
+    return {
+      template: '...',
+      expose: { label, doubled },
+    };
+  },
+});
+
+const mixedRef = ref(MixedExpose);
+const _mixedLabel: InputSignal<string> | undefined = mixedRef()?.label;
+const _mixedDoubled: Signal<number> | undefined = mixedRef()?.doubled;
+
+// Directive exposing its input
+const highlight = directive({
+  host: ref<HTMLElement>(),
+  bindings: {
+    color: input.required<string>(),
+  },
+  setup: ({ color }, { host }) => ({ color }),
+});
+
+const highlightRef = ref(highlight);
+const _highlightColor: InputSignal<string> | undefined = highlightRef()?.color;
+
+// ────────────────────────────────────────────────────────────────
 // COMPONENT — wrapper with generic target and spread
 //
 // Explicit opt-in via component.wrap<typeof Target>().
