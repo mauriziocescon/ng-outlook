@@ -125,12 +125,13 @@ export const AnalyticsHandlerToken = injectionToken('analytics', {
 ---
 
 ## `app/directives/tooltip.ng`
-A directive that attaches a tooltip to any DOM element.
+A directive that attaches a tooltip to any DOM element. `host` is a top-level config property (not a binding) — it is framework-provided context, not consumer-bindable. `setup` receives bindings as the first argument and `{ host }` as the second.
 
 ```ts
-import { directive, input, output, inject, DestroyRef, afterRenderEffect } from '@angular/core';
+import { directive, ref, input, output, inject, DestroyRef, afterRenderEffect } from '@angular/core';
 
-export const tooltip = directive<HTMLElement>({
+export const tooltip = directive({
+  host: ref<HTMLElement>(),
   bindings: {
     message: input.required<string>(),
     dismiss: output<void>(),
@@ -140,9 +141,9 @@ export const tooltip = directive<HTMLElement>({
     let tooltipEl: HTMLElement | null = null;
 
     afterRenderEffect(() => {
-      const hostEl = host(); // host is Signal<HTMLElement>
+      const hostEl: HTMLElement | undefined = host();
       tooltipEl?.remove();
-      if (!message()) return;
+      if (!hostEl || !message()) return;
 
       tooltipEl = document.createElement('span');
       tooltipEl.textContent = message();
@@ -166,18 +167,18 @@ export const tooltip = directive<HTMLElement>({
 A directive using the `:when` modifier to conditionally apply itself.
 
 ```ts
-import { directive, input, afterRenderEffect } from '@angular/core';
+import { directive, ref, input, afterRenderEffect } from '@angular/core';
 
-export const highlight = directive<HTMLElement>({
+export const highlight = directive({
+  host: ref<HTMLElement>(),
   bindings: {
     color: input<string>('yellow'),
   },
   setup: ({ color }, { host }) => {
     afterRenderEffect(() => {
-      host().style.backgroundColor = color(); // host is Signal<HTMLElement>
+      const hostEl: HTMLElement | undefined = host();
+      if (hostEl) hostEl.style.backgroundColor = color();
     });
-
-    return {};
   },
 });
 ```
@@ -248,33 +249,39 @@ export const filter = derivation({
 ---
 
 ## `app/components/button.ng`
-A component with `attachments` (directives spread), `children` fragment, and native element wrapping via `HTMLButtonAttributes`.
+A component with `attachments` (directives spread), `children` fragment, and native element wrapping via `HTMLButtonAttributes`. `...rest` is destructured from props — not from a second context argument.
 
 ```ts
-import { component, input, output, fragment, directives } from '@angular/core';
+import { component, input, output, computed, fragment, directives } from '@angular/core';
 import { HTMLButtonAttributes } from '@angular/core/elements';
 
 export const Button = component<HTMLButtonAttributes>({
   bindings: {
+    style: input<string>(''),
     disabled: input<boolean>(false),
     variant: input<'primary' | 'ghost'>('primary'),
     click: output<void>(),
     children: fragment<void>(),
     attachments: directives<HTMLButtonElement>(),
   },
-  setup: ({ disabled, variant, click, children, attachments }, { rest }) => ({
-    template: (
-      <button
-        {...attachments()}
-        {...rest}
-        class:primary={variant() === 'primary'}
-        class:ghost={variant() === 'ghost'}
-        disabled={disabled()}
-        on:click={() => click.emit()}>
-          @render(children())
-      </button>
-    ),
-  }),
+  setup: ({ style, disabled, variant, click, children, attachments, ...rest }) => {
+    const innerStyle = computed(() => `${style()}; `);
+
+    return {
+      template: (
+        <button
+          {...attachments()}
+          {...rest}
+          style={innerStyle()}
+          class:primary={variant() === 'primary'}
+          class:ghost={variant() === 'ghost'}
+          disabled={disabled()}
+          on:click={() => click.emit()}>
+            @render(children())
+        </button>
+      ),
+    };
+  },
   style: `
     button { padding: 6px 14px; border-radius: 4px; cursor: pointer; }
     .primary { background: #0070f3; color: white; border: none; }
@@ -286,7 +293,7 @@ export const Button = component<HTMLButtonAttributes>({
 ---
 
 ## `app/components/icon-button.ng`
-Wraps `Button` using `Bindings<typeof Button>` and `{...rest}` forwarding.
+Wraps `Button` using `Bindings<typeof Button>` and `{...rest}` forwarding. The wrapper declares a subset of bindings and forwards the rest via spread.
 
 ```ts
 import { component, input, Bindings } from '@angular/core';
@@ -297,7 +304,7 @@ export const IconButton = component<Bindings<typeof Button>>({
     icon: input.required<string>(),
     label: input.required<string>(),
   },
-  setup: ({ icon, label }, { rest }) => ({
+  setup: ({ icon, label, ...rest }) => ({
     template: (
       <Button {...rest}>
         {icon()} {label()}
@@ -513,7 +520,7 @@ The main page. Demonstrates:
 - shorthand binding syntax
 
 ```ts
-import { component, signal, computed, inject, ref, refMany, input, afterNextRender } from '@angular/core';
+import { component, signal, inject, ref, refMany, input, afterNextRender, provide } from '@angular/core';
 import { ripple } from '@mylib/ripple';
 import { filter } from '../derivations/filter.ng';
 import { Button } from '../components/button.ng';
@@ -560,7 +567,7 @@ export const CatalogPage = component({
         <h1>{PAGE_TITLE}</h1>
 
         <div style="display: flex; gap: 8px; align-items: center;">
-          <SearchBar {query} ref={searchBar} />
+          <SearchBar model:{query} ref={searchBar} />
           <Button variant={'ghost'} on:click={() => searchBar()?.clear()}>Clear</Button>
           <Badge count={cart.count()} />
         </div>
@@ -596,7 +603,7 @@ export const CatalogPage = component({
     };
   },
   providers: ({ currencyCode }) => [
-    // currencyCode is a Signal<string> — available here before setup() runs
+    // currencyCode is an InputSignal<string> — available here before setup() runs
     provide({ token: CurrencyCodeToken, useFactory: () => currencyCode }),
     provide(AnalyticsHandlerToken),
     provide({ token: AnalyticsHandlerToken, useFactory: () => (e: string) => fetch('/api/analytics', { method: 'POST', body: e }) }),
@@ -621,8 +628,6 @@ export const AppPage = component({
     const theme = inject(ThemeToken);
     const isAdmin = signal(false);
 
-    // panel() returns typeof CatalogPage | typeof AdminPage
-    // bindings are type-checked against the union
     const panel = computed(() => isAdmin() ? AdminPage : CatalogPage);
 
     return {
@@ -661,7 +666,7 @@ export const AppPage = component({
 | `component` (bindings, setup, style) | all component files |
 | `bind:` / `on:` / `model:` / `class:` / `use:` | `search-bar.ng`, `product-card.ng`, `catalog-page.ng` |
 | Lexical scoping (`enum`, `const`) | `catalog-page.ng` |
-| `directive` | `tooltip.ng`, `highlight.ng` |
+| `directive` (`host: ref<>()`, bindings, setup) | `tooltip.ng`, `highlight.ng` |
 | `:when` on `use:` binding | `product-card.ng` (`use:highlight`) |
 | `:ref` on `use:` binding | `product-card.ng` (`use:tooltip`) |
 | `derivation` + `@derive` | `currency.ng`, `filter.ng`, `product-card.ng`, `catalog-page.ng` |
@@ -676,4 +681,4 @@ export const AppPage = component({
 | `expose` | `search-bar.ng`, `product-card.ng` |
 | `injectionToken` (root, scoped, multi) | `tokens.ts` |
 | `provide` + `providers` | `catalog-page.ng`, `app-page.ng` |
-| Shorthand binding syntax | `catalog-page.ng` (`{query}`, `{item}`) |
+| Shorthand binding syntax | `catalog-page.ng` (`model:{query}`, `{item}`) |

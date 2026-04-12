@@ -29,7 +29,6 @@ import { component, input, model, directives } from '@angular/core';
 
 export const TextInput = component({
   bindings: {
-    // ── Component-specific ───────────────────────────────────────────────────
     label:       input<string>(''),
     placeholder: input<string>(''),
     type:        input<'text' | 'email' | 'password' | 'search'>('text'),
