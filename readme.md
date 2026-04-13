@@ -20,7 +20,7 @@ Points:
 **Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
 
 ## Component structure and bindings
-`setup` runs once on init; `bindings` are destructured and available immediately:
+`setup` runs once on init; `bindings` are available immediately — destructuring in the signature is optional:
 ```ts
 import { component, signal, linkedSignal, input, output } from '@angular/core';
 
@@ -129,8 +129,8 @@ export const UserDetail = component({
     email: model<string>(),
     makeAdmin: output<void>(),
   },
-  setup: ({ user, email, makeAdmin }) => {
-    // ...
+  setup: (bindings) => {
+    // bindings.user, bindings.email, bindings.makeAdmin, ...
   },
 });
 ```
