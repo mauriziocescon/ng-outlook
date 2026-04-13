@@ -14,6 +14,9 @@ import {
 import {
   type BindingValue,
   type Ref,
+  type DerivationInstance,
+  type FragmentBinding,
+  type DirectivesBinding,
   type InjectionToken,
   component,
   directive,
@@ -49,6 +52,12 @@ const StyledUrlComp = component({
   styleUrl: './my-comp.css',
 });
 
+// No bindings: providers receives empty object
+const MinimalProviders = component({
+  setup: () => ({ template: '...' }),
+  providers: () => [],
+});
+
 // ────────────────────────────────────────────────────────────────
 // COMPONENT — bindings (input, model, output, fragment, directives)
 //
@@ -70,6 +79,44 @@ const UserDetail = component({
     email.set('new');
     makeAdmin.emit();
     return { template: '...' };
+  },
+});
+
+// All five binding kinds: providers excludes everything except InputSignal
+const AllBindingKinds = component({
+  bindings: {
+    a: input.required<string>(),
+    b: model<string>(),
+    c: output<void>(),
+    d: fragment<void>(),
+    e: directives<HTMLElement>(),
+  },
+  setup: (b) => ({ template: '...' }),
+  providers: (inputs) => {
+    const _a: InputSignal<string> = inputs.a;
+    // @ts-expect-error b is model, excluded from providers
+    inputs.b;
+    // @ts-expect-error c is output, excluded from providers
+    inputs.c;
+    // @ts-expect-error d is fragment, excluded from providers
+    inputs.d;
+    // @ts-expect-error e is directives, excluded from providers
+    inputs.e;
+    return [];
+  },
+});
+
+// Output-only + model-only: providers has zero keys
+const OutputModelOnly = component({
+  bindings: {
+    change: output<string>(),
+    val: model<number>(),
+  },
+  setup: ({ change, val }) => ({ template: '...' }),
+  providers: (inputs) => {
+    type Keys = keyof typeof inputs;
+    const _check: Keys = undefined as never;
+    return [];
   },
 });
 
@@ -151,6 +198,10 @@ const highlight = directive({
 const highlightRef = ref(highlight);
 const _highlightColor: InputSignal<string> | undefined = highlightRef()?.color;
 
+// Void expose through ref: resolves to Ref<undefined>, not Ref<void | undefined>
+const voidExposeRef = ref(NoExpose);
+const _voidExposeCheck: Ref<undefined> = voidExposeRef;
+
 // ────────────────────────────────────────────────────────────────
 // COMPONENT — wrapper with generic target and spread
 //
@@ -169,8 +220,8 @@ const UserDetailWrapper = component.wrap<typeof UserDetail>({
     const _r: {
       email: ModelSignal<string>;
       makeAdmin: OutputEmitterRef<void>;
-      children: { readonly __fragment: void };
-      attachments: { readonly __directives: HTMLElement };
+      children: FragmentBinding<void>;
+      attachments: DirectivesBinding<HTMLElement>;
     } = rest;
     const other = computed(() => user());
     return { template: '...' };
@@ -213,6 +264,27 @@ const _NegWrongKind = component.wrap<typeof UserDetail>({
     makeAdmin: input<void>(),
   },
   setup: ({ makeAdmin }) => ({ template: '...' }),
+});
+
+// Wrap with no explicit bindings: all target bindings forwarded
+interface Simple { id: string; }
+
+const Base = component({
+  bindings: {
+    item: input.required<Simple>(),
+    selected: model<boolean>(),
+    click: output<void>(),
+  },
+  setup: ({ item, selected, click }) => ({ template: '...' }),
+});
+
+const PassThrough = component.wrap<typeof Base>({
+  setup: ({ item, selected, click }) => {
+    const _i: InputSignal<Simple> = item;
+    const _s: ModelSignal<boolean | undefined> = selected;
+    const _c: OutputEmitterRef<void> = click;
+    return { template: '...' };
+  },
 });
 
 // ────────────────────────────────────────────────────────────────
@@ -298,10 +370,27 @@ const tooltip = directive({
 // Directive without bindings
 const ripple = directive({
   host: ref<HTMLElement>(),
-  setup: (_props, { host }) => {
+  setup: ({ host }) => {
     const _hostEl: Ref<HTMLElement | undefined> = host;
   },
 });
+
+// Directive with void expose: ref resolves to Ref<undefined>
+const voidDir = directive({
+  host: ref<HTMLElement>(),
+  setup: ({ host }) => {},
+});
+const voidDirRef = ref(voidDir);
+const _voidDirCheck: Ref<undefined> = voidDirRef;
+
+// Directive expose flows through ref with correct type
+const typedDir = directive({
+  host: ref<HTMLButtonElement>(),
+  bindings: { label: input<string>() },
+  setup: ({ label }, { host }) => ({ getLabel: () => label() }),
+});
+const typedDirRef = ref(typedDir);
+const _typedDirRefCheck: Ref<{ getLabel: () => string | undefined } | undefined> = typedDirRef;
 
 // Host type constraint: narrows to specific element type
 const buttonOnly = directive({
@@ -327,14 +416,14 @@ const simulation = derivation({
   setup: ({ qty, item }) => computed(() => item().desc + ' x ' + qty()),
 });
 
-const _simType: { readonly _result: string } = simulation;
+const _simType: DerivationInstance<{ qty: InputSignal<number>; item: InputSignal<Item> }, string> = simulation;
 
-// Derivation without bindings
+// Derivation without bindings: setup receives no args
 const simple = derivation({
   setup: () => computed(() => 42),
 });
 
-const _simpleType: { readonly _result: number } = simple;
+const _simpleType: DerivationInstance<{}, number> = simple;
 
 // ────────────────────────────────────────────────────────────────
 // REF UTILITIES — ref, refMany, read-only enforcement
@@ -416,6 +505,22 @@ const Parent = component({
     return { template: '...' };
   },
 });
+
+// ────────────────────────────────────────────────────────────────
+// BRANDED TYPE NOMINALITY
+//
+// FragmentBinding and DirectivesBinding must be distinct nominal
+// types — not structurally assignable to each other.
+// ────────────────────────────────────────────────────────────────
+
+type FragIsDir = FragmentBinding<void> extends DirectivesBinding<any> ? 'LEAK' : 'OK';
+const _fragIsDir: FragIsDir = 'OK';
+
+type DirIsFrag = DirectivesBinding<HTMLElement> extends FragmentBinding<any> ? 'LEAK' : 'OK';
+const _dirIsFrag: DirIsFrag = 'OK';
+
+type SameInner = FragmentBinding<string> extends DirectivesBinding<string> ? 'LEAK' : 'OK';
+const _sameInner: SameInner = 'OK';
 
 // ────────────────────────────────────────────────────────────────
 // INJECTION TOKEN — component-level, root-level, multi
@@ -588,7 +693,7 @@ const _accordionRefType: Ref<Toggleable | undefined> = accordionRef;
 
 const toggleDirective = directive({
   host: ref<HTMLElement>(),
-  setup: (_props, { host }) => {
+  setup: ({ host }) => {
     const open = signal(false);
 
     return {

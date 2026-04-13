@@ -9,13 +9,16 @@ import {
 // ────────────────────────────────────────────────────────────────
 // 1. BRANDED BINDING TYPES
 //
-// These do not exist in Angular today. They use branded fields
-// (__fragment, __directives) so TypeScript treats each as a
-// distinct nominal type rather than a plain object.
+// These do not exist in Angular today. They use unique symbols
+// so TypeScript treats each as a distinct nominal type rather
+// than a plain object.
 // ────────────────────────────────────────────────────────────────
 
-export type FragmentBinding<T> = { readonly __fragment: T };
-export type DirectivesBinding<T> = { readonly __directives: T };
+declare const FRAGMENT: unique symbol;
+declare const DIRECTIVES: unique symbol;
+
+export type FragmentBinding<T> = { readonly [FRAGMENT]: T };
+export type DirectivesBinding<T> = { readonly [DIRECTIVES]: T };
 
 export declare function fragment<T>(): FragmentBinding<T>;
 export declare function directives<T extends HTMLElement>(): DirectivesBinding<T>;
@@ -30,10 +33,10 @@ export declare function directives<T extends HTMLElement>(): DirectivesBinding<T
 // Also used as the directive host declaration: host: ref<H>().
 // ────────────────────────────────────────────────────────────────
 
-declare const REF_SLOT: unique symbol;
+declare const REF: unique symbol;
 
 export interface Ref<T> extends Signal<T> {
-  readonly [REF_SLOT]: true;
+  readonly [REF]: true;
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -56,29 +59,33 @@ export type BindingValue =
 // DirectiveInstance adds a host element type (H) — a directive
 // must be attached to a DOM element.
 //
-// ExposeOf<T> works for both thanks to structural match on _expose.
+// ExposeOf<T> works for both thanks to structural match on EXPOSE.
 //
 // InputsOnly<B> filters a bindings record to InputSignal keys
 // only (excluding ModelSignal, which extends InputSignal in
 // Angular's type hierarchy). Used by `providers`.
 // ────────────────────────────────────────────────────────────────
 
+declare const BINDINGS: unique symbol;
+declare const EXPOSE: unique symbol;
+declare const HOST: unique symbol;
+
 export type ComponentInstance<B, E = void> = {
-  bindings: B;
-  readonly _expose: E;
+  readonly [BINDINGS]: B;
+  readonly [EXPOSE]: E;
 };
 
 export type DirectiveInstance<H extends HTMLElement, B, E = void> = {
-  readonly _host: H;
-  bindings: B;
-  readonly _expose: E;
+  readonly [HOST]: H;
+  readonly [BINDINGS]: B;
+  readonly [EXPOSE]: E;
 };
 
 type ExposeOf<T> =
-  T extends { readonly _expose: infer E } ? E : never;
+  T extends { readonly [EXPOSE]: infer E } ? E : never;
 
 type TargetBindings<C extends ComponentInstance<any, any>> =
-  C extends ComponentInstance<infer B, any> ? B : never;
+  C extends { readonly [BINDINGS]: infer B } ? B : never;
 
 type InputKeys<B> = {
   [K in keyof B]: B[K] extends ModelSignal<any> ? never
@@ -106,14 +113,22 @@ type InputsOnly<B> = Pick<B, InputKeys<B>>;
 //
 // ────────────────────────────────────────────────────────────────
 
-// Standard
+// With bindings
 export function component<B extends Record<string, BindingValue>, E = void>(config: {
-  bindings?: B;
+  bindings: B;
   setup: (props: B) => { template: any; expose?: E } | { template: any };
   providers?: (inputs: InputsOnly<B>) => Provider[];
   style?: string;
   styleUrl?: string;
 }): ComponentInstance<B, E>;
+
+// No bindings
+export function component<E = void>(config: {
+  setup: () => { template: any; expose?: E } | { template: any };
+  providers?: () => Provider[];
+  style?: string;
+  styleUrl?: string;
+}): ComponentInstance<{}, E>;
 
 export function component(config: any): any {
   return config;
@@ -146,15 +161,24 @@ export namespace component {
 // { host } as the second.
 // ────────────────────────────────────────────────────────────────
 
+// With bindings
 export function directive<
   H extends HTMLElement,
   B extends Record<string, BindingValue>,
   E = void,
 >(config: {
   host: Ref<H | undefined>;
-  bindings?: B;
+  bindings: B;
   setup: (props: B, context: { host: Ref<H | undefined> }) => E;
-}): DirectiveInstance<H, B, E> {
+}): DirectiveInstance<H, B, E>;
+
+// No bindings
+export function directive<H extends HTMLElement, E = void>(config: {
+  host: Ref<H | undefined>;
+  setup: (context: { host: Ref<H | undefined> }) => E;
+}): DirectiveInstance<H, {}, E>;
+
+export function directive(config: any): any {
   return config as any;
 }
 
@@ -166,15 +190,25 @@ export function directive<
 // no DOM surface). setup must return Signal<T>.
 // ────────────────────────────────────────────────────────────────
 
+declare const RESULT: unique symbol;
+
 export type DerivationInstance<B, T> = {
-  bindings: B;
-  readonly _result: T;
+  readonly [BINDINGS]: B;
+  readonly [RESULT]: T;
 };
 
+// With bindings
 export function derivation<B extends Record<string, InputSignal<any>>, T>(config: {
-  bindings?: B;
+  bindings: B;
   setup: (props: B) => Signal<T>;
-}): DerivationInstance<B, T> {
+}): DerivationInstance<B, T>;
+
+// No bindings
+export function derivation<T>(config: {
+  setup: () => Signal<T>;
+}): DerivationInstance<{}, T>;
+
+export function derivation(config: any): any {
   return config as any;
 }
 
@@ -217,9 +251,12 @@ export function refMany(_type?: any): any {
 //   Multi           — collects multiple values into T[].
 // ────────────────────────────────────────────────────────────────
 
+declare const TOKEN_TYPE: unique symbol;
+declare const TOKEN_MULTI: unique symbol;
+
 export interface InjectionToken<T> {
-  readonly __tokenType: T;
-  readonly __multi?: boolean;
+  readonly [TOKEN_TYPE]: T;
+  readonly [TOKEN_MULTI]?: boolean;
 }
 
 // Component-level
