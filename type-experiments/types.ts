@@ -104,10 +104,6 @@ type InputsOnly<B> = Pick<B, InputKeys<B>>;
 //   bindings on the target, re-wiring each wrapper to the
 //   corresponding target binding. No runtime object spread.
 //
-// defineBindings — alternative authoring shorthand
-//   (see authoring-format.md). This is a typed prototype only.
-//   The real behavior is compiler-driven extraction/hoisting,
-//   not runtime logic.
 // ────────────────────────────────────────────────────────────────
 
 // Standard
@@ -137,8 +133,6 @@ export namespace component {
 }
 
 (component as any).wrap = (config: any) => config;
-
-export declare function defineBindings<B extends Record<string, BindingValue>>(bindings: B): B;
 
 // ────────────────────────────────────────────────────────────────
 // 6. DIRECTIVE

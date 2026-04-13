@@ -19,49 +19,48 @@ This keeps the explicit contract model:
 
 Interface conformance for `bindings` and `expose` stays opt-in via `satisfies`.
 
-## Short Mode for Small Components (`defineBindings`) — Proposal Only
+### Boilerplate tax — a known trade-off
 
-Exploratory only. Baseline remains explicit mode (`bindings` + `setup`).
+Declaring a binding and then destructuring it in `setup` feels redundant for small components. This is a known tax of the format.
 
-Intent: reduce boilerplate in simple components by allowing `defineBindings(...)` inside `setup`, then hoisting to the same canonical binding metadata.
+```ts
+// Tiny — the tax is visible: ~5 lines of bindings for ~3 lines of logic
+export const Badge = component({
+  bindings: {
+    label: input.required<string>(),
+    variant: input<'info' | 'warn'>('info'),
+  },
+  setup: ({ label, variant }) => ({
+    template: (
+      <span class={variant()}>{label()}</span>
+    ),
+  }),
+});
 
-Benefits:
-- less repetition in small components,
-- bindings and template logic stay closer.
+// Medium — the same tax is a small fraction of the overall code
+export const DataTable = component({
+  bindings: {
+    rows: input.required<Row[]>(),
+    selected: model<Row | null>(),
+    sort: output<SortEvent>(),
+    rowTemplate: fragment<[Row]>(),
+  },
+  setup: ({ rows, selected, sort, rowTemplate }) => {
+    const sorted = linkedSignal(() => defaultSort(rows()));
+    const filter = signal('');
+    const filtered = computed(() => applyFilter(sorted(), filter()));
+    // ... 30+ lines of logic, handlers, derived state
+    return { template: (...) };
+  },
+});
+```
 
-Costs:
-- introduces a second authoring style,
-- requires strict compiler extraction rules and diagnostics.
+For medium and large components the binding declaration is a small fraction of the code, and the explicit contract pays for itself in readability, refactorability, and tooling support.
 
-Scope (if adopted): only non-wrapper components without `providers`.
+The comparison is also fairer than it looks: in React or Solid with TypeScript you typically write a separate `Props` interface that mirrors the component's accepted inputs — pure type-level boilerplate. Here, `bindings` serves double duty as both the type declaration *and* the runtime wiring. Counting the `Props` interface other frameworks require makes the math considerably more even.
 
-Allowed:
-- `component({ setup })` + one top-level `defineBindings(...)` call.
+Two additional points:
+- **Multi-component co-location.** Traditional SFCs (Vue, Svelte, etc.) map one component to one file. Splitting a growing component means creating a new file, moving markup, wiring imports, and updating the module graph — even for small, tightly coupled pieces. `.ng` files let you define helper components, fragments, and directives in the same file and extract them only when they earn their own module boundary.
+- **Why not `defineBindings(...)` inside `setup`?** It would reduce repetition, but `providers` needs input access *before* `setup` runs — so it would require compiler hoisting magic or giving up input access in providers. It also introduces a second authoring style (à la Vue Options vs. Composition API) that tooling, docs, and developers all have to support.
 
-Not allowed:
-- `component.wrap<typeof Target>(...)`,
-- `providers` in the same component.
-
-### Compiler model (if adopted)
-`defineBindings(...)` is extraction syntax, not runtime behavior:
-- compiler extracts its object literal,
-- extracted bindings become the same canonical metadata as `bindings: { ... }`,
-- template/type checking/wiring behave exactly like explicit mode.
-
-### Mandatory compiler errors (if adopted)
-The compiler should error when:
-- `bindings` and `defineBindings(...)` are both used,
-- `defineBindings(...)` is called more than once,
-- `defineBindings(...)` is not top-level in `setup` (inside conditionals/loops/nested functions),
-- used in a wrapper component,
-- used in a component with `providers`,
-- destructured binding vars are reassigned,
-- duplicate binding keys exist,
-- framework-reserved binding names are explicitly declared (`children`, `attachments`),
-- `defineBindings` is aliased/imported from user code instead of recognized as compiler intrinsic.
-
-Optional stricter rule:
-- disallow `async setup` with `defineBindings(...)` (or require extraction before first `await`) to keep extraction deterministic.
-
-### Trade-off summary
-This is a constrained convenience layer: explicit mode remains the default; short mode is opt-in for simple components. The gain is lower boilerplate, the cost is added format complexity.
+One authoring format — explicit bindings — keeps the mental model simple.
