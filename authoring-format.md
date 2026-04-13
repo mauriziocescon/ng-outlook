@@ -58,9 +58,8 @@ export const DataTable = component({
 
 For medium and large components the binding declaration is a small fraction of the code, and the explicit contract pays for itself in readability, refactorability, and tooling support.
 
-The comparison is also fairer than it looks: in React or Solid with TypeScript you typically write a separate `Props` interface that mirrors the component's accepted inputs — pure type-level boilerplate. Here, `bindings` serves double duty as both the type declaration *and* the runtime wiring. Counting the `Props` interface other frameworks require makes the math considerably more even.
-
-Two additional points:
+Three additional points:
+- **Fairer comparison with other frameworks.** In React or Solid with TypeScript you typically write a separate `Props` interface that mirrors the component's accepted inputs — pure type-level boilerplate. Here, `bindings` serves double duty as both the type declaration *and* the runtime wiring. Counting the `Props` interface other frameworks require makes the math considerably more even.
 - **Multi-component co-location.** Traditional SFCs (Vue, Svelte, etc.) map one component to one file. Splitting a growing component means creating a new file, moving markup, wiring imports, and updating the module graph — even for small, tightly coupled pieces. `.ng` files let you define helper components, fragments, and directives in the same file and extract them only when they earn their own module boundary.
 - **Why not `defineBindings(...)` inside `setup`?** It would reduce repetition, but `providers` needs input access *before* `setup` runs — so it would require compiler hoisting magic or giving up input access in providers. It also introduces a second authoring style (à la Vue Options vs. Composition API) that tooling, docs, and developers all have to support.
 
