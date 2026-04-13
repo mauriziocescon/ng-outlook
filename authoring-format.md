@@ -9,7 +9,8 @@ Key goals:
 - tooling and agents get stable structural markers (`component`, `directive`, `derivation`, `fragment`),
 - bindings remain explicit and statically typed,
 - provider declarations remain separate from setup/template logic,
-- providers can depend on inputs, but not on setup-local variables.
+- providers can depend on inputs, but not on setup-local variables,
+- component internals stay private — only what `expose` returns is reachable through `ref`.
 
 This keeps the explicit contract model:
 - `bindings` remain the canonical public API surface,
