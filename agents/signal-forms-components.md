@@ -13,7 +13,7 @@ Output everything in a single Markdown file.
 
 # Signal Forms — Reusable Input Components
 
-Reusable form controls that integrate with [`@angular/forms/signals`](https://github.com/angular/angular/tree/main/packages/forms/signals) via the `[formField]` directive and `attachments`.
+Reusable form controls that integrate with [`@angular/forms/signals`](https://github.com/angular/angular/tree/main/packages/forms/signals) via the `formField` directive and `attachments`.
 
 **How it works in the new `.ng` format:**
 `use:formField(field={...})` on a component is collected into `attachments: directives<HTMLInputElement>()` and spread onto the inner `<input>` via `{...attachments()}`. The directive then runs on the native element and handles all value/state binding. The components are styled wrappers; error display stays in the consumer where `FieldState` is in scope.
@@ -100,9 +100,9 @@ export const CheckboxInput = component({
 Error display is kept in the consumer — it reads `FieldState` directly, which avoids coupling the input components to the forms library.
 
 ```ts
-import { component, signal } from '@angular/core';
-import { form, schema, required, validate, emailError, minLengthError } from '@angular/forms/signals';
-import { formField, formRoot } from '@angular/forms/signals';   // directives
+import { component, signal, fragment } from '@angular/core';
+import { form, schema, required, validate, emailError, minLengthError, FieldState } from '@angular/forms/signals';
+import { formField, formRoot } from '@angular/forms/signals';   // directives (host: ref<HTMLFormElement>() / ref<HTMLInputElement>())
 import { TextInput } from './controls/text-input.ng';
 import { CheckboxInput } from './controls/checkbox-input.ng';
 
@@ -112,6 +112,7 @@ interface SignupModel {
   acceptTerms: boolean;
 }
 
+// Pure declaration — no DI needed, unlike derivations
 const signupSchema = schema<SignupModel>((p) => {
   required(p.email);
   validate(p.email, ({ value }) =>
@@ -128,66 +129,48 @@ const signupSchema = schema<SignupModel>((p) => {
 
 export const SignupForm = component({
   setup: () => {
-    const model = signal<SignupModel>({ email: '', password: '', acceptTerms: false });
+    const data = signal<SignupModel>({ email: '', password: '', acceptTerms: false });
 
     /**
      * setup() runs in an injection context, so form() resolves the injector
      * automatically — no inject(Injector) or explicit { injector } option needed.
      *
-     * The submit action is defined here so formRoot can call it automatically.
-     * formRoot intercepts the native submit event, prevents default, marks all
-     * fields touched, validates, and — only when valid — calls this action.
+     * formRoot (host: ref<HTMLFormElement>()) intercepts the native submit event,
+     * prevents default, marks all fields touched, validates, and — only when
+     * valid — calls the action.
      */
-    const f = form(model, signupSchema, {
+    const f = form(data, signupSchema, {
       submit: {
         action: (value) => console.log('signup', value),
       },
     });
 
+    // Errors are read from FieldState in this template — no coupling
+    // between input components and @angular/forms/signals.
     return {
       template: (
-        /**
-         * use:formRoot(field={f}) is applied to the native <form> element directly
-         * (not forwarded via attachments — <form> is not a wrapper component).
-         * No on:submit handler needed; formRoot owns the submit lifecycle.
-         */
         <form use:formRoot(field={f})>
 
-          /**
-           * use:formField(field={f.email}) is collected by TextInput's attachments
-           * and spread onto the inner <input>. The directive runs on the native
-           * element: it syncs the value and marks touched on blur.
-           *
-           * Errors are read from FieldState in this template — no coupling
-           * between TextInput and @angular/forms/signals.
-           */
-          <div class="field">
-            <TextInput
-              label="Email"
-              type="email"
-              use:formField(field={f.email}) />
-            @if (f.email().touched() && f.email().errors().length > 0) {
-              <span class="error">{f.email().errors()[0].message ?? f.email().errors()[0].kind}</span>
+          @fragment fieldError(field: FieldState) {
+            @if (field.touched() && field.errors().length > 0) {
+              <span class="error">{field.errors()[0].message ?? field.errors()[0].kind}</span>
             }
+          }
+
+          // use:formField is collected by attachments and spread onto the inner <input>
+          <div class="field">
+            <TextInput label="Email" type="email" use:formField(field={f.email}) />
+            @render(fieldError(f.email()))
           </div>
 
           <div class="field">
-            <TextInput
-              label="Password"
-              type="password"
-              use:formField(field={f.password}) />
-            @if (f.password().touched() && f.password().errors().length > 0) {
-              <span class="error">{f.password().errors()[0].message ?? f.password().errors()[0].kind}</span>
-            }
+            <TextInput label="Password" type="password" use:formField(field={f.password}) />
+            @render(fieldError(f.password()))
           </div>
 
           <div class="field">
-            <CheckboxInput
-              label="I accept the terms"
-              use:formField(field={f.acceptTerms}) />
-            @if (f.acceptTerms().touched() && f.acceptTerms().errors().length > 0) {
-              <span class="error">{f.acceptTerms().errors()[0].message ?? f.acceptTerms().errors()[0].kind}</span>
-            }
+            <CheckboxInput label="I accept the terms" use:formField(field={f.acceptTerms}) />
+            @render(fieldError(f.acceptTerms()))
           </div>
 
           <button type="submit">Sign up</button>
@@ -210,6 +193,21 @@ export const SignupForm = component({
 The same components work without a form, using `model:` directly:
 
 ```ts
-<TextInput label="Search" type="search" model:value={query} />
-<CheckboxInput label="Dark mode" model:checked={darkMode} />
+import { component, signal } from '@angular/core';
+import { TextInput } from './controls/text-input.ng';
+import { CheckboxInput } from './controls/checkbox-input.ng';
+
+export const Settings = component({
+  setup: () => {
+    const query = signal('');
+    const darkMode = signal(false);
+
+    return {
+      template: (
+        <TextInput label="Search" type="search" model:value={query} />
+        <CheckboxInput label="Dark mode" model:checked={darkMode} />
+      ),
+    };
+  },
+});
 ```
