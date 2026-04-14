@@ -4,7 +4,7 @@
 Points:
 1. building blocks as functions:
     - `*.ng` files with template DSL (see [`authoring format`](https://github.com/mauriziocescon/ng-outlook/blob/main/authoring-format.md)),
-    - `component`: a `setup` with scoped logic that returns a `template`,
+    - `component`: a `setup` with scoped logic that returns a `template` (shorthand) or `{ template, expose }` (full form),
     - `directive`: a `setup` that can change the appearance or behavior of DOM elements,
     - `derivation`: a factory for template-scoped computed values that requires DI,
     - `fragment`: a way to capture some markup in the form of a function,
@@ -49,16 +49,14 @@ export const TextSearch = component({
      * Can use multiple class: and style:
      * ✅ <span class="..." class:some-class={...} class:some-other-class={...}> ✅
      */
-    return {
-      template: (
-        <label class:danger={isDanger()}>Text:</label>
-        <input type="text" model:value={text} on:input={textChange} />
+    return (
+      <label class:danger={isDanger()}>Text:</label>
+      <input type="text" model:value={text} on:input={textChange} />
 
-        <button disabled={text().length === 0} on:click={() => text.set('')}>
-          {'Reset ' + text()}
-        </button>
-      ),
-    };
+      <button disabled={text().length === 0} on:click={() => text.set('')}>
+        {'Reset ' + text()}
+      </button>
+    );
   },
   style: `
     .danger {
@@ -90,14 +88,12 @@ export const UserDetailConsumer = component({
      * Shouldn't use 'on' prefix with input / model / output
      * ⚠️ <UserDetail onInput={...} model:onModel={...} on:onEvent={...} /> ⚠️
      */
-    return {
-      template: (
-        <UserDetail
-          user={user()}
-          model:email={email}
-          on:makeAdmin={makeAdmin} />
-      ),
-    };
+    return (
+      <UserDetail
+        user={user()}
+        model:email={email}
+        on:makeAdmin={makeAdmin} />
+    );
   },
 });
 
@@ -129,9 +125,9 @@ export const UserDetail = component({
     email: model<string>(),
     makeAdmin: output<void>(),
   },
-  setup: (bindings) => {
+  setup: (bindings) => (
     // bindings.user, bindings.email, bindings.makeAdmin, ...
-  },
+  ),
 });
 ```
 
@@ -149,15 +145,13 @@ const type = Type.Counter;
 const counter = (value: number) => `Let's count till ${value}`;
 
 export const Counter = component({
-  setup: () => ({
-    template: (
-      @if (type === Type.Counter) {
-        <p>{counter(5)}</p>
-      } @else {
-        <span>Empty</span>
-      }
-    ),
-  }),
+  setup: () => (
+    @if (type === Type.Counter) {
+      <p>{counter(5)}</p>
+    } @else {
+      <span>Empty</span>
+    }
+  ),
 });
 ```
 
@@ -179,17 +173,15 @@ export const TextSearch = component({
      * Encapsulation of directive data: use:directive(...)
      * Any directive can be used directly in the template
      */
-    return {
-      template: (
-        <input
-          type="text"
-          model:value={text}
-          on:input={valueChange}
-          use:tooltip(message={message()} on:dismiss={doSomething}) />
+    return (
+      <input
+        type="text"
+        model:value={text}
+        on:input={valueChange}
+        use:tooltip(message={message()} on:dismiss={doSomething}) />
 
-        <p>Value: {text()}</p>
-      ),
-    };
+      <p>Value: {text()}</p>
+    );
   },
 });
 
@@ -240,23 +232,21 @@ export const UserCard = component({
 
     function userChange() {/** ... **/}
 
-    return {
-      template: (
-        // explicit form — always works
-        <UserDetail
-          user={user()}
-          model:email={email}
-          on:userChange={userChange}
-          use:tooltip(message={tip()}):when={showTip()} />
+    return (
+      // explicit form — always works
+      <UserDetail
+        user={user()}
+        model:email={email}
+        on:userChange={userChange}
+        use:tooltip(message={tip()}):when={showTip()} />
 
-        // shorthand — when local variable names match binding names
-        <UserDetail
-          {user}
-          model:{email}
-          on:{userChange}
-          use:tooltip(message={tip()}):when={showTip()} />
-      ),
-    };
+      // shorthand — when local variable names match binding names
+      <UserDetail
+        {user}
+        model:{email}
+        on:{userChange}
+        use:tooltip(message={tip()}):when={showTip()} />
+    );
   },
 });
 ```
@@ -297,16 +287,14 @@ export const PriceSimulator = component({
      * price shares the @for embedded view scope and is created once,
      * following its lifecycle
      */
-    return {
-      template: (
-        @for (item of items(); track item.id) {
-          @derive price = simulation({qty: 1, item: item});
+    return (
+      @for (item of items(); track item.id) {
+        @derive price = simulation({qty: 1, item: item});
 
-          <h5>{item.desc}</h5>
-          <div>Price: {price()}</div>
-        }
-      ),
-    };
+        <h5>{item.desc}</h5>
+        <div>Price: {price()}</div>
+      }
+    );
   },
 });
 ```
@@ -335,14 +323,12 @@ export const Counter = component({
   setup: () => {
     const store = inject(CounterStore);
 
-    return {
-      template: (
-        <h1>Counter</h1>
-        <div>Value: {store.value()}</div>
-        <button on:click={() => store.decrease()}>-</button>
-        <button on:click={() => store.increase()}>+</button>
-      ),
-    };
+    return (
+      <h1>Counter</h1>
+      <div>Value: {store.value()}</div>
+      <button on:click={() => store.decrease()}>-</button>
+      <button on:click={() => store.increase()}>+</button>
+    );
   },
   /**
    * Only inputs are provided
@@ -369,14 +355,12 @@ export const MenuConsumer = component({
     /**
      * Markup inside comp tag => implicitly becomes a fragment called children
      */
-    return {
-      template: (
-        <Menu>
-          <MenuItem>{first()}</MenuItem>
-          <MenuItem>{second()}</MenuItem>
-        </Menu>
-      ),
-    };
+    return (
+      <Menu>
+        <MenuItem>{first()}</MenuItem>
+        <MenuItem>{second()}</MenuItem>
+      </Menu>
+    );
   },
 });
 
@@ -399,15 +383,13 @@ export const Menu = component({
     /**
      * No ng-container needed; full form: @render(fragment(), { injector })
      */
-    return {
-      template: (
-        @if (children) {
-          @render(children())
-        } @else {
-          <span>Empty</span>
-        }
-      ),
-    };
+    return (
+      @if (children) {
+        @render(children())
+      } @else {
+        <span>Empty</span>
+      }
+    );
   },
 });
 
@@ -415,11 +397,9 @@ export const MenuItem = component({
   bindings: {
     children: fragment<void>(),
   },
-  setup: ({ children }) => ({
-    template: (
-      @render(children())
-    ),
-  }),
+  setup: ({ children }) => (
+    @render(children())
+  ),
 });
 ```
 
@@ -438,32 +418,30 @@ export const MenuConsumer = component({
   setup: () => {
     const items = signal<Item[]>(/** ... **/);
 
-    return {
-      template: (
-        /**
-         * Explicit form: @fragment declared outside the component tags,
-         * then passed as a named binding — equivalent to the inline form above.
-         *
-         * @fragment menuItem(item: Item) {
-         *  <div class="my-menu-item">
-         *    <MyMenuItem>{item.desc}</MyMenuItem>
-         *  </div>
-         * }
-         * <Menu items={items()} menuItem={menuItem} />
-         * 
-         * Inline form: @fragment declared inside the component tags is
-         * automatically passed as the matching fragment input — no explicit
-         * menuItem={menuItem} needed.
-         */
-        <Menu items={items()}>
-          @fragment menuItem(item: Item) {
-            <div class="my-menu-item">
-              <MyMenuItem>{item.desc}</MyMenuItem>
-            </div>
-          }
-        </Menu>
-      ),
-    };
+    return (
+      /**
+       * Explicit form: @fragment declared outside the component tags,
+       * then passed as a named binding — equivalent to the inline form above.
+       *
+       * @fragment menuItem(item: Item) {
+       *  <div class="my-menu-item">
+       *    <MyMenuItem>{item.desc}</MyMenuItem>
+       *  </div>
+       * }
+       * <Menu items={items()} menuItem={menuItem} />
+       * 
+       * Inline form: @fragment declared inside the component tags is
+       * automatically passed as the matching fragment input — no explicit
+       * menuItem={menuItem} needed.
+       */
+      <Menu items={items()}>
+        @fragment menuItem(item: Item) {
+          <div class="my-menu-item">
+            <MyMenuItem>{item.desc}</MyMenuItem>
+          </div>
+        }
+      </Menu>
+    );
   },
   styleUrl: './menu-consumer.css',
 });
@@ -476,15 +454,13 @@ export const Menu = component({
     items: input.required<{ id: string, desc: string }[]>(),
     menuItem: fragment<[{ id: string, desc: string }]>(),
   },
-  setup: ({ items, menuItem }) => ({
-    template: (
-      <h1> Total items: {items().length} </h1>
+  setup: ({ items, menuItem }) => (
+    <h1> Total items: {items().length} </h1>
 
-      @for (item of items(); track item.id) {
-        @render(menuItem(item))
-      }
-    ),
-  }),
+    @for (item of items(); track item.id) {
+      @render(menuItem(item))
+    }
+  ),
 });
 ```
 
@@ -502,17 +478,15 @@ export const ButtonConsumer = component({
 
     function doSomething() {/** ... **/}
 
-    return {
-      template: (
-        <Button
-          use:ripple()
-          use:tooltip(message={tooltipMsg()})
-          disabled={!valid()}
-          on:click={doSomething}>
-            Click / Hover me
-        </Button>
-      ),
-    };
+    return (
+      <Button
+        use:ripple()
+        use:tooltip(message={tooltipMsg()})
+        disabled={!valid()}
+        on:click={doSomething}>
+          Click / Hover me
+      </Button>
+    );
   },
 });
 
@@ -538,13 +512,11 @@ export const Button = component({
     /**
      * Compile-time unrolling + type checking
      */
-    return {
-      template: (
-        <button {...attachments()} disabled={disabled()} on:click={() => click.emit()}>
-          @render(children())
-        </button>
-      ),
-    };
+    return (
+      <button {...attachments()} disabled={disabled()} on:click={() => click.emit()}>
+        @render(children())
+      </button>
+    );
   },
 });
 ```
@@ -561,14 +533,12 @@ export const UserDetailConsumer = component({
 
     function makeAdmin() {/** ... **/}
 
-    return {
-      template: (
-        <UserDetailWrapper
-          user={user()}
-          model:email={email}
-          on:makeAdmin={makeAdmin} />
-      ),
-    };
+    return (
+      <UserDetailWrapper
+        user={user()}
+        model:email={email}
+        on:makeAdmin={makeAdmin} />
+    );
   },
 });
 
@@ -588,11 +558,9 @@ export const UserDetailWrapper = component.wrap<typeof UserDetail>({
   setup: ({ user, ...rest }) => {
     const other = computed(() => /** something depending on user() or a default value **/);
 
-    return {
-      template: (
-        <UserDetail {...rest} user={other()} />
-      ),
-    };
+    return (
+      <UserDetail {...rest} user={other()} />
+    );
   },
 });
 
@@ -612,7 +580,7 @@ export const UserDetail = component({
   setup: ({ user, email, makeAdmin, children, attachments }) => {
     // ...
 
-    return { template: (...) };
+    return (...);
   },
 });
 ```
@@ -632,20 +600,18 @@ export const ButtonConsumer = component({
     function doSomething() {/** ... **/}
 
     // Pass selected attributes and events.
-    return {
-      template: (
-        <Button
-          type="button"
-          style="background-color: cyan"
-          class={valid() ? 'global-css-valid' : ''}
-          use:ripple()
-          use:tooltip(message={tooltipMsg()})
-          disabled={!valid()}
-          on:click={doSomething}>
-            Click / Hover me
-        </Button>
-      ),
-    };
+    return (
+      <Button
+        type="button"
+        style="background-color: cyan"
+        class={valid() ? 'global-css-valid' : ''}
+        use:ripple()
+        use:tooltip(message={tooltipMsg()})
+        disabled={!valid()}
+        on:click={doSomething}>
+          Click / Hover me
+      </Button>
+    );
   },
 });
 
@@ -666,19 +632,17 @@ export const Button = component({
     const innerStyle = computed(() => `${style()}; color: red;`);
 
     // Forward explicit bindings + attached directives.
-    return {
-      template: (
-        <button
-          {...attachments()}
-          type={type()}
-          class={className()}
-          style={innerStyle()}
-          disabled={disabled()}
-          on:click={() => click.emit()}>
-          @render(children())
-        </button>
-      ),
-    };
+    return (
+      <button
+        {...attachments()}
+        type={type()}
+        class={className()}
+        style={innerStyle()}
+        disabled={disabled()}
+        on:click={() => click.emit()}>
+        @render(children())
+      </button>
+    );
   },
 });
 ```
@@ -712,11 +676,9 @@ const Sibling = component({
   bindings: {
     childRef: input.required<{ text: Signal<string> } | undefined>(),
   },
-  setup: ({ childRef }) => ({
-    template: (
-      <button on:click={() => childRef()?.text()}>Show text</button>
-    ),
-  }),
+  setup: ({ childRef }) => (
+    <button on:click={() => childRef()?.text()}>Show text</button>
+  ),
 });
 
 export const Parent = component({
@@ -734,24 +696,22 @@ export const Parent = component({
       // refs resolve here
     });
 
-    return {
-      template: (
-        <div
-          ref={el}
-          use:ripple()
-          use:tooltip(message={'something'}):ref={tlp}>
-            Something
-        </div>
+    return (
+      <div
+        ref={el}
+        use:ripple()
+        use:tooltip(message={'something'}):ref={tlp}>
+          Something
+      </div>
 
-        <Child ref={child} />
-        <Sibling childRef={child()} />
+      <Child ref={child} />
+      <Sibling childRef={child()} />
 
-        <Child ref={many} />
-        <Child ref={many} />
+      <Child ref={many} />
+      <Child ref={many} />
 
-        <button on:click={() => tlp()?.toggle()}>Toggle tlp</button>
-      ),
-    };
+      <button on:click={() => tlp()?.toggle()}>Toggle tlp</button>
+    );
   },
 });
 ```
@@ -829,6 +789,7 @@ export const Counter = component({
     const multi = inject(multiToken); // array of numbers
     const store = inject(Store);
     /** ... **/
+    return (...);
   },
   providers: ({ initialValue }) => [
     // provide compToken at Counter level using the default factory

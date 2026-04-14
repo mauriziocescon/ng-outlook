@@ -31,11 +31,9 @@ export const Badge = component({
     label: input.required<string>(),
     variant: input<'info' | 'warn'>('info'),
   },
-  setup: ({ label, variant }) => ({
-    template: (
-      <span class={variant()}>{label()}</span>
-    ),
-  }),
+  setup: ({ label, variant }) => (
+    <span class={variant()}>{label()}</span>
+  ),
 });
 
 // Medium — the same tax is a small fraction of the overall code
@@ -51,7 +49,7 @@ export const DataTable = component({
     const filter = signal('');
     const filtered = computed(() => applyFilter(sorted(), filter()));
     // ... 30+ lines of logic, handlers, derived state
-    return { template: (...) };
+    return (...);
   },
 });
 ```

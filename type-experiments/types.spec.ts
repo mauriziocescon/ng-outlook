@@ -14,6 +14,7 @@ import {
 import {
   type BindingValue,
   type Ref,
+  type TemplateMarkup,
   type DerivationInstance,
   type FragmentBinding,
   type DirectivesBinding,
@@ -29,6 +30,8 @@ import {
   injectionToken,
   provide,
 } from './types';
+
+declare const tmpl: TemplateMarkup;
 
 interface User { id: string; name: string; }
 interface Item { id: string; desc: string; }
@@ -53,25 +56,35 @@ const _sameInner: SameInner = 'OK';
 // COMPONENT — basics
 // ────────────────────────────────────────────────────────────────
 
-// No bindings: setup returns template
+// —— Shorthand return: raw template ——
+
 const Minimal = component({
-  setup: () => ({ template: '...' }),
+  setup: () => tmpl,
 });
 
-// Style and styleUrl
 const StyledComp = component({
-  setup: () => ({ template: '...' }),
+  setup: () => tmpl,
   style: `.danger { color: red; }`,
 });
 
 const StyledUrlComp = component({
-  setup: () => ({ template: '...' }),
+  setup: () => tmpl,
   styleUrl: './my-comp.css',
 });
 
-// No bindings: providers receives empty object
 const MinimalProviders = component({
-  setup: () => ({ template: '...' }),
+  setup: () => tmpl,
+  providers: () => [],
+});
+
+// —— Full form return: { template } ——
+
+const MinimalFull = component({
+  setup: () => ({ template: tmpl }),
+});
+
+const MinimalFullProviders = component({
+  setup: () => ({ template: tmpl }),
   providers: () => [],
 });
 
@@ -95,7 +108,7 @@ const UserDetail = component({
     const _e: string = email();
     email.set('new');
     makeAdmin.emit();
-    return { template: '...' };
+    return tmpl;
   },
 });
 
@@ -114,7 +127,7 @@ const AllBindingKinds = component({
     d: fragment<void>(),
     e: directives<HTMLElement>(),
   },
-  setup: (b) => ({ template: '...' }),
+  setup: (b) => tmpl,
   providers: (inputs) => {
     const _a: InputSignal<string> = inputs.a;
     // @ts-expect-error b is model, excluded from providers
@@ -135,7 +148,7 @@ const OutputModelOnly = component({
     change: output<string>(),
     val: model<number>(),
   },
-  setup: ({ change, val }) => ({ template: '...' }),
+  setup: ({ change, val }) => tmpl,
   providers: (inputs) => {
     type Keys = keyof typeof inputs;
     const _check: Keys = undefined as never;
@@ -147,7 +160,7 @@ const Counter = component({
   bindings: {
     c: input.required<number>(),
   },
-  setup: () => ({ template: '...' }),
+  setup: () => tmpl,
   providers: ({ c }) => {
     const _cInput: InputSignal<number> = c;
     return [provide({ token: Store, useFactory: () => new Store() })];
@@ -161,7 +174,7 @@ const WithMixed = component({
     email: model<string>(),
     save: output<void>(),
   },
-  setup: ({ name, age, email, save }) => ({ template: '...' }),
+  setup: ({ name, age, email, save }) => tmpl,
   providers: (inputs) => {
     const _name: InputSignal<string> = inputs.name;
     const _age: InputSignal<number | undefined> = inputs.age;
@@ -186,14 +199,15 @@ const Child = component({
     const _internal = signal(0);
 
     return {
-      template: '...',
+      template: tmpl,
       expose: { text: text.asReadonly() },
     };
   },
 });
 
+// Shorthand: no expose → raw template
 const NoExpose = component({
-  setup: () => ({ template: '...' }),
+  setup: () => tmpl,
 });
 
 // ────────────────────────────────────────────────────────────────
@@ -218,7 +232,7 @@ const UserDetailWrapper = component.wrap<typeof UserDetail>({
       attachments: DirectivesBinding<HTMLElement>;
     } = rest;
     const other = computed(() => user());
-    return { template: '...' };
+    return tmpl;
   },
 });
 
@@ -228,7 +242,7 @@ const _NegRest = component.wrap<typeof UserDetail>({
   setup: ({ user, ...rest }) => {
     // @ts-expect-error user was destructured, not in rest
     rest.user;
-    return { template: '...' };
+    return tmpl;
   },
 });
 
@@ -239,7 +253,7 @@ const _NegExtra = component.wrap<typeof UserDetail>({
     // @ts-expect-error nonsense is not in target bindings
     nonsense: input<string>(),
   },
-  setup: ({ user, ...rest }) => ({ template: '...' }),
+  setup: ({ user, ...rest }) => tmpl,
 });
 
 // bindings should NOT accept wrong inner types
@@ -248,7 +262,7 @@ const _NegWrongType = component.wrap<typeof UserDetail>({
     // @ts-expect-error user input type should be User
     user: input.required<string>(),
   },
-  setup: ({ user, ...rest }) => ({ template: '...' }),
+  setup: ({ user, ...rest }) => tmpl,
 });
 
 // bindings should preserve target binding kind
@@ -257,7 +271,7 @@ const _NegWrongKind = component.wrap<typeof UserDetail>({
     // @ts-expect-error makeAdmin is an output on target, not an input
     makeAdmin: input<void>(),
   },
-  setup: ({ makeAdmin }) => ({ template: '...' }),
+  setup: ({ makeAdmin }) => tmpl,
 });
 
 // Wrap with no explicit bindings: all target bindings forwarded
@@ -269,7 +283,7 @@ const Base = component({
     selected: model<boolean>(),
     click: output<void>(),
   },
-  setup: ({ item, selected, click }) => ({ template: '...' }),
+  setup: ({ item, selected, click }) => tmpl,
 });
 
 const PassThrough = component.wrap<typeof Base>({
@@ -277,7 +291,7 @@ const PassThrough = component.wrap<typeof Base>({
     const _i: InputSignal<Simple> = item;
     const _s: ModelSignal<boolean | undefined> = selected;
     const _c: OutputEmitterRef<void> = click;
-    return { template: '...' };
+    return tmpl;
   },
 });
 
@@ -286,7 +300,7 @@ const WrapperProviders = component.wrap<typeof UserDetail>({
   bindings: {
     user: input.required<User>(),
   },
-  setup: ({ user, email, makeAdmin, children, attachments }) => ({ template: '...' }),
+  setup: ({ user, email, makeAdmin, children, attachments }) => tmpl,
   providers: (inputs) => {
     const _user: InputSignal<User> = inputs.user;
     // @ts-expect-error email is model on target, excluded from wrapper providers
@@ -441,7 +455,7 @@ const ExposedInput = component({
     age: input<number>(),
   },
   setup: ({ name, age }) => ({
-    template: '...',
+    template: tmpl,
     expose: { name, age },
   }),
 });
@@ -460,7 +474,7 @@ const MixedExpose = component({
     const doubled = computed(() => (count() ?? 0) * 2);
 
     return {
-      template: '...',
+      template: tmpl,
       expose: { label, doubled },
     };
   },
@@ -493,7 +507,7 @@ const Sibling = component({
   },
   setup: ({ childRef }) => {
     const _val = childRef();
-    return { template: '...' };
+    return tmpl;
   },
 });
 
@@ -512,7 +526,7 @@ const Parent = component({
       const _many: { text: Signal<string> }[] = many();
     });
 
-    return { template: '...' };
+    return tmpl;
   },
 });
 
@@ -610,7 +624,7 @@ const SortableTable = component({
     sortKey: input.required<string>(),
     sortDirection: input.required<'asc' | 'desc'>(),
   } satisfies Sortable,
-  setup: ({ sortKey, sortDirection }) => ({ template: '...' }),
+  setup: ({ sortKey, sortDirection }) => tmpl,
 });
 
 // Extra bindings: interface + Record allows additional keys
@@ -620,7 +634,7 @@ const SortableTableExtra = component({
     sortDirection: input.required<'asc' | 'desc'>(),
     pageSize: input<number>(),
   } satisfies Sortable & Record<string, BindingValue>,
-  setup: ({ sortKey, sortDirection, pageSize }) => ({ template: '...' }),
+  setup: ({ sortKey, sortDirection, pageSize }) => tmpl,
 });
 
 // -- Bindings conformance: multiple interfaces ----
@@ -637,7 +651,7 @@ const SortablePaginatedTable = component({
     page: input.required<number>(),
     pageSize: input.required<number>(),
   } satisfies Sortable & Paginated,
-  setup: ({ sortKey, sortDirection, page, pageSize }) => ({ template: '...' }),
+  setup: ({ sortKey, sortDirection, page, pageSize }) => tmpl,
 });
 
 // -- Bindings conformance: directive --------------
@@ -683,7 +697,7 @@ const Accordion = component({
     const open = signal(false);
 
     return {
-      template: '...',
+      template: tmpl,
       expose: {
         toggle: () => open.update(v => !v),
         isOpen: open.asReadonly(),
@@ -720,7 +734,7 @@ const _NegMissingKey = component({
     sortKey: input.required<string>(),
     // @ts-expect-error sortDirection is missing from Sortable
   } satisfies Sortable,
-  setup: ({ sortKey }) => ({ template: '...' }),
+  setup: ({ sortKey }) => tmpl,
 });
 
 // -- Negative: wrong type in bindings -------------
@@ -731,14 +745,14 @@ const _NegWrongBindingType = component({
     // @ts-expect-error sortDirection should be InputSignal<'asc' | 'desc'>, not InputSignal<number>
     sortDirection: input<number>(),
   } satisfies Sortable,
-  setup: ({ sortKey, sortDirection }) => ({ template: '...' }),
+  setup: ({ sortKey, sortDirection }) => tmpl,
 });
 
 // -- Negative: missing key in expose --------------
 
 const _NegMissingExpose = component({
   setup: () => ({
-    template: '...',
+    template: tmpl,
     expose: {
       toggle: () => {},
       // @ts-expect-error isOpen is missing from Toggleable

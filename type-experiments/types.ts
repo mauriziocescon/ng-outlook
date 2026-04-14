@@ -96,7 +96,29 @@ type InputKeys<B> = {
 type InputsOnly<B> = Pick<B, InputKeys<B>>;
 
 // ────────────────────────────────────────────────────────────────
+// 4b. TEMPLATE MARKUP
+//
+// Branded type so the compiler can distinguish a raw template
+// return (shorthand) from an object return (full form).
+// In practice the compiler produces TemplateMarkup from the DSL;
+// here we use `any` as a stand-in.
+// ────────────────────────────────────────────────────────────────
+
+declare const TEMPLATE: unique symbol;
+
+export type TemplateMarkup = { readonly [TEMPLATE]: true };
+
+type SetupReturn<E> =
+  | { template: TemplateMarkup; expose: E }   // full form with expose
+  | { template: TemplateMarkup }               // full form, no expose
+  | TemplateMarkup;                            // shorthand: raw template
+
+// ────────────────────────────────────────────────────────────────
 // 5. COMPONENT
+//
+// setup return type — two forms:
+//   Shorthand: return raw TemplateMarkup (no expose).
+//   Full form: return { template, expose? }.
 //
 // component(...) — standard mode:
 //   B inferred from bindings, setup receives Angular signal types
@@ -116,7 +138,7 @@ type InputsOnly<B> = Pick<B, InputKeys<B>>;
 // With bindings
 export function component<B extends Record<string, BindingValue>, E = void>(config: {
   bindings: B;
-  setup: (props: B) => { template: any; expose?: E } | { template: any };
+  setup: (props: B) => SetupReturn<E>;
   providers?: (inputs: InputsOnly<B>) => Provider[];
   style?: string;
   styleUrl?: string;
@@ -124,7 +146,7 @@ export function component<B extends Record<string, BindingValue>, E = void>(conf
 
 // No bindings
 export function component<E = void>(config: {
-  setup: () => { template: any; expose?: E } | { template: any };
+  setup: () => SetupReturn<E>;
   providers?: () => Provider[];
   style?: string;
   styleUrl?: string;
@@ -139,7 +161,7 @@ export namespace component {
   export declare function wrap<C extends ComponentInstance<any, any>, E = void>(config:
     TargetBindings<C> extends Record<string, BindingValue> ? {
       bindings?: Partial<TargetBindings<C>>;
-      setup: (props: TargetBindings<C>) => { template: any; expose?: E } | { template: any };
+      setup: (props: TargetBindings<C>) => SetupReturn<E>;
       providers?: (inputs: InputsOnly<TargetBindings<C>>) => Provider[];
       style?: string;
       styleUrl?: string;

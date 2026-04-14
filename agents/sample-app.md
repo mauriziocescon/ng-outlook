@@ -268,21 +268,19 @@ export const Button = component({
   setup: ({ type, class: className, style, disabled, variant, click, children, attachments }) => {
     const innerStyle = computed(() => `${style()}; font-weight: 500;`);
 
-    return {
-      template: (
-        <button
-          {...attachments()}
-          type={type()}
-          class={className()}
-          style={innerStyle()}
-          class:primary={variant() === 'primary'}
-          class:ghost={variant() === 'ghost'}
-          disabled={disabled()}
-          on:click={() => click.emit()}>
-            @render(children())
-        </button>
-      ),
-    };
+    return (
+      <button
+        {...attachments()}
+        type={type()}
+        class={className()}
+        style={innerStyle()}
+        class:primary={variant() === 'primary'}
+        class:ghost={variant() === 'ghost'}
+        disabled={disabled()}
+        on:click={() => click.emit()}>
+          @render(children())
+      </button>
+    );
   },
   style: `
     button { padding: 6px 14px; border-radius: 4px; cursor: pointer; }
@@ -305,13 +303,11 @@ export const IconButton = component.wrap<typeof Button>({
   bindings: {
     children: fragment<void>(),
   },
-  setup: ({ children, ...rest }) => ({
-    template: (
-      <Button {...rest}>
-        @render(children())
-      </Button>
-    ),
-  }),
+  setup: ({ children, ...rest }) => (
+    <Button {...rest}>
+      @render(children())
+    </Button>
+  ),
   style: `button { display: inline-flex; align-items: center; gap: 4px; }`,
 });
 ```
@@ -328,13 +324,11 @@ export const Badge = component({
   bindings: {
     count: input.required<number>(),
   },
-  setup: ({ count }) => ({
-    template: (
-      @if (count() > 0) {
-        <span class="badge">{count()}</span>
-      }
-    ),
-  }),
+  setup: ({ count }) => (
+    @if (count() > 0) {
+      <span class="badge">{count()}</span>
+    }
+  ),
   style: `
     .badge { background: #e00; color: white; border-radius: 999px; padding: 2px 8px; font-size: .75rem; }
   `,
@@ -446,19 +440,17 @@ export const ProductList = component({
     items: input.required<Product[]>(),
     item: fragment<[Product]>(),
   },
-  setup: ({ items, item }) => ({
-    template: (
-      @if (items().length === 0) {
-        <p>No products found.</p>
-      } @else {
-        <div class="grid">
-          @for (p of items(); track p.id) {
-            @render(item(p))
-          }
-        </div>
-      }
-    ),
-  }),
+  setup: ({ items, item }) => (
+    @if (items().length === 0) {
+      <p>No products found.</p>
+    } @else {
+      <div class="grid">
+        @for (p of items(); track p.id) {
+          @render(item(p))
+        }
+      </div>
+    }
+  ),
   style: `.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }`,
 });
 ```
@@ -472,14 +464,12 @@ Minimal admin view — used as one branch of an `@if`/`@else` switch.
 import { component } from '@angular/core';
 
 export const AdminPage = component({
-  setup: () => ({
-    template: (
-      <div>
-        <h2>Admin Panel</h2>
-        <p>Manage your catalog here.</p>
-      </div>
-    ),
-  }),
+  setup: () => (
+    <div>
+      <h2>Admin Panel</h2>
+      <p>Manage your catalog here.</p>
+    </div>
+  ),
 });
 ```
 
@@ -534,33 +524,31 @@ export const CatalogPage = component({
       cards().forEach(c => c.flash());
     }
 
-    return {
-      template: (
-        <h1>{PAGE_TITLE}</h1>
+    return (
+      <h1>{PAGE_TITLE}</h1>
 
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <SearchBar model:{query} ref={searchBar} />
-          <Button variant={'ghost'} on:click={() => searchBar()?.clear()}>Clear</Button>
-          <Badge count={cart.count()} />
-        </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <SearchBar model:{query} ref={searchBar} />
+        <Button variant={'ghost'} on:click={() => searchBar()?.clear()}>Clear</Button>
+        <Badge count={cart.count()} />
+      </div>
 
-        <Button use:ripple() variant={'ghost'} on:click={flashAll}>
-          ✨ Flash all
-        </Button>
+      <Button use:ripple() variant={'ghost'} on:click={flashAll}>
+        ✨ Flash all
+      </Button>
 
-        @derive filtered = filter({ items: PRODUCTS, query: query() });
+      @derive filtered = filter({ items: PRODUCTS, query: query() });
 
-        @fragment item(p: Product) {
-          <ProductCard
-            ref={cards}
-            product={p}
-            cartQty={cart.qty(p.id)}
-            on:addToCart={(prod) => cart.add(prod)} />
-        }
+      @fragment item(p: Product) {
+        <ProductCard
+          ref={cards}
+          product={p}
+          cartQty={cart.qty(p.id)}
+          on:addToCart={(prod) => cart.add(prod)} />
+      }
 
-        <ProductList items={filtered()} {item} />
-      ),
-    };
+      <ProductList items={filtered()} {item} />
+    );
   },
   providers: ({ currencyCode }) => [
     // currencyCode is an InputSignal<string> — available here before setup() runs
@@ -589,26 +577,24 @@ export const AppPage = component({
     const theme = inject(ThemeToken);
     const isAdmin = signal(false);
 
-    return {
-      template: (
-        <div class:dark={theme() === 'dark'}>
-          <nav>
-            <button on:click={() => isAdmin.update(v => !v)}>
-              {isAdmin() ? 'Go to catalog' : 'Go to admin'}
-            </button>
-            <button on:click={() => theme.update(t => t === 'light' ? 'dark' : 'light')}>
-              Toggle theme
-            </button>
-          </nav>
+    return (
+      <div class:dark={theme() === 'dark'}>
+        <nav>
+          <button on:click={() => isAdmin.update(v => !v)}>
+            {isAdmin() ? 'Go to catalog' : 'Go to admin'}
+          </button>
+          <button on:click={() => theme.update(t => t === 'light' ? 'dark' : 'light')}>
+            Toggle theme
+          </button>
+        </nav>
 
-          @if (isAdmin()) {
-            <AdminPage />
-          } @else {
-            <CatalogPage currencyCode={'EUR'} />
-          }
-        </div>
-      ),
-    };
+        @if (isAdmin()) {
+          <AdminPage />
+        } @else {
+          <CatalogPage currencyCode={'EUR'} />
+        }
+      </div>
+    );
   },
   providers: () => [
     provide({ token: CartStore, useFactory: () => new CartStore() }),

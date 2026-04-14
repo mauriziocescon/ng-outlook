@@ -40,18 +40,16 @@ export const TextInput = component({
     // They are spread onto the inner <input> so formField runs on the native element.
     attachments: directives<HTMLInputElement>(),
   },
-  setup: ({ label, placeholder, type, value, attachments }) => ({
-    template: (
-      <label>
-        @if (label()) { <span>{label()}</span> }
-        <input
-          {...attachments()}
-          type={type()}
-          placeholder={placeholder()}
-          model:value={value} />
-      </label>
-    ),
-  }),
+  setup: ({ label, placeholder, type, value, attachments }) => (
+    <label>
+      @if (label()) { <span>{label()}</span> }
+      <input
+        {...attachments()}
+        type={type()}
+        placeholder={placeholder()}
+        model:value={value} />
+    </label>
+  ),
   style: `
     label { display: flex; flex-direction: column; gap: 4px; }
     span { font-size: .9rem; font-weight: 500; }
@@ -74,17 +72,15 @@ export const CheckboxInput = component({
     checked: model<boolean>(false),
     attachments: directives<HTMLInputElement>(),
   },
-  setup: ({ label, checked, attachments }) => ({
-    template: (
-      <label class="row">
-        <input
-          {...attachments()}
-          type="checkbox"
-          model:checked={checked} />
-        <span>{label()}</span>
-      </label>
-    ),
-  }),
+  setup: ({ label, checked, attachments }) => (
+    <label class="row">
+      <input
+        {...attachments()}
+        type="checkbox"
+        model:checked={checked} />
+      <span>{label()}</span>
+    </label>
+  ),
   style: `
     .row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
     input { width: 16px; height: 16px; cursor: pointer; }
@@ -147,36 +143,34 @@ export const SignupForm = component({
 
     // Errors are read from FieldState in this template — no coupling
     // between input components and @angular/forms/signals.
-    return {
-      template: (
-        <form use:formRoot(field={f})>
+    return (
+      <form use:formRoot(field={f})>
 
-          @fragment fieldError(field: FieldState) {
-            @if (field.touched() && field.errors().length > 0) {
-              <span class="error">{field.errors()[0].message ?? field.errors()[0].kind}</span>
-            }
+        @fragment fieldError(field: FieldState) {
+          @if (field.touched() && field.errors().length > 0) {
+            <span class="error">{field.errors()[0].message ?? field.errors()[0].kind}</span>
           }
+        }
 
-          // use:formField is collected by attachments and spread onto the inner <input>
-          <div class="field">
-            <TextInput label="Email" type="email" use:formField(field={f.email}) />
-            @render(fieldError(f.email()))
-          </div>
+        // use:formField is collected by attachments and spread onto the inner <input>
+        <div class="field">
+          <TextInput label="Email" type="email" use:formField(field={f.email}) />
+          @render(fieldError(f.email()))
+        </div>
 
-          <div class="field">
-            <TextInput label="Password" type="password" use:formField(field={f.password}) />
-            @render(fieldError(f.password()))
-          </div>
+        <div class="field">
+          <TextInput label="Password" type="password" use:formField(field={f.password}) />
+          @render(fieldError(f.password()))
+        </div>
 
-          <div class="field">
-            <CheckboxInput label="I accept the terms" use:formField(field={f.acceptTerms}) />
-            @render(fieldError(f.acceptTerms()))
-          </div>
+        <div class="field">
+          <CheckboxInput label="I accept the terms" use:formField(field={f.acceptTerms}) />
+          @render(fieldError(f.acceptTerms()))
+        </div>
 
-          <button type="submit">Sign up</button>
-        </form>
-      ),
-    };
+        <button type="submit">Sign up</button>
+      </form>
+    );
   },
   style: `
     form { display: flex; flex-direction: column; gap: 16px; max-width: 360px; }
@@ -202,12 +196,10 @@ export const Settings = component({
     const query = signal('');
     const darkMode = signal(false);
 
-    return {
-      template: (
-        <TextInput label="Search" type="search" model:value={query} />
-        <CheckboxInput label="Dark mode" model:checked={darkMode} />
-      ),
-    };
+    return (
+      <TextInput label="Search" type="search" model:value={query} />
+      <CheckboxInput label="Dark mode" model:checked={darkMode} />
+    );
   },
 });
 ```
