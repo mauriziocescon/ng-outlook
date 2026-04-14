@@ -281,7 +281,25 @@ export function injectionToken(_desc: string, _config: any): any {
 }
 
 // ────────────────────────────────────────────────────────────────
-// 10. PROVIDE
+// 10. INJECT
+//
+// inject(Component)  → ExposeOf<Component>
+// inject(Directive)  → ExposeOf<Directive>
+// inject(Token)      → T
+// inject(Class)      → instance
+// ────────────────────────────────────────────────────────────────
+
+export function inject<B, E>(token: ComponentInstance<B, E>): ExposeOf<ComponentInstance<B, E>>;
+export function inject<H extends HTMLElement, B, E>(token: DirectiveInstance<H, B, E>): ExposeOf<DirectiveInstance<H, B, E>>;
+export function inject<T>(token: InjectionToken<T>): T;
+export function inject<T>(token: new (...args: any[]) => T): T;
+
+export function inject(_token: any): any {
+  return {} as any;
+}
+
+// ────────────────────────────────────────────────────────────────
+// 11. PROVIDE
 //
 // Shorthand — provide(token): uses the token's default factory.
 // Object    — provide({ token, useFactory }): overrides factory.

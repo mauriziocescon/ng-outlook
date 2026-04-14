@@ -25,12 +25,29 @@ import {
   directives,
   ref,
   refMany,
+  inject,
   injectionToken,
   provide,
 } from './types';
 
 interface User { id: string; name: string; }
 interface Item { id: string; desc: string; }
+
+// ────────────────────────────────────────────────────────────────
+// BRANDED TYPE NOMINALITY
+//
+// FragmentBinding and DirectivesBinding must be distinct nominal
+// types — not structurally assignable to each other.
+// ────────────────────────────────────────────────────────────────
+
+type FragIsDir = FragmentBinding<void> extends DirectivesBinding<any> ? 'LEAK' : 'OK';
+const _fragIsDir: FragIsDir = 'OK';
+
+type DirIsFrag = DirectivesBinding<HTMLElement> extends FragmentBinding<any> ? 'LEAK' : 'OK';
+const _dirIsFrag: DirIsFrag = 'OK';
+
+type SameInner = FragmentBinding<string> extends DirectivesBinding<string> ? 'LEAK' : 'OK';
+const _sameInner: SameInner = 'OK';
 
 // ────────────────────────────────────────────────────────────────
 // COMPONENT — basics
@@ -82,6 +99,12 @@ const UserDetail = component({
   },
 });
 
+// ────────────────────────────────────────────────────────────────
+// COMPONENT — providers receive only inputs (not models/outputs)
+// ────────────────────────────────────────────────────────────────
+
+class Store {}
+
 // All five binding kinds: providers excludes everything except InputSignal
 const AllBindingKinds = component({
   bindings: {
@@ -120,11 +143,41 @@ const OutputModelOnly = component({
   },
 });
 
+const Counter = component({
+  bindings: {
+    c: input.required<number>(),
+  },
+  setup: () => ({ template: '...' }),
+  providers: ({ c }) => {
+    const _cInput: InputSignal<number> = c;
+    return [provide({ token: Store, useFactory: () => new Store() })];
+  },
+});
+
+const WithMixed = component({
+  bindings: {
+    name: input.required<string>(),
+    age: input<number>(),
+    email: model<string>(),
+    save: output<void>(),
+  },
+  setup: ({ name, age, email, save }) => ({ template: '...' }),
+  providers: (inputs) => {
+    const _name: InputSignal<string> = inputs.name;
+    const _age: InputSignal<number | undefined> = inputs.age;
+    // @ts-expect-error email is a model, not an input
+    inputs.email;
+    // @ts-expect-error save is an output, not an input
+    inputs.save;
+    return [];
+  },
+});
+
 // ────────────────────────────────────────────────────────────────
 // COMPONENT — expose
 //
-// expose defines the public interface accessible via ref.
-// Components without expose resolve to undefined.
+// expose defines the public interface accessible via ref and
+// inject. Components without expose resolve to void / undefined.
 // ────────────────────────────────────────────────────────────────
 
 const Child = component({
@@ -142,65 +195,6 @@ const Child = component({
 const NoExpose = component({
   setup: () => ({ template: '...' }),
 });
-
-// ────────────────────────────────────────────────────────────────
-// COMPONENT — expose with inputs
-//
-// Inputs can be surfaced directly through expose, making them
-// accessible via ref. Since InputSignal<T> extends Signal<T>,
-// they are naturally read-only.
-// ────────────────────────────────────────────────────────────────
-
-const ExposedInput = component({
-  bindings: {
-    name: input.required<string>(),
-    age: input<number>(),
-  },
-  setup: ({ name, age }) => ({
-    template: '...',
-    expose: { name, age },
-  }),
-});
-
-const exposedInputRef = ref(ExposedInput);
-const _exposedName: InputSignal<string> | undefined = exposedInputRef()?.name;
-const _exposedAge: InputSignal<number | undefined> | undefined = exposedInputRef()?.age;
-
-// Mixed: inputs + local signals in expose
-const MixedExpose = component({
-  bindings: {
-    label: input.required<string>(),
-    count: model<number>(),
-  },
-  setup: ({ label, count }) => {
-    const doubled = computed(() => (count() ?? 0) * 2);
-
-    return {
-      template: '...',
-      expose: { label, doubled },
-    };
-  },
-});
-
-const mixedRef = ref(MixedExpose);
-const _mixedLabel: InputSignal<string> | undefined = mixedRef()?.label;
-const _mixedDoubled: Signal<number> | undefined = mixedRef()?.doubled;
-
-// Directive exposing its input
-const highlight = directive({
-  host: ref<HTMLElement>(),
-  bindings: {
-    color: input.required<string>(),
-  },
-  setup: ({ color }, { host }) => ({ color }),
-});
-
-const highlightRef = ref(highlight);
-const _highlightColor: InputSignal<string> | undefined = highlightRef()?.color;
-
-// Void expose through ref: resolves to Ref<undefined>, not Ref<void | undefined>
-const voidExposeRef = ref(NoExpose);
-const _voidExposeCheck: Ref<undefined> = voidExposeRef;
 
 // ────────────────────────────────────────────────────────────────
 // COMPONENT — wrapper with generic target and spread
@@ -284,42 +278,6 @@ const PassThrough = component.wrap<typeof Base>({
     const _s: ModelSignal<boolean | undefined> = selected;
     const _c: OutputEmitterRef<void> = click;
     return { template: '...' };
-  },
-});
-
-// ────────────────────────────────────────────────────────────────
-// COMPONENT — providers receive only inputs (not models/outputs)
-// ────────────────────────────────────────────────────────────────
-
-class Store {}
-
-const Counter = component({
-  bindings: {
-    c: input.required<number>(),
-  },
-  setup: () => ({ template: '...' }),
-  providers: ({ c }) => {
-    const _cInput: InputSignal<number> = c;
-    return [provide({ token: Store, useFactory: () => new Store() })];
-  },
-});
-
-const WithMixed = component({
-  bindings: {
-    name: input.required<string>(),
-    age: input<number>(),
-    email: model<string>(),
-    save: output<void>(),
-  },
-  setup: ({ name, age, email, save }) => ({ template: '...' }),
-  providers: (inputs) => {
-    const _name: InputSignal<string> = inputs.name;
-    const _age: InputSignal<number | undefined> = inputs.age;
-    // @ts-expect-error email is a model, not an input
-    inputs.email;
-    // @ts-expect-error save is an output, not an input
-    inputs.save;
-    return [];
   },
 });
 
@@ -476,6 +434,58 @@ tooltipRef.set({ toggle: () => {} });
 // @ts-expect-error
 manyChildren.set([]);
 
+// Expose with inputs: inputs surfaced through expose
+const ExposedInput = component({
+  bindings: {
+    name: input.required<string>(),
+    age: input<number>(),
+  },
+  setup: ({ name, age }) => ({
+    template: '...',
+    expose: { name, age },
+  }),
+});
+
+const exposedInputRef = ref(ExposedInput);
+const _exposedName: InputSignal<string> | undefined = exposedInputRef()?.name;
+const _exposedAge: InputSignal<number | undefined> | undefined = exposedInputRef()?.age;
+
+// Mixed: inputs + local signals in expose
+const MixedExpose = component({
+  bindings: {
+    label: input.required<string>(),
+    count: model<number>(),
+  },
+  setup: ({ label, count }) => {
+    const doubled = computed(() => (count() ?? 0) * 2);
+
+    return {
+      template: '...',
+      expose: { label, doubled },
+    };
+  },
+});
+
+const mixedRef = ref(MixedExpose);
+const _mixedLabel: InputSignal<string> | undefined = mixedRef()?.label;
+const _mixedDoubled: Signal<number> | undefined = mixedRef()?.doubled;
+
+// Directive exposing its input
+const highlight = directive({
+  host: ref<HTMLElement>(),
+  bindings: {
+    color: input.required<string>(),
+  },
+  setup: ({ color }, { host }) => ({ color }),
+});
+
+const highlightRef = ref(highlight);
+const _highlightColor: InputSignal<string> | undefined = highlightRef()?.color;
+
+// Void expose through ref: resolves to Ref<undefined>, not Ref<void | undefined>
+const voidExposeRef = ref(NoExpose);
+const _voidExposeCheck: Ref<undefined> = voidExposeRef;
+
 // Passing a ref as an input
 const Sibling = component({
   bindings: {
@@ -507,23 +517,7 @@ const Parent = component({
 });
 
 // ────────────────────────────────────────────────────────────────
-// BRANDED TYPE NOMINALITY
-//
-// FragmentBinding and DirectivesBinding must be distinct nominal
-// types — not structurally assignable to each other.
-// ────────────────────────────────────────────────────────────────
-
-type FragIsDir = FragmentBinding<void> extends DirectivesBinding<any> ? 'LEAK' : 'OK';
-const _fragIsDir: FragIsDir = 'OK';
-
-type DirIsFrag = DirectivesBinding<HTMLElement> extends FragmentBinding<any> ? 'LEAK' : 'OK';
-const _dirIsFrag: DirIsFrag = 'OK';
-
-type SameInner = FragmentBinding<string> extends DirectivesBinding<string> ? 'LEAK' : 'OK';
-const _sameInner: SameInner = 'OK';
-
-// ────────────────────────────────────────────────────────────────
-// INJECTION TOKEN — component-level, root-level, multi
+// DI — injection tokens, inject, provide
 // ────────────────────────────────────────────────────────────────
 
 // Component-level: must be provided explicitly
@@ -567,10 +561,23 @@ const multiToken = injectionToken('desc', {
 
 const _multiTokenType: InjectionToken<number[]> = multiToken;
 
-// ────────────────────────────────────────────────────────────────
-// PROVIDE — shorthand and object form
-// ────────────────────────────────────────────────────────────────
+// inject(Component) → expose type
+const _injectedChild: { text: Signal<string> } = inject(Child);
 
+// inject(Component without expose) → void
+const _injectedNoExpose: void = inject(NoExpose);
+
+// inject(Directive) → expose type
+const _injectedTooltip: { toggle: () => void } = inject(tooltip);
+
+// inject(InjectionToken) → token type
+const _injectedComp: { value: Signal<number>; increase: () => void } = inject(compToken);
+const _injectedMulti: number[] = inject(multiToken);
+
+// inject(Class) → class instance
+const _injectedStore: Store = inject(Store);
+
+// provide — shorthand and object form
 const _providers = [
   provide(compToken),
   provide(multiToken),
