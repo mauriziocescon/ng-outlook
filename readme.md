@@ -513,7 +513,7 @@ export const Button = component({
      * Directive Sink: directives applied to <Button /> are forwarded
      * and instantiated on the internal <button> element at runtime.
      * The element type (HTMLButtonElement) is the only constraint
-     * the child needs to declare.
+     * the child needs to declare (compile-time validation + runtime unrolling.
      */
     return (
       <button {...attachments()} disabled={disabled()} on:click={() => click.emit()}>
