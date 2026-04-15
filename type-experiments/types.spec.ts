@@ -41,6 +41,12 @@ interface Item { id: string; desc: string; }
 //
 // FragmentBinding and DirectivesBinding must be distinct nominal
 // types — not structurally assignable to each other.
+//
+// NOTE on Directive Sink semantics:
+// The element-type parameter T in DirectivesBinding<T> is the
+// Sink constraint checked by the compiler at build time.
+// The *instantiation* of directives is deferred to runtime via
+// ɵɵapplyDirectiveSink at the {…attachments()} site.
 // ────────────────────────────────────────────────────────────────
 
 type FragIsDir = FragmentBinding<void> extends DirectivesBinding<any> ? 'LEAK' : 'OK';
@@ -51,6 +57,59 @@ const _dirIsFrag: DirIsFrag = 'OK';
 
 type SameInner = FragmentBinding<string> extends DirectivesBinding<string> ? 'LEAK' : 'OK';
 const _sameInner: SameInner = 'OK';
+
+// ────────────────────────────────────────────────────────────────
+// DIRECTIVE SINK — element-type compatibility
+//
+// DirectivesBinding<T> is covariant in T: a sink for a narrower
+// element type (HTMLButtonElement) must NOT accept a
+// DirectivesBinding typed for a broader or unrelated element type.
+// The check reflects compile-time Sink validation: the element
+// type T declared in directives<T>() constrains which directives
+// are legal at the call site. Instantiation itself is deferred to
+// runtime (ɵɵapplyDirectiveSink), but the type-mismatch is caught
+// at build time.
+// ────────────────────────────────────────────────────────────────
+
+// A Button-sink should NOT accept a Div-sink
+type ButtonSinkAcceptsDiv =
+  DirectivesBinding<HTMLDivElement> extends DirectivesBinding<HTMLButtonElement>
+    ? 'LEAK'
+    : 'OK';
+const _buttonSinkAcceptsDiv: ButtonSinkAcceptsDiv = 'OK';
+
+// A Div-sink should NOT accept a Button-sink (unrelated narrowing)
+type DivSinkAcceptsButton =
+  DirectivesBinding<HTMLButtonElement> extends DirectivesBinding<HTMLDivElement>
+    ? 'LEAK'
+    : 'OK';
+const _divSinkAcceptsButton: DivSinkAcceptsButton = 'OK';
+
+// A component declaring attachments: directives<HTMLButtonElement>()
+// carries the constraint in its bindings — verified here structurally.
+const ButtonSink = component({
+  bindings: {
+    attachments: directives<HTMLButtonElement>(),
+  },
+  setup: ({ attachments }) => {
+    // attachments is DirectivesBinding<HTMLButtonElement> — not HTMLDivElement
+    const _sink: DirectivesBinding<HTMLButtonElement> = attachments;
+    return tmpl;
+  },
+});
+
+// Attempting to assign a Div-sink where a Button-sink is expected
+// must be a type error.
+const _NegDivSinkToButtonSink = component({
+  bindings: {
+    attachments: directives<HTMLButtonElement>(),
+  },
+  setup: ({ attachments }) => {
+    // @ts-expect-error DirectivesBinding<HTMLDivElement> is not assignable to DirectivesBinding<HTMLButtonElement>
+    const _sink: DirectivesBinding<HTMLDivElement> = attachments;
+    return tmpl;
+  },
+});
 
 // ────────────────────────────────────────────────────────────────
 // COMPONENT — basics

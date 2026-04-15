@@ -510,7 +510,10 @@ export const Button = component({
     // ...
 
     /**
-     * Compile-time unrolling + type checking
+     * Directive Sink: directives applied to <Button /> are forwarded
+     * and instantiated on the internal <button> element at runtime.
+     * The element type (HTMLButtonElement) is the only constraint
+     * the child needs to declare.
      */
     return (
       <button {...attachments()} disabled={disabled()} on:click={() => click.emit()}>
@@ -550,6 +553,10 @@ export const UserDetailConsumer = component({
  * unrolls the spread into individual bindings on the target,
  * re-wiring each binding wrapper (InputSignal, ModelSignal, etc.)
  * to the corresponding target binding. No runtime object spread.
+ *
+ * `attachments` acts as a behavior passthrough — a "Sink" —
+ * forwarding directives from the caller through to the innermost
+ * element where {…attachments()} is declared.
  */
 export const UserDetailWrapper = component.wrap<typeof UserDetail>({
   bindings: {
