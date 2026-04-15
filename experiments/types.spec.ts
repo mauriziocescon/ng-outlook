@@ -17,13 +17,13 @@ import {
   type TemplateMarkup,
   type DerivationInstance,
   type FragmentBinding,
-  type AttachBinding,
+  type AttachableBinding,
   type InjectionToken,
   component,
   directive,
   derivation,
   fragment,
-  attach,
+  attachable,
   ref,
   refMany,
   inject,
@@ -39,60 +39,60 @@ interface Item { id: string; desc: string; }
 // ────────────────────────────────────────────────────────────────
 // BRANDED TYPE NOMINALITY
 //
-// FragmentBinding and AttachBinding must be distinct nominal
+// FragmentBinding and AttachableBinding must be distinct nominal
 // types — not structurally assignable to each other.
 //
 // NOTE on Directive Attachments semantics:
-// The element-type parameter T in AttachBinding<T> is the
+// The element-type parameter T in AttachableBinding<T> is the
 // Sink constraint checked by the compiler at build time.
 // The *instantiation* of directives is deferred to runtime via
-// ɵɵapplyAttachments at the {…attachments()} site.
+// ɵɵapplyAttachments at the use:attachments() site.
 // ────────────────────────────────────────────────────────────────
 
-type FragIsDir = FragmentBinding<void> extends AttachBinding<any> ? 'LEAK' : 'OK';
+type FragIsDir = FragmentBinding<void> extends AttachableBinding<any> ? 'LEAK' : 'OK';
 const _fragIsDir: FragIsDir = 'OK';
 
-type DirIsFrag = AttachBinding<HTMLElement> extends FragmentBinding<any> ? 'LEAK' : 'OK';
+type DirIsFrag = AttachableBinding<HTMLElement> extends FragmentBinding<any> ? 'LEAK' : 'OK';
 const _dirIsFrag: DirIsFrag = 'OK';
 
-type SameInner = FragmentBinding<string> extends AttachBinding<string> ? 'LEAK' : 'OK';
+type SameInner = FragmentBinding<string> extends AttachableBinding<string> ? 'LEAK' : 'OK';
 const _sameInner: SameInner = 'OK';
 
 // ────────────────────────────────────────────────────────────────
 // DIRECTIVE ATTACHMENTS — element-type compatibility
 //
-// AttachBinding<T> is covariant in T: an attachments binding for a
+// AttachableBinding<T> is covariant in T: an attachments binding for a
 // narrower element type (HTMLButtonElement) must NOT accept an
-// AttachBinding typed for a broader or unrelated element type.
+// AttachableBinding typed for a broader or unrelated element type.
 // The check reflects compile-time validation: the element type T
-// declared in attach<T>() constrains which directives are legal at
+// declared in attachable<T>() constrains which directives are legal at
 // the call site. Instantiation itself is deferred to runtime
 // (ɵɵapplyAttachments), but the type-mismatch is caught at build time.
 // ────────────────────────────────────────────────────────────────
 
 // A Button-sink should NOT accept a Div-sink
 type ButtonSinkAcceptsDiv =
-  AttachBinding<HTMLDivElement> extends AttachBinding<HTMLButtonElement>
+  AttachableBinding<HTMLDivElement> extends AttachableBinding<HTMLButtonElement>
     ? 'LEAK'
     : 'OK';
 const _buttonSinkAcceptsDiv: ButtonSinkAcceptsDiv = 'OK';
 
 // A Div-sink should NOT accept a Button-sink (unrelated narrowing)
 type DivSinkAcceptsButton =
-  AttachBinding<HTMLButtonElement> extends AttachBinding<HTMLDivElement>
+  AttachableBinding<HTMLButtonElement> extends AttachableBinding<HTMLDivElement>
     ? 'LEAK'
     : 'OK';
 const _divSinkAcceptsButton: DivSinkAcceptsButton = 'OK';
 
-// A component declaring attachments: attach<HTMLButtonElement>()
+// A component declaring attachments: attachable<HTMLButtonElement>()
 // carries the constraint in its bindings — verified here structurally.
 const ButtonSink = component({
   bindings: {
-    attachments: attach<HTMLButtonElement>(),
+    attachments: attachable<HTMLButtonElement>(),
   },
   setup: ({ attachments }) => {
-    // attachments is AttachBinding<HTMLButtonElement> — not HTMLDivElement
-    const _sink: AttachBinding<HTMLButtonElement> = attachments;
+    // attachments is AttachableBinding<HTMLButtonElement> — not HTMLDivElement
+    const _sink: AttachableBinding<HTMLButtonElement> = attachments;
     return tmpl;
   },
 });
@@ -101,11 +101,11 @@ const ButtonSink = component({
 // must be a type error.
 const _NegDivSinkToButtonSink = component({
   bindings: {
-    attachments: attach<HTMLButtonElement>(),
+    attachments: attachable<HTMLButtonElement>(),
   },
   setup: ({ attachments }) => {
-    // @ts-expect-error AttachBinding<HTMLDivElement> is not assignable to AttachBinding<HTMLButtonElement>
-    const _sink: AttachBinding<HTMLDivElement> = attachments;
+    // @ts-expect-error AttachableBinding<HTMLDivElement> is not assignable to AttachableBinding<HTMLButtonElement>
+    const _sink: AttachableBinding<HTMLDivElement> = attachments;
     return tmpl;
   },
 });
@@ -147,10 +147,10 @@ const MinimalFullProviders = component({
 });
 
 // ────────────────────────────────────────────────────────────────
-// COMPONENT — bindings (input, model, output, fragment, attach)
+// COMPONENT — bindings (input, model, output, fragment, attachable)
 //
 // Setup receives raw Angular types: InputSignal, ModelSignal,
-// OutputEmitterRef, FragmentBinding, AttachBinding.
+// OutputEmitterRef, FragmentBinding, AttachableBinding.
 // ────────────────────────────────────────────────────────────────
 
 const UserDetail = component({
@@ -159,7 +159,7 @@ const UserDetail = component({
     email: model.required<string>(),
     makeAdmin: output<void>(),
     children: fragment<void>(),
-    attachments: attach<HTMLElement>(),
+    attachments: attachable<HTMLElement>(),
   },
   setup: ({ user, email, makeAdmin, children, attachments }) => {
     const _u: User = user();
@@ -183,7 +183,7 @@ const AllBindingKinds = component({
     b: model<string>(),
     c: output<void>(),
     d: fragment<void>(),
-    e: attach<HTMLElement>(),
+    e: attachable<HTMLElement>(),
   },
   setup: (b) => tmpl,
   providers: (inputs) => {
@@ -194,7 +194,7 @@ const AllBindingKinds = component({
     inputs.c;
     // @ts-expect-error d is fragment, excluded from providers
     inputs.d;
-    // @ts-expect-error e is attach, excluded from providers
+    // @ts-expect-error e is attachable, excluded from providers
     inputs.e;
     return [];
   },
@@ -271,13 +271,14 @@ const NoExpose = component({
 // ────────────────────────────────────────────────────────────────
 // COMPONENT — wrapper with generic target and spread
 //
-// Explicit opt-in via component.wrap<typeof Target>().
+// Target passed as first arg; C is inferred from the value
+// (consistent with ref(Child), inject(Child), etc.).
 // setup receives wrapped bindings, same as standard components.
 // {...rest} spread is compile-time: the compiler unrolls it into
 // individual bindings on the target. No runtime object spread.
 // ────────────────────────────────────────────────────────────────
 
-const UserDetailWrapper = component.wrap<typeof UserDetail>({
+const UserDetailWrapper = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
   },
@@ -287,7 +288,7 @@ const UserDetailWrapper = component.wrap<typeof UserDetail>({
       email: ModelSignal<string>;
       makeAdmin: OutputEmitterRef<void>;
       children: FragmentBinding<void>;
-      attachments: AttachBinding<HTMLElement>;
+      attachments: AttachableBinding<HTMLElement>;
     } = rest;
     const other = computed(() => user());
     return tmpl;
@@ -295,7 +296,7 @@ const UserDetailWrapper = component.wrap<typeof UserDetail>({
 });
 
 // rest should NOT contain explicitly destructured keys
-const _NegRest = component.wrap<typeof UserDetail>({
+const _NegRest = component.wrap(UserDetail, {
   bindings: { user: input.required<User>() },
   setup: ({ user, ...rest }) => {
     // @ts-expect-error user was destructured, not in rest
@@ -305,7 +306,7 @@ const _NegRest = component.wrap<typeof UserDetail>({
 });
 
 // bindings should NOT accept keys outside the target type
-const _NegExtra = component.wrap<typeof UserDetail>({
+const _NegExtra = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
     // @ts-expect-error nonsense is not in target bindings
@@ -315,7 +316,7 @@ const _NegExtra = component.wrap<typeof UserDetail>({
 });
 
 // bindings should NOT accept wrong inner types
-const _NegWrongType = component.wrap<typeof UserDetail>({
+const _NegWrongType = component.wrap(UserDetail, {
   bindings: {
     // @ts-expect-error user input type should be User
     user: input.required<string>(),
@@ -324,7 +325,7 @@ const _NegWrongType = component.wrap<typeof UserDetail>({
 });
 
 // bindings should preserve target binding kind
-const _NegWrongKind = component.wrap<typeof UserDetail>({
+const _NegWrongKind = component.wrap(UserDetail, {
   bindings: {
     // @ts-expect-error makeAdmin is an output on target, not an input
     makeAdmin: input<void>(),
@@ -344,7 +345,7 @@ const Base = component({
   setup: ({ item, selected, click }) => tmpl,
 });
 
-const PassThrough = component.wrap<typeof Base>({
+const PassThrough = component.wrap(Base, {
   setup: ({ item, selected, click }) => {
     const _i: InputSignal<Simple> = item;
     const _s: ModelSignal<boolean | undefined> = selected;
@@ -354,7 +355,7 @@ const PassThrough = component.wrap<typeof Base>({
 });
 
 // Wrapper providers should receive inputs only (target-kind aware)
-const WrapperProviders = component.wrap<typeof UserDetail>({
+const WrapperProviders = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
   },
@@ -367,7 +368,7 @@ const WrapperProviders = component.wrap<typeof UserDetail>({
     inputs.makeAdmin;
     // @ts-expect-error children is fragment on target, excluded from wrapper providers
     inputs.children;
-    // @ts-expect-error attachments is attach on target, excluded from wrapper providers
+    // @ts-expect-error attachments is attachable on target, excluded from wrapper providers
     inputs.attachments;
     return [];
   },

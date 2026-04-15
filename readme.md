@@ -491,7 +491,7 @@ export const ButtonConsumer = component({
 });
 
 // -- button in @mylib/button --------------------
-import { component, input, output, fragment, attach } from '@angular/core';
+import { component, input, output, fragment, attachable } from '@angular/core';
 
 export const Button = component({
   bindings: {
@@ -504,7 +504,7 @@ export const Button = component({
      * Readonly signal provided by ng (not bindable directly)
      * Name reserved to ng
      */
-    attachments: attach<HTMLButtonElement>(),
+    attachments: attachable<HTMLButtonElement>(),
   },
   setup: ({ children, disabled, click, attachments }) => {
     // ...
@@ -516,7 +516,7 @@ export const Button = component({
      * the child needs to declare (compile-time validation + runtime unrolling).
      */
     return (
-      <button {...attachments()} disabled={disabled()} on:click={() => click.emit()}>
+      <button use:attachments() disabled={disabled()} on:click={() => click.emit()}>
         @render(children())
       </button>
     );
@@ -546,7 +546,9 @@ export const UserDetailConsumer = component({
 });
 
 /**
- * Wrapper mode: component.wrap<typeof Target>({ ... }).
+ * Wrapper mode: component.wrap(Target, { ... }).
+ * Target is passed as a value; the type is inferred from it,
+ * consistent with ref(Child), inject(Child), etc.
  * setup receives wrapped bindings (same as standard components).
  *
  * {...rest} is a compile-time operation: the compiler statically
@@ -554,11 +556,11 @@ export const UserDetailConsumer = component({
  * re-wiring each binding wrapper (InputSignal, ModelSignal, etc.)
  * to the corresponding target binding. No runtime object spread.
  *
- * `Directive Attachments` acts as a behavior passthrough — a "Sink" —
- * forwarding directives from the caller through to the innermost
- * element where {…attachments()} is declared.
+ * attachments act as a behavior passthrough — forwarding directives
+ * from the caller through to the innermost element where
+ * {…attachments()} is declared.
  */
-export const UserDetailWrapper = component.wrap<typeof UserDetail>({
+export const UserDetailWrapper = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
   },
@@ -572,9 +574,12 @@ export const UserDetailWrapper = component.wrap<typeof UserDetail>({
 });
 
 // -- UserDetail -----------------------------------
-import { component, input, model, output, fragment, attach } from '@angular/core';
+import { component, input, model, output, fragment, attachable } from '@angular/core';
 
-export interface User {/** ... **/}
+export interface User {
+  name: string;
+  role: string;
+}
 
 export const UserDetail = component({
   bindings: {
@@ -582,13 +587,23 @@ export const UserDetail = component({
     email: model.required<string>(),
     makeAdmin: output<void>(),
     children: fragment<void>(),
-    attachments: attach<HTMLElement>(),
+    attachments: attachable<HTMLElement>(),
   },
-  setup: ({ user, email, makeAdmin, children, attachments }) => {
-    // ...
+  setup: ({ user, email, makeAdmin, children, attachments }) => (
+    <div use:attachments()>
+      <h3>{user().name}</h3>
+      <p>Role: {user().role}</p>
 
-    return (...);
-  },
+      <label>Email:</label>
+      <input type="email" model:value={email} />
+
+      <button on:click={() => makeAdmin.emit()}>Make Admin</button>
+
+      @if (children) {
+        @render(children())
+      }
+    </div>
+  ),
 });
 ```
 
@@ -623,7 +638,7 @@ export const ButtonConsumer = component({
 });
 
 // -- button in @mylib/button --------------------
-import { component, input, output, computed, fragment, attach } from '@angular/core';
+import { component, input, output, computed, fragment, attachable } from '@angular/core';
 
 export const Button = component({
   bindings: {
@@ -633,7 +648,7 @@ export const Button = component({
     disabled: input<boolean>(false),
     click: output<void>(),
     children: fragment<void>(),
-    attachments: attach<HTMLButtonElement>(),
+    attachments: attachable<HTMLButtonElement>(),
   },
   setup: ({ type, class: className, style, disabled, click, children, attachments }) => {
     const innerStyle = computed(() => `${style()}; color: red;`);
@@ -641,7 +656,7 @@ export const Button = component({
     // Forward explicit bindings + attached directives.
     return (
       <button
-        {...attachments()}
+        use:attachments()
         type={type()}
         class={className()}
         style={innerStyle()}

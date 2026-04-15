@@ -15,7 +15,7 @@ import {
 // ────────────────────────────────────────────────────────────────
 
 declare const FRAGMENT: unique symbol;
-declare const ATTACH: unique symbol;
+declare const ATTACHABLE: unique symbol;
 
 export type FragmentBinding<T> = { readonly [FRAGMENT]: T };
 
@@ -25,10 +25,10 @@ export type FragmentBinding<T> = { readonly [FRAGMENT]: T };
  *
  * PASS-THROUGH FLOW:
  * 1. Parent applies directives to component: <Button use:ripple() use:tooltip() />
- * 2. Component declares sink: attachments: attach<HTMLButtonElement>()
+ * 2. Component declares sink: attachments: attachable<HTMLButtonElement>()
  * 3. Framework stores directive definitions in component's Logical Anchor
- * 4. Component spreads sink: <button {...attachments()} />
- * 5. Compiler emits ɵɵapplyAttachments instruction (not object spread)
+ * 4. Component forwards: <button use:attachments() />
+ * 5. Compiler emits ɵɵapplyAttachments instruction
  * 6. Runtime instantiates directives on the target <button> element
  *
  * The compiler validates at build time that any directive applied
@@ -36,10 +36,10 @@ export type FragmentBinding<T> = { readonly [FRAGMENT]: T };
  * The child template never inspects the bag contents; it only
  * declares the required element type as the Sink constraint.
  */
-export type AttachBinding<T> = { readonly [ATTACH]: T };
+export type AttachableBinding<T> = { readonly [ATTACHABLE]: T };
 
 export declare function fragment<T>(): FragmentBinding<T>;
-export declare function attach<T extends HTMLElement>(): AttachBinding<T>;
+export declare function attachable<T extends HTMLElement>(): AttachableBinding<T>;
 
 // ────────────────────────────────────────────────────────────────
 // 2. REF
@@ -68,7 +68,7 @@ export type BindingValue =
   | ModelSignal<any>
   | OutputEmitterRef<any>
   | FragmentBinding<any>
-  | AttachBinding<any>;
+  | AttachableBinding<any>;
 
 // ────────────────────────────────────────────────────────────────
 // 4. INSTANCE TYPES & SHARED HELPERS
@@ -142,7 +142,9 @@ type SetupReturn<E> =
 //   B inferred from bindings, setup receives Angular signal types
 //   (InputSignal, ModelSignal, OutputEmitterRef, …).
 //
-// component.wrap<typeof Target>(...) — wrapper mode:
+// component.wrap(Target, ...) — wrapper mode:
+//   Target is passed as a value; C is inferred from it (consistent
+//   with ref(Child), inject(Child), etc.).
 //   bindings are partial and type-checked against Target while
 //   preserving binding kind per key.
 //   setup receives binding wrappers (signals/outputs/etc.), matching
@@ -150,10 +152,10 @@ type SetupReturn<E> =
 //   compile-time operation: the compiler unrolls it into individual
 //   bindings on the target, re-wiring each wrapper to the
 //   corresponding target binding. No runtime object spread.
-//   For AttachBinding keys, {...attachments()} creates a
-//   PASS-THROUGH: the compiler emits a ɵɵapplyAttachments instruction
-//   rather than spreading a plain object — the Sink is forwarded intact
-//   from parent → wrapper → target, maintaining the directive chain.
+//   For AttachableBinding keys in {...rest}, the compiler passes them
+//   through intact to the target component. ɵɵapplyAttachments is only
+//   emitted at the target's use:attachments() site — the chain is
+//   maintained from parent → wrapper → target element.
 //
 // ────────────────────────────────────────────────────────────────
 
@@ -178,10 +180,11 @@ export function component(config: any): any {
   return config;
 }
 
-// Wrapper namespace helper (explicit opt-in via generic target)
+// Wrapper namespace helper (target as first arg, C inferred from value)
 export namespace component {
-  export declare function wrap<C extends ComponentInstance<any, any>, E = void>(config:
-    TargetBindings<C> extends Record<string, BindingValue> ? {
+  export declare function wrap<C extends ComponentInstance<any, any>, E = void>(
+    target: C,
+    config: TargetBindings<C> extends Record<string, BindingValue> ? {
       bindings?: Partial<TargetBindings<C>>;
       setup: (props: TargetBindings<C>) => SetupReturn<E>;
       providers?: (inputs: InputsOnly<TargetBindings<C>>) => Provider[];
@@ -191,7 +194,7 @@ export namespace component {
   ): ComponentInstance<TargetBindings<C>, E>;
 }
 
-(component as any).wrap = (config: any) => config;
+(component as any).wrap = (_target: any, config: any) => config;
 
 // ────────────────────────────────────────────────────────────────
 // 6. DIRECTIVE

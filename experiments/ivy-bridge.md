@@ -19,7 +19,7 @@ With the interop layer in place, the core shift is from **instance-based** to **
 ### 3. The "Logical Anchor"
 Hostless components need a place in Ivy's internal tree without requiring a physical DOM element. The framework solves this with a "Logical Host."
 * **Mechanic:** The Ivy renderer uses an `LContainer` (a comment node) as an anchor.
-* **Purpose:** This anchor provides a stable slot in the Logical View (`LView`) to store the component's metadata, its `NodeInjector`, and the `setup()` closure results. It also holds the **Attachment Bag** — the opaque collection of directive definitions supplied by the parent via the `attachments` binding — so the engine can retrieve and instantiate them at the `{...attachments()}` spread site.
+* **Purpose:** This anchor provides a stable slot in the Logical View (`LView`) to store the component's metadata, its `NodeInjector`, and the `setup()` closure results. It also holds the **Attachment Bag** — the opaque collection of directive definitions supplied by the parent via the `attachments` binding — so the engine can retrieve and instantiate them at the `use:attachments()` site.
 * **DOM Impact:** The component's template fragments render directly into the parent's DOM without a wrapper element, preventing DOM bloat.
 
 ### 4. Hostless Scoped CSS
@@ -30,7 +30,7 @@ Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping
 
 ### 5. Directive Attachments & Content Projection
 Ambient metadata — directives and projected content — flows through explicit bindings rather than implicit host attachment or `<ng-content>` slots.
-* **`attachments` (Directive Attachments):** Directives applied to a component's selector are validated at compile time against the element type declared in `attach<T>()`. The `{...attachments()}` spread is not a runtime object spread; the compiler emits a `ɵɵapplyAttachments(slot, attachments)` instruction instead. At runtime, this instruction reads the directive definitions from the Attachment Bag and instantiates them on the target DOM element. This preserves **isolated AOT compilation** — the child template is compiled without knowledge of which directives the parent will supply; only the element-type constraint is known at build time.
+* **`attachments` (Directive Attachments):** Directives applied to a component's selector are validated at compile time against the element type declared in `attachable<T>()`. `use:attachments()` is not a regular directive application; the compiler emits a `ɵɵapplyAttachments(slot, attachments)` instruction instead. At runtime, this instruction reads the directive definitions from the Attachment Bag and instantiates them on the target DOM element. This preserves **isolated AOT compilation** — the child template is compiled without knowledge of which directives the parent will supply; only the element-type constraint is known at build time.
 * **`children` (Content Projection):** The parent's inner markup is captured as template fragments and passed into `setup` via the `children` object, to be rendered as functions wherever the component author chooses.
 
 ### 6. Derivations & Fragments
@@ -48,6 +48,6 @@ Derivations and fragments leverage existing Ivy mechanics but shift complexity t
 | **Host Element** | Implicitly required (physical tag). | Absent by default (comment node anchor). |
 | **CSS Scoping** | Tied to the physical host attribute. | Applied to all template elements via compiler-generated attributes. |
 | **External Styling** | Always possible via host `class`/`style`. | Opt-in via explicit `input()` bindings. |
-| **Directives** | Automatically attach to the host element. | Collected in the Attachment Bag and instantiated at the `{...attachments()}` site via `ɵɵapplyAttachments`. |
+| **Directives** | Automatically attach to the host element. | Collected in the Attachment Bag and instantiated at the `use:attachments()` site via `ɵɵapplyAttachments`. |
 | **Projection** | Implicitly handled by `<ng-content>`. | Passed as fragments in `children` and called as functions. |
 | **Pipes/Helpers** | Global or module-scoped classes. | Lexically scoped `derivation` or `fragment`. |
