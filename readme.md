@@ -4,7 +4,7 @@
 Points:
 1. building blocks as functions:
     - `*.ng` files with template DSL (see [`authoring format`](https://github.com/mauriziocescon/ng-outlook/blob/main/authoring-format.md)),
-    - `component`: a `setup` with scoped logic that returns a `template` (shorthand) or `{ template, expose }` (full form),
+    - `component`: a `setup` with scoped logic that returns a `template` or `{ template, expose }` (full form),
     - `directive`: a `setup` that can change the appearance or behavior of DOM elements,
     - `derivation`: a factory for template-scoped computed values that requires DI,
     - `fragment`: a way to capture some markup in the form of a function,
