@@ -491,7 +491,7 @@ export const ButtonConsumer = component({
 });
 
 // -- button in @mylib/button --------------------
-import { component, input, output, fragment, directives } from '@angular/core';
+import { component, input, output, fragment, attach } from '@angular/core';
 
 export const Button = component({
   bindings: {
@@ -504,16 +504,16 @@ export const Button = component({
      * Readonly signal provided by ng (not bindable directly)
      * Name reserved to ng
      */
-    attachments: directives<HTMLButtonElement>(),
+    attachments: attach<HTMLButtonElement>(),
   },
   setup: ({ children, disabled, click, attachments }) => {
     // ...
 
     /**
-     * Directive Sink: directives applied to <Button /> are forwarded
+     * Directive Attachments: directives applied to <Button /> are forwarded
      * and instantiated on the internal <button> element at runtime.
      * The element type (HTMLButtonElement) is the only constraint
-     * the child needs to declare (compile-time validation + runtime unrolling.
+     * the child needs to declare (compile-time validation + runtime unrolling).
      */
     return (
       <button {...attachments()} disabled={disabled()} on:click={() => click.emit()}>
@@ -554,7 +554,7 @@ export const UserDetailConsumer = component({
  * re-wiring each binding wrapper (InputSignal, ModelSignal, etc.)
  * to the corresponding target binding. No runtime object spread.
  *
- * `attachments` acts as a behavior passthrough — a "Sink" —
+ * `Directive Attachments` acts as a behavior passthrough — a "Sink" —
  * forwarding directives from the caller through to the innermost
  * element where {…attachments()} is declared.
  */
@@ -572,7 +572,7 @@ export const UserDetailWrapper = component.wrap<typeof UserDetail>({
 });
 
 // -- UserDetail -----------------------------------
-import { component, input, model, output, fragment, directives } from '@angular/core';
+import { component, input, model, output, fragment, attach } from '@angular/core';
 
 export interface User {/** ... **/}
 
@@ -582,7 +582,7 @@ export const UserDetail = component({
     email: model.required<string>(),
     makeAdmin: output<void>(),
     children: fragment<void>(),
-    attachments: directives<HTMLElement>(),
+    attachments: attach<HTMLElement>(),
   },
   setup: ({ user, email, makeAdmin, children, attachments }) => {
     // ...
@@ -623,7 +623,7 @@ export const ButtonConsumer = component({
 });
 
 // -- button in @mylib/button --------------------
-import { component, input, output, computed, fragment, directives } from '@angular/core';
+import { component, input, output, computed, fragment, attach } from '@angular/core';
 
 export const Button = component({
   bindings: {
@@ -633,7 +633,7 @@ export const Button = component({
     disabled: input<boolean>(false),
     click: output<void>(),
     children: fragment<void>(),
-    attachments: directives<HTMLButtonElement>(),
+    attachments: attach<HTMLButtonElement>(),
   },
   setup: ({ type, class: className, style, disabled, click, children, attachments }) => {
     const innerStyle = computed(() => `${style()}; color: red;`);

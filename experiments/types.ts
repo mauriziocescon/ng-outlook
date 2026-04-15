@@ -15,20 +15,20 @@ import {
 // ────────────────────────────────────────────────────────────────
 
 declare const FRAGMENT: unique symbol;
-declare const DIRECTIVES: unique symbol;
+declare const ATTACH: unique symbol;
 
 export type FragmentBinding<T> = { readonly [FRAGMENT]: T };
 
 /**
- * Directive Sink — an opaque collection of directive definitions
+ * Directive Attachments — an opaque collection of directive definitions
  * intended for a specific element type T.
  *
  * PASS-THROUGH FLOW:
  * 1. Parent applies directives to component: <Button use:ripple() use:tooltip() />
- * 2. Component declares sink: attachments: directives<HTMLButtonElement>()
+ * 2. Component declares sink: attachments: attach<HTMLButtonElement>()
  * 3. Framework stores directive definitions in component's Logical Anchor
  * 4. Component spreads sink: <button {...attachments()} />
- * 5. Compiler emits ɵɵapplyDirectiveSink instruction (not object spread)
+ * 5. Compiler emits ɵɵapplyAttachments instruction (not object spread)
  * 6. Runtime instantiates directives on the target <button> element
  *
  * The compiler validates at build time that any directive applied
@@ -36,10 +36,10 @@ export type FragmentBinding<T> = { readonly [FRAGMENT]: T };
  * The child template never inspects the bag contents; it only
  * declares the required element type as the Sink constraint.
  */
-export type DirectivesBinding<T> = { readonly [DIRECTIVES]: T };
+export type AttachBinding<T> = { readonly [ATTACH]: T };
 
 export declare function fragment<T>(): FragmentBinding<T>;
-export declare function directives<T extends HTMLElement>(): DirectivesBinding<T>;
+export declare function attach<T extends HTMLElement>(): AttachBinding<T>;
 
 // ────────────────────────────────────────────────────────────────
 // 2. REF
@@ -68,7 +68,7 @@ export type BindingValue =
   | ModelSignal<any>
   | OutputEmitterRef<any>
   | FragmentBinding<any>
-  | DirectivesBinding<any>;
+  | AttachBinding<any>;
 
 // ────────────────────────────────────────────────────────────────
 // 4. INSTANCE TYPES & SHARED HELPERS
@@ -150,8 +150,8 @@ type SetupReturn<E> =
 //   compile-time operation: the compiler unrolls it into individual
 //   bindings on the target, re-wiring each wrapper to the
 //   corresponding target binding. No runtime object spread.
-//   For DirectivesBinding keys, {...attachments()} creates a
-//   PASS-THROUGH: the compiler emits a ɵɵapplyDirectiveSink instruction
+//   For AttachBinding keys, {...attachments()} creates a
+//   PASS-THROUGH: the compiler emits a ɵɵapplyAttachments instruction
 //   rather than spreading a plain object — the Sink is forwarded intact
 //   from parent → wrapper → target, maintaining the directive chain.
 //

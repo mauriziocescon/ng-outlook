@@ -17,13 +17,13 @@ import {
   type TemplateMarkup,
   type DerivationInstance,
   type FragmentBinding,
-  type DirectivesBinding,
+  type AttachBinding,
   type InjectionToken,
   component,
   directive,
   derivation,
   fragment,
-  directives,
+  attach,
   ref,
   refMany,
   inject,
@@ -39,61 +39,60 @@ interface Item { id: string; desc: string; }
 // ────────────────────────────────────────────────────────────────
 // BRANDED TYPE NOMINALITY
 //
-// FragmentBinding and DirectivesBinding must be distinct nominal
+// FragmentBinding and AttachBinding must be distinct nominal
 // types — not structurally assignable to each other.
 //
-// NOTE on Directive Sink semantics:
-// The element-type parameter T in DirectivesBinding<T> is the
+// NOTE on Directive Attachments semantics:
+// The element-type parameter T in AttachBinding<T> is the
 // Sink constraint checked by the compiler at build time.
 // The *instantiation* of directives is deferred to runtime via
-// ɵɵapplyDirectiveSink at the {…attachments()} site.
+// ɵɵapplyAttachments at the {…attachments()} site.
 // ────────────────────────────────────────────────────────────────
 
-type FragIsDir = FragmentBinding<void> extends DirectivesBinding<any> ? 'LEAK' : 'OK';
+type FragIsDir = FragmentBinding<void> extends AttachBinding<any> ? 'LEAK' : 'OK';
 const _fragIsDir: FragIsDir = 'OK';
 
-type DirIsFrag = DirectivesBinding<HTMLElement> extends FragmentBinding<any> ? 'LEAK' : 'OK';
+type DirIsFrag = AttachBinding<HTMLElement> extends FragmentBinding<any> ? 'LEAK' : 'OK';
 const _dirIsFrag: DirIsFrag = 'OK';
 
-type SameInner = FragmentBinding<string> extends DirectivesBinding<string> ? 'LEAK' : 'OK';
+type SameInner = FragmentBinding<string> extends AttachBinding<string> ? 'LEAK' : 'OK';
 const _sameInner: SameInner = 'OK';
 
 // ────────────────────────────────────────────────────────────────
-// DIRECTIVE SINK — element-type compatibility
+// DIRECTIVE ATTACHMENTS — element-type compatibility
 //
-// DirectivesBinding<T> is covariant in T: a sink for a narrower
-// element type (HTMLButtonElement) must NOT accept a
-// DirectivesBinding typed for a broader or unrelated element type.
-// The check reflects compile-time Sink validation: the element
-// type T declared in directives<T>() constrains which directives
-// are legal at the call site. Instantiation itself is deferred to
-// runtime (ɵɵapplyDirectiveSink), but the type-mismatch is caught
-// at build time.
+// AttachBinding<T> is covariant in T: an attachments binding for a
+// narrower element type (HTMLButtonElement) must NOT accept an
+// AttachBinding typed for a broader or unrelated element type.
+// The check reflects compile-time validation: the element type T
+// declared in attach<T>() constrains which directives are legal at
+// the call site. Instantiation itself is deferred to runtime
+// (ɵɵapplyAttachments), but the type-mismatch is caught at build time.
 // ────────────────────────────────────────────────────────────────
 
 // A Button-sink should NOT accept a Div-sink
 type ButtonSinkAcceptsDiv =
-  DirectivesBinding<HTMLDivElement> extends DirectivesBinding<HTMLButtonElement>
+  AttachBinding<HTMLDivElement> extends AttachBinding<HTMLButtonElement>
     ? 'LEAK'
     : 'OK';
 const _buttonSinkAcceptsDiv: ButtonSinkAcceptsDiv = 'OK';
 
 // A Div-sink should NOT accept a Button-sink (unrelated narrowing)
 type DivSinkAcceptsButton =
-  DirectivesBinding<HTMLButtonElement> extends DirectivesBinding<HTMLDivElement>
+  AttachBinding<HTMLButtonElement> extends AttachBinding<HTMLDivElement>
     ? 'LEAK'
     : 'OK';
 const _divSinkAcceptsButton: DivSinkAcceptsButton = 'OK';
 
-// A component declaring attachments: directives<HTMLButtonElement>()
+// A component declaring attachments: attach<HTMLButtonElement>()
 // carries the constraint in its bindings — verified here structurally.
 const ButtonSink = component({
   bindings: {
-    attachments: directives<HTMLButtonElement>(),
+    attachments: attach<HTMLButtonElement>(),
   },
   setup: ({ attachments }) => {
-    // attachments is DirectivesBinding<HTMLButtonElement> — not HTMLDivElement
-    const _sink: DirectivesBinding<HTMLButtonElement> = attachments;
+    // attachments is AttachBinding<HTMLButtonElement> — not HTMLDivElement
+    const _sink: AttachBinding<HTMLButtonElement> = attachments;
     return tmpl;
   },
 });
@@ -102,11 +101,11 @@ const ButtonSink = component({
 // must be a type error.
 const _NegDivSinkToButtonSink = component({
   bindings: {
-    attachments: directives<HTMLButtonElement>(),
+    attachments: attach<HTMLButtonElement>(),
   },
   setup: ({ attachments }) => {
-    // @ts-expect-error DirectivesBinding<HTMLDivElement> is not assignable to DirectivesBinding<HTMLButtonElement>
-    const _sink: DirectivesBinding<HTMLDivElement> = attachments;
+    // @ts-expect-error AttachBinding<HTMLDivElement> is not assignable to AttachBinding<HTMLButtonElement>
+    const _sink: AttachBinding<HTMLDivElement> = attachments;
     return tmpl;
   },
 });
@@ -148,10 +147,10 @@ const MinimalFullProviders = component({
 });
 
 // ────────────────────────────────────────────────────────────────
-// COMPONENT — bindings (input, model, output, fragment, directives)
+// COMPONENT — bindings (input, model, output, fragment, attach)
 //
 // Setup receives raw Angular types: InputSignal, ModelSignal,
-// OutputEmitterRef, FragmentBinding, DirectivesBinding.
+// OutputEmitterRef, FragmentBinding, AttachBinding.
 // ────────────────────────────────────────────────────────────────
 
 const UserDetail = component({
@@ -160,7 +159,7 @@ const UserDetail = component({
     email: model.required<string>(),
     makeAdmin: output<void>(),
     children: fragment<void>(),
-    attachments: directives<HTMLElement>(),
+    attachments: attach<HTMLElement>(),
   },
   setup: ({ user, email, makeAdmin, children, attachments }) => {
     const _u: User = user();
@@ -184,7 +183,7 @@ const AllBindingKinds = component({
     b: model<string>(),
     c: output<void>(),
     d: fragment<void>(),
-    e: directives<HTMLElement>(),
+    e: attach<HTMLElement>(),
   },
   setup: (b) => tmpl,
   providers: (inputs) => {
@@ -195,7 +194,7 @@ const AllBindingKinds = component({
     inputs.c;
     // @ts-expect-error d is fragment, excluded from providers
     inputs.d;
-    // @ts-expect-error e is directives, excluded from providers
+    // @ts-expect-error e is attach, excluded from providers
     inputs.e;
     return [];
   },
@@ -288,7 +287,7 @@ const UserDetailWrapper = component.wrap<typeof UserDetail>({
       email: ModelSignal<string>;
       makeAdmin: OutputEmitterRef<void>;
       children: FragmentBinding<void>;
-      attachments: DirectivesBinding<HTMLElement>;
+      attachments: AttachBinding<HTMLElement>;
     } = rest;
     const other = computed(() => user());
     return tmpl;
@@ -368,7 +367,7 @@ const WrapperProviders = component.wrap<typeof UserDetail>({
     inputs.makeAdmin;
     // @ts-expect-error children is fragment on target, excluded from wrapper providers
     inputs.children;
-    // @ts-expect-error attachments is directives on target, excluded from wrapper providers
+    // @ts-expect-error attachments is attach on target, excluded from wrapper providers
     inputs.attachments;
     return [];
   },
