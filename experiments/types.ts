@@ -23,10 +23,16 @@ export type FragmentBinding<T> = { readonly [FRAGMENT]: T };
  * Directive Sink — an opaque collection of directive definitions
  * intended for a specific element type T.
  *
+ * PASS-THROUGH FLOW:
+ * 1. Parent applies directives to component: <Button use:ripple() use:tooltip() />
+ * 2. Component declares sink: attachments: directives<HTMLButtonElement>()
+ * 3. Framework stores directive definitions in component's Logical Anchor
+ * 4. Component spreads sink: <button {...attachments()} />
+ * 5. Compiler emits ɵɵapplyDirectiveSink instruction (not object spread)
+ * 6. Runtime instantiates directives on the target <button> element
+ *
  * The compiler validates at build time that any directive applied
  * by a parent is compatible with the element type T declared here.
- * At runtime, the Ivy engine instantiates those directives directly
- * on the internal element via a `ɵɵapplyDirectiveSink` instruction.
  * The child template never inspects the bag contents; it only
  * declares the required element type as the Sink constraint.
  */
@@ -144,10 +150,10 @@ type SetupReturn<E> =
 //   compile-time operation: the compiler unrolls it into individual
 //   bindings on the target, re-wiring each wrapper to the
 //   corresponding target binding. No runtime object spread.
-//   For DirectivesBinding keys (attachments), {...rest} is an
-//   instruction-based delegation: the compiler emits a
-//   ɵɵapplyDirectiveSink instruction rather than spreading a
-//   plain object — the Sink is forwarded, not flattened.
+//   For DirectivesBinding keys, {...attachments()} creates a
+//   PASS-THROUGH: the compiler emits a ɵɵapplyDirectiveSink instruction
+//   rather than spreading a plain object — the Sink is forwarded intact
+//   from parent → wrapper → target, maintaining the directive chain.
 //
 // ────────────────────────────────────────────────────────────────
 
