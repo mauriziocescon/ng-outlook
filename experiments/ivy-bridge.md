@@ -9,6 +9,7 @@ The existing Angular infrastructure (Router, DI, Module imports) expects class c
 * **Shape:** The utility returns a plain JavaScript function that satisfies both the TypeScript compiler and the Angular runtime as if it were a class constructor.
 * **Ivy Metadata:** The compiler attaches the standard static properties (`ɵcmp` for the component definition, `ɵfac` for the factory) directly to this function.
 * **Factory Hijack:** When the Router or a template "instantiates" the component, the `ɵfac` instruction runs the `setup()` closure and returns the `expose` object instead of a class instance.
+* **Reference Resolution:** The value returned by `ɵfac` (the `expose` object) is stored in the `LView` slot usually reserved for a class instance. A parent template reference variable (e.g. `<MyHostless #api />`) resolves via `ɵɵreference` to this `expose` object and nothing else. As with `#ref` on `<ng-container>`, there is no implicit DOM element access; if DOM access is needed, the child must explicitly expose a signal wrapping `ref<HTMLElement>()`.
 * **Hostless Create Pass Contract:** During `firstCreatePass`, `ngtsc` must mark `.ng` hostless components as `Hostless`, then emit container-aware metadata that links the child `TView` and `LView` to the parent view graph. At runtime, this allows the instruction pointer to enter the child template while preserving the parent's insertion context, so the component behaves like a permanent structural block rather than an element-backed node.
 
 ### 2. Component Boundaries & Encapsulation
@@ -20,7 +21,9 @@ With the interop layer in place, the core shift is from **instance-based** to **
 
 ### 3. The "Logical Anchor"
 Hostless components need a place in Ivy's internal tree without requiring a physical DOM element. The framework solves this with a Logical Anchor that acts as a **Virtual View Container**.
-* **Mechanic:** The Ivy renderer uses an `LContainer` (a comment node) as the Logical Anchor / Virtual View Container.
+* **Identity:** A hostless component is technically an `LContainer` (comment node), equivalent in storage shape to an `ng-container`, but with a permanent component view attached.
+* **Cursor Persistence:** Because there is no host element, child nodes are spliced directly into the parent `TNode` flow; the runtime must preserve parent cursor state across child execution.
+* **Runtime Guard:** `ɵɵcomponentContainerStart` and `ɵɵcomponentContainerEnd` save/restore parent `ɵɵadvance` state so parent change detection remains stable regardless of child template size.
 * **Purpose:** This container provides a stable slot in the Logical View (`LView`) to store the component's metadata, its `NodeInjector`, and the `setup()` closure results. It also holds the **Attachment Bag** — the opaque collection of directive definitions supplied by the parent via the `attachments` binding — so the engine can retrieve and instantiate them at the `use:attachments()` site.
 * **DOM Impact:** The component's template fragments render directly into the parent's DOM without a wrapper element, preventing DOM bloat.
 
@@ -33,6 +36,7 @@ Hostless composition must not disturb parent template cursor math.
 ### 5. Hostless Scoped CSS
 Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping** (similar to Svelte/Vue).
 * **Mechanic:** The `.ng` compiler generates a unique attribute (e.g., `_ngcontent-c123`) and applies it to every DOM element in the component's template.
+* **ShadowDom Constraint:** Hostless components are incompatible with `ViewEncapsulation.ShadowDom` because there is no concrete host element to own a shadow root.
 * **External Styling:** A parent cannot decorate a hostless component automatically. Styling intent (`class`, `style`) must be explicitly declared as `input` signals in the `bindings` block.
 * **Diagnostic Safety:** If a parent applies a `class` to a hostless component that hasn't opted in via `bindings`, the compiler emits a diagnostic error.
 
@@ -45,7 +49,8 @@ Ambient metadata — directives and projected content — flows through explicit
 ### 7. Derivations & Fragments
 Derivations and fragments leverage existing Ivy mechanics but shift complexity to the compiler for lexical scoping within the `.ng` file.
 * **Derivations (Functional Pipes):** A `derivation` is a DI-capable factory. At runtime it behaves like a Pipe: it executes within an injection context to retrieve dependencies and returns a computed signal.
-* **Fragments (Typed Templates):** A `fragment` is essentially a typed `ng-template`. The compiler hoists the fragment's markup into a standalone instruction array.
+* **Fragments (Typed, Lexically-Scoped `ng-template`):** At Ivy runtime, a `fragment` is not a new primitive; it is an `ng-template`/`LTemplate` that the compiler hoists into a standalone instruction array. The delta is compile-time only: typed parameters and lexical capture of the surrounding `setup()` scope.
+* **Execution:** Invoking a fragment function (for example `children()`) runs standard `ɵɵtemplate`-based embedded view execution at the caller insertion point.
 * **Compiler Responsibility:** The heavy lifting is in `ngtsc`, which manages lexical grouping so these functions can access the `setup` scope while mapping correctly to Ivy's internal `LTemplate` logic.
 
 ---
