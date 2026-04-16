@@ -1,6 +1,9 @@
 # Bridging .ng Components to the Ivy Runtime
 
-This document describes how the functional, signal-native `.ng` proposal maps onto the existing Angular Ivy engine — maintaining strict component boundaries, enabling hostless rendering, and preserving interoperability with legacy class-based components.
+> **DISCLAIMER — Highly Speculative & Likely Not Fully Accurate**
+> This document is a design exercise and thought experiment. The `.ng` component model described here does not exist in Angular today. The Ivy runtime details (instruction names, internal structures, compilation contracts) are approximations used for illustrative purposes and should not be treated as authoritative or production-accurate descriptions of Angular internals.
+
+This document explores how the functional, signal-native `.ng` proposal could map onto the existing Angular Ivy engine — potentially maintaining strict component boundaries, enabling hostless rendering, and preserving interoperability with legacy class-based components.
 
 ---
 
