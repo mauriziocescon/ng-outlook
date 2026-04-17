@@ -45,8 +45,6 @@ interface Item { id: string; desc: string; }
 // NOTE on Directive Attachments semantics:
 // The element-type parameter T in AttachableBinding<T> is the
 // Sink constraint checked by the compiler at build time.
-// The *instantiation* of directives is deferred to runtime via
-// ɵɵapplyAttachments at the use:attachments() site.
 // ────────────────────────────────────────────────────────────────
 
 type FragIsDir = FragmentBinding<void> extends AttachableBinding<any> ? 'LEAK' : 'OK';
@@ -66,8 +64,8 @@ const _sameInner: SameInner = 'OK';
 // AttachableBinding typed for a broader or unrelated element type.
 // The check reflects compile-time validation: the element type T
 // declared in attachable<T>() constrains which directives are legal at
-// the call site. Instantiation itself is deferred to runtime
-// (ɵɵapplyAttachments), but the type-mismatch is caught at build time.
+// the call site. Instantiation itself is deferred to runtime,
+// but the type-mismatch is caught at build time.
 // ────────────────────────────────────────────────────────────────
 
 // A Button-sink should NOT accept a Div-sink
