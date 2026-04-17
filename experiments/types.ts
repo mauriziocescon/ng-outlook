@@ -28,8 +28,7 @@ export type FragmentBinding<T> = { readonly [FRAGMENT]: T };
  * 2. Component declares sink: attachments: attachable<HTMLButtonElement>()
  * 3. Framework stores directive definitions in component's Logical Anchor
  * 4. Component forwards: <button use:attachments() />
- * 5. Compiler emits ɵɵapplyAttachments instruction
- * 6. Runtime instantiates directives on the target <button> element
+ * 5. Runtime instantiates directives on the target <button> element
  *
  * The compiler validates at build time that any directive applied
  * by a parent is compatible with the element type T declared here.
@@ -153,9 +152,8 @@ type SetupReturn<E> =
 //   bindings on the target, re-wiring each wrapper to the
 //   corresponding target binding. No runtime object spread.
 //   For AttachableBinding keys in {...rest}, the compiler passes them
-//   through intact to the target component. ɵɵapplyAttachments is only
-//   emitted at the target's use:attachments() site — the chain is
-//   maintained from parent → wrapper → target element.
+//   through intact to the target component; the chain is maintained
+//   from parent → wrapper → target element at run time.
 //
 // ────────────────────────────────────────────────────────────────
 
