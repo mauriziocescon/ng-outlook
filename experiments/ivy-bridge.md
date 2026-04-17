@@ -3,12 +3,9 @@
 > **DISCLAIMER — Highly Speculative & Design Exercise**
 > This document explores how the functional, signal-native `.ng` proposal maps onto the existing Angular Ivy engine. The runtime details and instruction names are approximations used for illustrative purposes and should not be treated as authoritative descriptions of Angular internals.
 
-This document explores how the functional, signal-native `.ng` proposal could map onto the existing Angular Ivy engine — potentially maintaining strict component boundaries, enabling hostless rendering, and preserving interoperability with legacy class-based components.
-
 ## Proposal Framing
 * **Change Class:** what layer must change (`Compiler-only`, `Runtime-only`, `Compiler + Runtime`).
 * **Delta from Ivy Today:** what is intentionally different from current behavior.
-* **Compatibility Impact:** where migration risk is concentrated.
 
 ---
 
@@ -30,7 +27,7 @@ Standard components require a physical DOM host. Hostless `.ng` components map t
 
 * **Change Class:** Runtime-only.
 * **Mechanism:**
-  1. **Anchor Instruction:** The parent template calls `ɵɵcomponentAnchor(index, ComponentDef)`. This creates a comment node (``) in the DOM.
+  1. **Anchor Instruction:** The parent template calls `ɵɵcomponentAnchor(index, ComponentDef)`. This creates a comment node (`<!-- -->`) in the DOM.
   2. **LView Boundary:** The "anchor" occupies exactly one slot in the parent `LView`.
   3. **Automatic Context Switching:** Ivy’s native `enterView()` and `leaveView()` handle the instruction cursor. The parent simply "steps over" the anchor via `ɵɵadvance(1)`. The child manages its own internal `ɵɵadvance` indexing. The child’s internal DOM size never leaks into the parent’s cursor math.
 * **Delta from Ivy Today:** Components are currently element-hosted; hostless mode uses a structural anchor that behaves like a permanent view container.
@@ -67,14 +64,13 @@ Allows directives to "tunnel" through hostless components without requiring glob
 * **Optimization (Independent Compilation):** This enables 100% independent compilation. Components no longer need to know about the global directive registry; they only care about the instructions they receive at runtime.
 * **Delta from Ivy Today:** Shifts directive matching and instantiation from a static build-time task to a dynamic runtime task, prioritizing build speed (HMR) and modularity over absolute creation-pass micro-optimizations.
 
-
 ---
 
 ### 6. Hostless Scoped CSS
 Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping** (similar to Svelte/Vue).
 
 * **Change Class:** Compiler + Runtime (renderer behavior).
-* **Mechanic:** The `.ng` compiler generates a unique attribute (e.g., `_ngcontent-c123`) and applies it to **every** DOM element in the component’s template.
+* **Mechanism:** The `.ng` compiler generates a unique attribute (e.g., `_ngcontent-c123`) and applies it to **every** DOM element in the component’s template.
 * **ShadowDom Constraint:** Hostless components are incompatible with `ViewEncapsulation.ShadowDom` because there is no concrete host element to own a shadow root.
 * **External Styling:** A parent cannot decorate a hostless component automatically. Styling intent (`class`, `style`) must be explicitly declared as `input` signals in the `bindings` block.
 * **Diagnostic Safety:** If a parent applies a `class` to a hostless component that hasn’t opted in via `bindings`, the compiler emits a diagnostic error.
@@ -83,7 +79,7 @@ Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping
 
 ---
 
-### Comparison: Legacy vs. Functional Model
+## Comparison: Legacy vs. Functional Model
 
 | Concept | Legacy Class Model | Functional `.ng` Model |
 | :--- | :--- | :--- |
