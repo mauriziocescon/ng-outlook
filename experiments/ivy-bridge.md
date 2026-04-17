@@ -55,14 +55,18 @@ Fragments capture the `setup()` scope via JS closures.
 
 ---
 
-### 5. Directive Attachments & Attachment Bags
-Allows directives to "tunnel" through hostless components to an internal element.
+### 5. Directive Attachments (Instruction-Based Late Binding)
+Allows directives to "tunnel" through hostless components without requiring global compiler knowledge.
 
 * **Change Class:** Compiler + Runtime.
-* **Mechanism:** Directives applied to a hostless selector are collected into an opaque "Attachment Bag" and stored in the Logical Anchor.
-* **Forwarding:** The child template uses `use:attachments()`, which lowers to `ɵɵapplyAttachments(slot, bag)`.
-* **Late Binding:** This instruction reads the bag and instantiates the directives on the target DOM element.
-* **Delta from Ivy Today:** Requires new runtime slot-allocation for directives not known until the bag is unrolled at runtime.
+* **Compiler Responsibility:** The parent compiler generates a "Recipe" of directive instructions. It does NOT require the child component's source to do this.
+* **The "Sink" Contract:** The child defines an `attachable<T>` sink. The compiler only validates that the "Recipe" target type matches `T`.
+* **Runtime Execution:** 1. The parent pushes the "Recipe" into the component's Logical Anchor.
+  2. When the child hits `use:attachments()`, it triggers `ɵɵapplyAttachments`.
+  3. The runtime "plays" the recipe on the local element, instantiating directives and wiring up their signals dynamically.
+* **Optimization (Independent Compilation):** This enables 100% independent compilation. Components no longer need to know about the global directive registry; they only care about the instructions they receive at runtime.
+* **Delta from Ivy Today:** Shifts directive matching and instantiation from a static build-time task to a dynamic runtime task, prioritizing build speed (HMR) and modularity over absolute creation-pass micro-optimizations.
+
 
 ---
 
