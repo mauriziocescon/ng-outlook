@@ -77,7 +77,8 @@ Allows directives to "tunnel" through hostless components without requiring glob
 * **Change Class:** Compiler + Runtime.
 * **Compiler Responsibility:** The parent compiler generates a "Recipe" of directive instructions. It does NOT require the child component’s source to do this.
 * **The "Sink" Contract:** The child defines an `attachable<T>` sink. The compiler only validates that the "Recipe" target type matches `T`.
-* **Runtime Execution:** 1. The parent pushes the "Recipe" into the component’s Logical Anchor.
+* **Runtime Execution:**
+  1. The parent pushes the "Recipe" into the component’s Logical Anchor.
   2. When the child hits `use:attachments()`, it triggers `ɵɵapplyAttachments`.
   3. The runtime "plays" the recipe on the local element, instantiating directives and wiring up their signals dynamically.
 * **Optimization (Independent Compilation):** This enables 100% independent compilation. Components no longer need to know about the global directive registry; they only care about the instructions they receive at runtime.
