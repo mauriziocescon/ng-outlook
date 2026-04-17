@@ -47,14 +47,14 @@ Standard components require a physical DOM host. Hostless `.ng` components map t
 ---
 
 ### 4. Fragments and Lexical Scoping
-Fragments capture the `setup()` scope via JS closures.
+Fragments are ng-templates with typed parameters.
 
 * **Change Class:** Compiler + Runtime.
-* **Lexical Capture:** `ngtsc` ensures fragment functions are generated *inside* the `setup()` closure rather than being hoisted.
-* **Memory Impact:** Increases memory allocation per instance (functions are no longer singletons) but allows templates to directly access signals and variables from `setup()`.
-* **Execution:** Calling a fragment (for example `children()`) runs standard `ɵɵtemplate`-based embedded view execution.
-* **Dynamic `LContainer` Establishment:** Because fragments are passed as callable JavaScript functions rather than as static `<ng-template>` references, the runtime cannot pre-allocate an `LContainer` (view insertion point) at compile time. Instead, when `@render(children())` executes, the runtime dynamically establishes the `LContainer` at that exact call site, projecting the fragment into the current component’s DOM tree at the position where `@render` appears.
-* **Delta from Ivy Today:** In legacy Ivy, an embedded view is rigidly bound to the `<!-- -->` comment node (LContainer) at the location of the `<ng-template>` declaration. The template always renders at its original declaration site and cannot be repositioned. With callable fragments, the `LContainer` is established dynamically at the `@render` call site, decoupling the fragment’s *declaration* scope from its *render* location and allowing the consuming component to place projected content anywhere in its own DOM tree.
+* **Mechanism:** A `@fragment` declaration compiles to a standard `ɵɵtemplate` instruction, producing an `LContainer` backed by a comment node — identical to `<ng-template>`. Each `@render(frag(args))` call site is also statically known at compile time, so the compiler pre-allocates the `LContainer` at the render site, exactly as it does for existing ng-template outlets. No dynamic container establishment is required.
+* **Lexical Capture:** Fragments access `setup()` variables through the existing `declarationLView` mechanism: Ivy already renders every embedded view in the context of the LView where it was declared, giving the template function access to the surrounding scope. Fragments rely on this unchanged.
+* **Typed Parameters:** The sole compiler addition over `<ng-template>` is static typing for context arguments — `@fragment menuItem(item: Item) { ... }` gives `item` a concrete TypeScript type. Today’s `ng-template` context is untyped by default (requiring `ngTemplateContextGuard` workarounds). This is a compiler-only change; the runtime instruction set is identical.
+* **Memory Impact:** Increases memory allocation per instance (template functions are no longer singletons) because each `setup()` closure captures its own variables. This is the expected trade-off for lexical scoping.
+* **Delta from Ivy Today:** The runtime is unchanged — `ɵɵtemplate`, `LContainer`, and `declarationLView` scoping all carry over as-is. The only delta is the typed-parameter contract enforced by the compiler, and the `@render(frag(args))` call syntax replacing `*ngTemplateOutlet` + untyped context object.
 
 ---
 
