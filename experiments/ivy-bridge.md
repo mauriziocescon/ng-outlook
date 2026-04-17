@@ -29,10 +29,10 @@ Standard components require a physical DOM host. Hostless `.ng` components map t
 
 * **Change Class:** Runtime-only.
 * **Mechanism:**
-  1. **Anchor Instruction:** The parent template calls `ɵɵcomponentAnchor(index, ComponentDef)`. This creates a comment node (`<!-- -->`) in the DOM.
+  1. **Anchor Instruction:** The parent template calls `ɵɵcomponentAnchor(index, ComponentDef)`. This creates a comment node (`<!-- -->`) in the DOM. The instruction is new, but the pattern is not: `ɵɵelementContainer` (`<ng-container>`) already produces a comment-backed `TNodeType.ElementContainer`; `ɵɵcomponentAnchor` would be a third member of that family, extended to carry a component view.
   2. **LView Boundary:** The "anchor" occupies exactly one slot in the parent `LView`.
-  3. **Automatic Context Switching:** Ivy’s native `enterView()` and `leaveView()` handle the instruction cursor. The parent simply "steps over" the anchor via `ɵɵadvance(1)`. The child manages its own internal `ɵɵadvance` indexing. The child’s internal DOM size never leaks into the parent’s cursor math.
-* **Delta from Ivy Today:** Components are currently element-hosted; hostless mode uses a structural anchor that behaves like a permanent view container.
+  3. **Context Switching:** `enterView()` / `leaveView()` and the per-`LFrame` `selectedIndex` cursor are unchanged. The parent advances past the anchor with `ɵɵadvance(1)`; the child runs its own template function with its own cursor. This is not a new behavior — all components already get an independent cursor. The only change is that the anchor is a comment node instead of a real element.
+* **Delta from Ivy Today:** Components are currently element-hosted (`TNodeType.Element`). Hostless mode introduces a comment-backed anchor (`TNodeType.ElementContainer`-like) that carries a component view. The cursor independence is not a delta — it is how Ivy already works for every component.
 
 ---
 
