@@ -20,7 +20,7 @@ The `component()` utility returns a constructor-impersonator to satisfy the DI a
 * **Provider Lifecycle:**
   * **Synchronous read:** `useFactory: () => new Service(c())` — reads the initial/undefined state of `c`, just as an `input()` read inside a class constructor would before the first CD run.
   * **Signal reference:** `useFactory: () => new Service(c)` — by passing the signal itself, the service can safely react once CD pushes the actual value into the node.
-* **Delta from Ivy Today:** The delta is deliberately minimized. The core data flow — Instantiation → CD push — is identical to standard Ivy class components. The only difference is that inputs are wired into the `setup` closure’s argument object rather than assigned to class instance properties.
+* **Delta from Ivy Today:** The core data flow — Instantiation → CD push — is preserved from standard Ivy class components. Inputs are wired into the `setup` closure’s argument object rather than assigned to class instance properties. However, the entire class lifecycle protocol is removed: `ngOnChanges`, `ngOnInit`, ... no longer exist on the component instance. Post-binding notification (previously `ngOnChanges`) is replaced by signal reactivity; teardown is handled by `DestroyRef.onDestroy`; post-render work by `afterRenderEffect`. The `lView[CONTEXT]` slot, which today stores the class instance, instead stores the `expose` object returned by `setup()` — making the factory’s return value a plain object, not a class instance.
 
 ---
 
@@ -117,6 +117,7 @@ Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping
 | Concept | Legacy Class Model | Functional `.ng` Model |
 | :--- | :--- | :--- |
 | **Input Timing** | Inputs uninitialized in the constructor; values pushed by CD after instantiation. | Inputs wired as signal nodes at instantiation; references available in `setup` and `providers`; values pushed by CD on the update pass — same flow as class components. |
+| **Lifecycle Hooks** | `ngOnChanges`, `ngOnInit`, `ngDoCheck`, `ngAfterContent*`, `ngAfterView*`, `ngOnDestroy` on the class instance. | Entirely removed. Signal reactivity replaces `ngOnChanges`; `DestroyRef.onDestroy` replaces `ngOnDestroy`; `afterRenderEffect` replaces `ngAfterViewInit`. `lView[CONTEXT]` stores the `expose` object, not a class instance. |
 | **Host Element** | Implicitly required (physical tag). | Absent by default (comment node anchor). |
 | **Instruction Cursor** | Sequential `ɵɵadvance` on host. | Parent `ɵɵadvance` treats component as 1 slot; Child has a fresh cursor. |
 | **Public API** | Entire class instance exposed via template ref. | Only the `expose` object is accessible; internals remain private. |
