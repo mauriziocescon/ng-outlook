@@ -11,7 +11,7 @@ Points:
 2. ts expressions with `{}`: bindings + text interpolation,
 3. extra bindings for DOM elements: `bind:`, `on:`, `model:`, `class:`, `style:`, `animate:`, `use:`,
 4. hostless components + ts lexical scoping for templates,
-5. component inputs: lifted up + immediately available in the setup,
+5. component inputs: lifted up + available in setup and providers,
 6. composition with fragments, directives and spread syntax,
 7. expose and template ref,
 8. DI enhancements, 
@@ -20,7 +20,7 @@ Points:
 **Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
 
 ## Component structure and bindings
-`setup` runs once on init; `bindings` are available immediately — destructuring in the signature is optional:
+`setup` runs once on init; `bindings` are wired — same timing as signals in a class constructor. Destructuring is optional:
 ```ts
 import { component, signal, linkedSignal, input, output } from '@angular/core';
 
