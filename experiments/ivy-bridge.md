@@ -9,16 +9,18 @@
 
 ---
 
-### 1. The "Fake Class" & Eager Binding Resolution
+### 1. The "Fake Class" & Reactive Input Wiring
 The `component()` utility returns a constructor-impersonator to satisfy the DI and Router systems.
 
 * **Change Class:** Compiler + Runtime.
-* **The Binding Pre-pass:** To ensure inputs are available in `setup()` and `providers()`, the runtime implements **Eager Binding Resolution**.
-* **Mechanism:** Before calling the child’s factory (`ɵfac`), the runtime evaluates the parent’s expressions for that component and hydrates the `input` signals.
-* **Provider Lifecycle:** The `providers` function executes exactly once during the creation pass.
-  * **Static Injection:** `useFactory: () => new Service(c())` — The service receives the value of `c` at the moment of creation. It will **not** update if `c` changes.
-  * **Reactive Injection:** `useFactory: () => new Service(c)` — By passing the signal itself, the service can create `computed` values or `effect`s that react to changes in the component’s input.
-* **Delta from Ivy Today:** Ivy typically pushes inputs *after* instantiation. This bridge moves input synchronization to the "Pre-Construction" phase.
+* **Shape:** The utility returns a plain JavaScript function that satisfies both the TypeScript compiler and the Angular runtime as if it were a class constructor.
+* **Ivy Metadata:** The compiler attaches the standard static properties (`ɵcmp` for the component definition, `ɵfac` for the factory) directly to this function.
+* **Factory Hijack:** When the Router or a template "instantiates" the component, the `ɵfac` factory function (a static property on the constructor, distinct from the `ɵɵ`-prefixed runtime instructions) is invoked, running the `setup()` closure and returning the `expose` object instead of a class instance.
+* **Reactive Input Wiring:** During construction, the inputs defined in `bindings` are created as empty signal nodes (or initialized with their default values) — exactly like `input()` properties in a class constructor today. The `providers` and `setup` functions run immediately after, receiving signal *references* rather than resolved values. During the standard CD cycle’s creation-pass update phase, the parent template evaluates its expressions and pushes the actual values into these nodes.
+* **Provider Lifecycle:**
+  * **Synchronous read:** `useFactory: () => new Service(c())` — reads the initial/undefined state of `c`, just as an `input()` read inside a class constructor would before the first CD run.
+  * **Signal reference:** `useFactory: () => new Service(c)` — by passing the signal itself, the service can safely react once CD pushes the actual value into the node.
+* **Delta from Ivy Today:** The delta is deliberately minimized. The core data flow — Instantiation → CD push — is identical to standard Ivy class components. The only difference is that inputs are wired into the `setup` closure’s argument object rather than assigned to class instance properties.
 
 ---
 
@@ -113,7 +115,7 @@ Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping
 
 | Concept | Legacy Class Model | Functional `.ng` Model |
 | :--- | :--- | :--- |
-| **Input Timing** | Available after constructor (`ngOnInit`). | Available in `setup` and `providers` via **Eager Binding Resolution**. |
+| **Input Timing** | Inputs uninitialized in the constructor; values pushed by CD after instantiation. | Inputs wired as signal nodes at instantiation; references available in `setup` and `providers`; values pushed by CD on the update pass — same flow as class components. |
 | **Host Element** | Implicitly required (physical tag). | Absent by default (comment node anchor). |
 | **Instruction Cursor** | Sequential `ɵɵadvance` on host. | Parent `ɵɵadvance` treats component as 1 slot; Child has a fresh cursor. |
 | **Public API** | Entire class instance exposed via template ref. | Only the `expose` object is accessible; internals remain private. |
