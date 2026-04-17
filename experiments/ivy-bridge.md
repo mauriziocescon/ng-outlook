@@ -51,18 +51,31 @@ Fragments capture the `setup()` scope via JS closures.
 * **Lexical Capture:** `ngtsc` ensures fragment functions are generated *inside* the `setup()` closure rather than being hoisted.
 * **Memory Impact:** Increases memory allocation per instance (functions are no longer singletons) but allows templates to directly access signals and variables from `setup()`.
 * **Execution:** Calling a fragment (for example `children()`) runs standard `ɵɵtemplate`-based embedded view execution.
-* **Dynamic `LContainer` Establishment:** Because fragments are passed as callable JavaScript functions rather than as static `<ng-template>` references, the runtime cannot pre-allocate an `LContainer` (view insertion point) at compile time. Instead, when `@render(children())` executes, the runtime dynamically establishes the `LContainer` at that exact call site, projecting the fragment into the current component's DOM tree at the position where `@render` appears.
-* **Delta from Ivy Today:** In legacy Ivy, an embedded view is rigidly bound to the `<!-- -->` comment node (LContainer) at the location of the `<ng-template>` declaration. The template always renders at its original declaration site and cannot be repositioned. With callable fragments, the `LContainer` is established dynamically at the `@render` call site, decoupling the fragment's *declaration* scope from its *render* location and allowing the consuming component to place projected content anywhere in its own DOM tree.
+* **Dynamic `LContainer` Establishment:** Because fragments are passed as callable JavaScript functions rather than as static `<ng-template>` references, the runtime cannot pre-allocate an `LContainer` (view insertion point) at compile time. Instead, when `@render(children())` executes, the runtime dynamically establishes the `LContainer` at that exact call site, projecting the fragment into the current component’s DOM tree at the position where `@render` appears.
+* **Delta from Ivy Today:** In legacy Ivy, an embedded view is rigidly bound to the `<!-- -->` comment node (LContainer) at the location of the `<ng-template>` declaration. The template always renders at its original declaration site and cannot be repositioned. With callable fragments, the `LContainer` is established dynamically at the `@render` call site, decoupling the fragment’s *declaration* scope from its *render* location and allowing the consuming component to place projected content anywhere in its own DOM tree.
 
 ---
 
-### 5. Directive Attachments (Instruction-Based Late Binding)
+### 5. Derivations (`@derive`)
+Template-scoped reactive computations with native DI support.
+
+* **Change Class:** Runtime-only.
+* **Mechanism:**
+  1. **Slot Allocation:** When the compiler encounters `@derive price = simulation(...)` inside a template, it allocates a dedicated slot in the enclosing `LView` for the derivation.
+  2. **Creation Pass:** During the embedded view’s creation pass, the runtime pushes an injection context (scoped to the current view’s injector) and calls the derivation’s `setup()` function. The `Signal<T>` returned by `setup()` is stored in the allocated `LView` slot.
+  3. **Update Pass:** During change detection, the runtime reads the `Signal<T>` from the slot. The signal’s own reactive graph drives all further propagation — no additional polling or dirty-checking is required.
+  4. **Lifecycle:** The derivation’s lifetime matches the enclosing embedded view. When the view is destroyed (e.g., the `@for` iteration is removed), the derivation is torn down with it.
+* **Delta from Ivy Today:** The closest legacy analogue is a `Pipe` instance — pipes are also allocated per view slot and applied during the update pass. However, pipes cannot inject services without `ChangeDetectorRef` workarounds and cannot participate in Angular’s reactive signal graph. Derivations are functional memoization slots with full, native DI access, effectively replacing the `Pipe` class pattern for all transform use cases that require services or reactive state.
+
+---
+
+### 6. Directive Attachments (Instruction-Based Late Binding)
 Allows directives to "tunnel" through hostless components without requiring global compiler knowledge.
 
 * **Change Class:** Compiler + Runtime.
-* **Compiler Responsibility:** The parent compiler generates a "Recipe" of directive instructions. It does NOT require the child component's source to do this.
+* **Compiler Responsibility:** The parent compiler generates a "Recipe" of directive instructions. It does NOT require the child component’s source to do this.
 * **The "Sink" Contract:** The child defines an `attachable<T>` sink. The compiler only validates that the "Recipe" target type matches `T`.
-* **Runtime Execution:** 1. The parent pushes the "Recipe" into the component's Logical Anchor.
+* **Runtime Execution:** 1. The parent pushes the "Recipe" into the component’s Logical Anchor.
   2. When the child hits `use:attachments()`, it triggers `ɵɵapplyAttachments`.
   3. The runtime "plays" the recipe on the local element, instantiating directives and wiring up their signals dynamically.
 * **Optimization (Independent Compilation):** This enables 100% independent compilation. Components no longer need to know about the global directive registry; they only care about the instructions they receive at runtime.
@@ -70,7 +83,20 @@ Allows directives to "tunnel" through hostless components without requiring glob
 
 ---
 
-### 6. Hostless Scoped CSS
+### 7. Wrapper Components (`component.wrap`)
+A compile-time macro for structurally wrapping an existing component.
+
+* **Change Class:** Compiler-only.
+* **Mechanism:** `component.wrap(Target, { bindings, setup })` is processed entirely at compile time. When the compiler encounters a wrapper, it:
+  1. Resolves which bindings are explicitly declared in the wrapper’s own `bindings` block.
+  2. Unrolls `{...rest}` spread syntax at compile time: each key in `rest` is mapped directly to the corresponding `InputSignal`, `ModelSignal`, `OutputEmitterRef`, `FragmentBinding`, or `AttachableBinding` reference on the `Target` component’s bindings. No intermediate JavaScript object is created and no runtime object spread is performed.
+  3. For `AttachableBinding` keys included in `{...rest}`, the compiler passes them through intact to the target component, preserving the full directive attachment chain from parent → wrapper → target element. `ɵɵapplyAttachments` is emitted only at the target’s `use:attachments()` call site.
+  4. The resulting generated instructions are identical to those the compiler would emit if every forwarded binding were listed explicitly — the wrapper introduces zero additional Ivy instructions at runtime.
+* **Delta from Ivy Today:** Standard Angular has no spread syntax for forwarding component inputs. Developers must enumerate every forwarded binding manually, making wrapper components fragile when the wrapped component’s API changes. `component.wrap` formalizes a strict compile-time macro for structural wrapping: the Ivy runtime never observes a "wrapper object" and incurs no object-spread overhead.
+
+---
+
+### 8. Hostless Scoped CSS
 Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping** (similar to Svelte/Vue).
 
 * **Change Class:** Compiler + Runtime (renderer behavior).
@@ -80,32 +106,6 @@ Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping
 * **Diagnostic Safety:** If a parent applies a `class` to a hostless component that hasn’t opted in via `bindings`, the compiler emits a diagnostic error.
 * **Delta from Ivy Today:** Current emulated encapsulation uses both host/content attributes; hostless mode needs a hostless scoping contract.
 * **Compatibility Impact:** Medium/High — influences style encapsulation, SSR serialization, and hydration style reconciliation.
-
----
-
-### 7. Derivations (`@derive`)
-Template-scoped reactive computations with native DI support.
-
-* **Change Class:** Runtime-only.
-* **Mechanism:**
-  1. **Slot Allocation:** When the compiler encounters `@derive price = simulation(...)` inside a template, it allocates a dedicated slot in the enclosing `LView` for the derivation.
-  2. **Creation Pass:** During the embedded view's creation pass, the runtime pushes an injection context (scoped to the current view's injector) and calls the derivation's `setup()` function. The `Signal<T>` returned by `setup()` is stored in the allocated `LView` slot.
-  3. **Update Pass:** During change detection, the runtime reads the `Signal<T>` from the slot. The signal's own reactive graph drives all further propagation — no additional polling or dirty-checking is required.
-  4. **Lifecycle:** The derivation's lifetime matches the enclosing embedded view. When the view is destroyed (e.g., the `@for` iteration is removed), the derivation is torn down with it.
-* **Delta from Ivy Today:** The closest legacy analogue is a `Pipe` instance — pipes are also allocated per view slot and applied during the update pass. However, pipes cannot inject services without `ChangeDetectorRef` workarounds and cannot participate in Angular's reactive signal graph. Derivations are functional memoization slots with full, native DI access, effectively replacing the `Pipe` class pattern for all transform use cases that require services or reactive state.
-
----
-
-### 8. Wrapper Components (`component.wrap`)
-A compile-time macro for structurally wrapping an existing component.
-
-* **Change Class:** Compiler-only.
-* **Mechanism:** `component.wrap(Target, { bindings, setup })` is processed entirely at compile time. When the compiler encounters a wrapper, it:
-  1. Resolves which bindings are explicitly declared in the wrapper's own `bindings` block.
-  2. Unrolls `{...rest}` spread syntax at compile time: each key in `rest` is mapped directly to the corresponding `InputSignal`, `ModelSignal`, `OutputEmitterRef`, `FragmentBinding`, or `AttachableBinding` reference on the `Target` component's bindings. No intermediate JavaScript object is created and no runtime object spread is performed.
-  3. For `AttachableBinding` keys included in `{...rest}`, the compiler passes them through intact to the target component, preserving the full directive attachment chain from parent → wrapper → target element. `ɵɵapplyAttachments` is emitted only at the target's `use:attachments()` call site.
-  4. The resulting generated instructions are identical to those the compiler would emit if every forwarded binding were listed explicitly — the wrapper introduces zero additional Ivy instructions at runtime.
-* **Delta from Ivy Today:** Standard Angular has no spread syntax for forwarding component inputs. Developers must enumerate every forwarded binding manually, making wrapper components fragile when the wrapped component's API changes. `component.wrap` formalizes a strict compile-time macro for structural wrapping: the Ivy runtime never observes a "wrapper object" and incurs no object-spread overhead.
 
 ---
 
