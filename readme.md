@@ -20,7 +20,7 @@ Points:
 **Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
 
 ## Component structure and bindings
-`setup` runs once in an injection context; `bindings` are wired — same timing availability as signals in a class constructor. Destructuring is optional:
+`setup` runs once in an injection context; `bindings` are wired — same availability as signal inputs declared in a class constructor. Destructuring is optional:
 ```ts
 import { component, signal, linkedSignal, input, output } from '@angular/core';
 
