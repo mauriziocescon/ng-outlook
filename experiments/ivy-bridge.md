@@ -39,16 +39,20 @@ Standard components require a physical DOM host. Hostless `.ng` components map t
 * **The `expose` Hijack:** During view creation, the `expose` object returned by `setup()` is stored at `lView[CONTEXT]`.
 * **Reference Resolution:** Parent template refs (e.g., `<Comp #ref />`) resolve to this `expose` object. Component internals remain private.
 * **Lifecycle:** Prototype-based hooks (`ngOnInit`) are replaced by DI-native APIs like `afterNextRender` and `DestroyRef`.
+* **Query Bridging (`ref` and `refMany`):** The heavy legacy query instructions (`ɵɵqueryRefresh`, `ɵɵviewQuery`) are completely bypassed. When a template uses `ref={myRef}`, the compiler generates a lightweight instruction that pulls the child's `expose` object from `lView[CONTEXT]` and pushes it directly into the `myRef` signal. `refMany` simply appends to an array signal rather than walking a static query tree.
+* **Delta from Ivy Today:** Ivy's query resolution engine resolves `@ViewChild`/`@ViewChildren` tokens by walking the view tree at creation time and requires a `ɵɵqueryRefresh` call on every change-detection cycle. The signal-push model is event-driven: a single compiler-generated instruction fires once at child-creation time, writing the `expose` object into the ref signal. No periodic refresh is needed.
 
 ---
 
 ### 4. Fragments and Lexical Scoping
 Fragments capture the `setup()` scope via JS closures.
 
-* **Change Class:** Compiler-only.
+* **Change Class:** Compiler + Runtime.
 * **Lexical Capture:** `ngtsc` ensures fragment functions are generated *inside* the `setup()` closure rather than being hoisted.
 * **Memory Impact:** Increases memory allocation per instance (functions are no longer singletons) but allows templates to directly access signals and variables from `setup()`.
 * **Execution:** Calling a fragment (for example `children()`) runs standard `ɵɵtemplate`-based embedded view execution.
+* **Dynamic `LContainer` Establishment:** Because fragments are passed as callable JavaScript functions rather than as static `<ng-template>` references, the runtime cannot pre-allocate an `LContainer` (view insertion point) at compile time. Instead, when `@render(children())` executes, the runtime dynamically establishes the `LContainer` at that exact call site, projecting the fragment into the current component's DOM tree at the position where `@render` appears.
+* **Delta from Ivy Today:** In legacy Ivy, an embedded view is rigidly bound to the `<!-- -->` comment node (LContainer) at the location of the `<ng-template>` declaration. The template always renders at its original declaration site and cannot be repositioned. With callable fragments, the `LContainer` is established dynamically at the `@render` call site, decoupling the fragment's *declaration* scope from its *render* location and allowing the consuming component to place projected content anywhere in its own DOM tree.
 
 ---
 
@@ -79,6 +83,32 @@ Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping
 
 ---
 
+### 7. Derivations (`@derive`)
+Template-scoped reactive computations with native DI support.
+
+* **Change Class:** Runtime-only.
+* **Mechanism:**
+  1. **Slot Allocation:** When the compiler encounters `@derive price = simulation(...)` inside a template, it allocates a dedicated slot in the enclosing `LView` for the derivation.
+  2. **Creation Pass:** During the embedded view's creation pass, the runtime pushes an injection context (scoped to the current view's injector) and calls the derivation's `setup()` function. The `Signal<T>` returned by `setup()` is stored in the allocated `LView` slot.
+  3. **Update Pass:** During change detection, the runtime reads the `Signal<T>` from the slot. The signal's own reactive graph drives all further propagation — no additional polling or dirty-checking is required.
+  4. **Lifecycle:** The derivation's lifetime matches the enclosing embedded view. When the view is destroyed (e.g., the `@for` iteration is removed), the derivation is torn down with it.
+* **Delta from Ivy Today:** The closest legacy analogue is a `Pipe` instance — pipes are also allocated per view slot and applied during the update pass. However, pipes cannot inject services without `ChangeDetectorRef` workarounds and cannot participate in Angular's reactive signal graph. Derivations are functional memoization slots with full, native DI access, effectively replacing the `Pipe` class pattern for all transform use cases that require services or reactive state.
+
+---
+
+### 8. Wrapper Components (`component.wrap`)
+A compile-time macro for structurally wrapping an existing component.
+
+* **Change Class:** Compiler-only.
+* **Mechanism:** `component.wrap(Target, { bindings, setup })` is processed entirely at compile time. When the compiler encounters a wrapper, it:
+  1. Resolves which bindings are explicitly declared in the wrapper's own `bindings` block.
+  2. Unrolls `{...rest}` spread syntax at compile time: each key in `rest` is mapped directly to the corresponding `InputSignal`, `ModelSignal`, `OutputEmitterRef`, `FragmentBinding`, or `AttachableBinding` reference on the `Target` component's bindings. No intermediate JavaScript object is created and no runtime object spread is performed.
+  3. For `AttachableBinding` keys included in `{...rest}`, the compiler passes them through intact to the target component, preserving the full directive attachment chain from parent → wrapper → target element. `ɵɵapplyAttachments` is emitted only at the target's `use:attachments()` call site.
+  4. The resulting generated instructions are identical to those the compiler would emit if every forwarded binding were listed explicitly — the wrapper introduces zero additional Ivy instructions at runtime.
+* **Delta from Ivy Today:** Standard Angular has no spread syntax for forwarding component inputs. Developers must enumerate every forwarded binding manually, making wrapper components fragile when the wrapped component's API changes. `component.wrap` formalizes a strict compile-time macro for structural wrapping: the Ivy runtime never observes a "wrapper object" and incurs no object-spread overhead.
+
+---
+
 ## Comparison: Legacy vs. Functional Model
 
 | Concept | Legacy Class Model | Functional `.ng` Model |
@@ -90,3 +120,6 @@ Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping
 | **Projection** | Implicitly handled by `<ng-content>`. | Passed as fragments in `children` and called as functions. |
 | **Directives** | Automatically attach to the host element. | Collected in the Attachment Bag and forwarded via `use:attachments()`. |
 | **CSS Scoping** | Tied to the physical host attribute. | Applied to all template elements via compiler-generated attributes. |
+| **Template Queries** | `@ViewChild`/`@ViewChildren` resolved by a tree-walk; refreshed via `ɵɵqueryRefresh` every CD cycle. | Signal-push via `ref`/`refMany`; `expose` written once at child creation — no periodic refresh. |
+| **Transform / Memoization** | `Pipe` instances per view slot; limited DI access and no signal reactivity. | `derivation` slots with full native DI; driven directly by the signal reactive graph. |
+| **Component Wrapping** | Manual enumeration of every forwarded binding; no spread syntax. | Compile-time macro (`component.wrap`); `{...rest}` unrolled by the compiler with zero runtime overhead. |
