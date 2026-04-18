@@ -18,24 +18,6 @@ declare const FRAGMENT: unique symbol;
 declare const ATTACHABLE: unique symbol;
 
 export type FragmentBinding<T> = { readonly [FRAGMENT]: T };
-
-/**
- * Directive Attachments — an opaque collection of directive definitions
- * intended for a specific element type T.
- *
- * PASS-THROUGH FLOW:
- * 1. Parent applies directives to component: <Button use:ripple() use:tooltip() />
- * 2. Component declares sink: attachments: attachable<HTMLButtonElement>()
- * 3. Consuming compiler generates a recipe (directive defs + binding functions)
- *    stored in the component's Logical Anchor
- * 4. Component forwards: <button use:attachments() />
- * 5. Runtime executes the recipe, instantiating directives on the target <button>
- *
- * The compiler validates at build time that any directive applied
- * by a parent is compatible with the element type T declared here.
- * The child template never inspects the bag contents; it only
- * declares the required element type as the Sink constraint.
- */
 export type AttachableBinding<T> = { readonly [ATTACHABLE]: T };
 
 export declare function fragment<T>(): FragmentBinding<T>;
