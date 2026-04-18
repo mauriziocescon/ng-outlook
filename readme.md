@@ -542,7 +542,7 @@ export const UserDetailConsumer = component({
  *
  * attachments act as a behavior passthrough — forwarding directives
  * from the caller through to the innermost element where
- * {…attachments()} is declared.
+ * use:attachments() is declared.
  */
 export const UserDetailWrapper = component.wrap(UserDetail, {
   bindings: {
