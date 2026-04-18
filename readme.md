@@ -651,7 +651,7 @@ export const Button = component({
 ```
 
 ## Expose and Template ref
-`expose` is the public interface of `setup()` for refs. Components return it with `template`; directives return it from `setup` (their host is provided via the second setup arg).
+`expose` is the public interface of `setup()` for refs. Components return it with `template`; directives return it from `setup`.
 
 `ref(Type)` → `Signal<expose | undefined>`, `refMany(Type)` → `Signal<expose[]>`; without `expose`, they resolve to `Signal<undefined>` and `Signal<undefined[]>`. Bind with `ref={...}` (elements/components) or `:ref={...}` (`use:`), and read after `afterNextRender`.
 
