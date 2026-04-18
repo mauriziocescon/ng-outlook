@@ -404,7 +404,7 @@ export const MenuConsumer = component({
     return (
       /**
        * Explicit form: @fragment declared outside the component tags,
-       * then passed as a named binding — equivalent to the inline form above.
+       * then passed as a named binding — equivalent to the inline form below.
        *
        * @fragment menuItem(item: Item) {
        *  <div class="my-menu-item">
