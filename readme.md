@@ -447,7 +447,7 @@ export const Menu = component({
 });
 ```
 
-Directives attached to a component and bound to an element:
+Directives attached to a component and forwarded to an element:
 ```ts
 import { component, signal } from '@angular/core';
 import { Button } from '@mylib/button';
