@@ -463,6 +463,9 @@ export const ButtonConsumer = component({
 
     return (
       <Button
+        type="button"
+        style="background-color: cyan"
+        class={valid() ? 'global-css-valid' : ''}
         use:ripple()
         use:tooltip(message={tooltipMsg()})
         disabled={!valid()}
@@ -474,13 +477,16 @@ export const ButtonConsumer = component({
 });
 
 // -- button in @mylib/button --------------------
-import { component, input, output, fragment, attachable } from '@angular/core';
+import { component, input, output, computed, fragment, attachable } from '@angular/core';
 
 export const Button = component({
   bindings: {
-    children: fragment<void>(),
+    type: input<'button' | 'submit' | 'reset'>('button'),
+    class: input<string>(''),
+    style: input<string>(''),
     disabled: input<boolean>(false),
     click: output<void>(),
+    children: fragment<void>(),
     /**
      * All directives applied to <Button />
      *
@@ -489,7 +495,9 @@ export const Button = component({
      */
     attachments: attachable<HTMLButtonElement>(),
   },
-  setup: ({ children, disabled, click, attachments }) => {
+  setup: ({ type, class: className, style, disabled, click, children, attachments }) => {
+    const innerStyle = computed(() => `${style()}; color: red;`);
+
     /**
      * Directive Attachments: directives applied to <Button /> are forwarded
      * and instantiated on the internal <button> element.
@@ -497,7 +505,13 @@ export const Button = component({
      * the child needs to declare.
      */
     return (
-      <button use:attachments() disabled={disabled()} on:click={() => click.emit()}>
+      <button
+        use:attachments()
+        type={type()}
+        class={className()}
+        style={innerStyle()}
+        disabled={disabled()}
+        on:click={() => click.emit()}>
         @render(children())
       </button>
     );
@@ -505,7 +519,7 @@ export const Button = component({
 });
 ```
 
-Wrapping components and forwarding inputs and outputs:
+Wrapping components and forwarding inputs, outputs and directives:
 ```ts
 import { component, signal, input, computed } from '@angular/core';
 import { UserDetail, User } from './user-detail.ng';
@@ -585,68 +599,6 @@ export const UserDetail = component({
       }
     </div>
   ),
-});
-```
-
-Wrapping native elements and forwarding selected attributes and event listeners:
-```ts
-import { component, signal } from '@angular/core';
-import { Button } from '@mylib/button';
-import { ripple } from '@mylib/ripple';
-import { tooltip } from '@mylib/tooltip';
-
-export const ButtonConsumer = component({
-  setup: () => {
-    const tooltipMsg = signal('');
-    const valid = signal(false);
-
-    function doSomething() {/** ... **/}
-
-    // Pass selected attributes and events.
-    return (
-      <Button
-        type="button"
-        style="background-color: cyan"
-        class={valid() ? 'global-css-valid' : ''}
-        use:ripple()
-        use:tooltip(message={tooltipMsg()})
-        disabled={!valid()}
-        on:click={doSomething}>
-          Click / Hover me
-      </Button>
-    );
-  },
-});
-
-// -- button in @mylib/button --------------------
-import { component, input, output, computed, fragment, attachable } from '@angular/core';
-
-export const Button = component({
-  bindings: {
-    type: input<'button' | 'submit' | 'reset'>('button'),
-    class: input<string>(''),
-    style: input<string>(''),
-    disabled: input<boolean>(false),
-    click: output<void>(),
-    children: fragment<void>(),
-    attachments: attachable<HTMLButtonElement>(),
-  },
-  setup: ({ type, class: className, style, disabled, click, children, attachments }) => {
-    const innerStyle = computed(() => `${style()}; color: red;`);
-
-    // Forward explicit bindings + attached directives.
-    return (
-      <button
-        use:attachments()
-        type={type()}
-        class={className()}
-        style={innerStyle()}
-        disabled={disabled()}
-        on:click={() => click.emit()}>
-        @render(children())
-      </button>
-    );
-  },
 });
 ```
 
