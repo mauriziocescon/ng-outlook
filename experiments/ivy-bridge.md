@@ -15,12 +15,18 @@ The `component()` utility returns a constructor-impersonator to satisfy the DI a
 * **Change Class:** Compiler + Runtime.
 * **Shape:** The utility returns a plain JavaScript function that satisfies both the TypeScript compiler and the Angular runtime as if it were a class constructor.
 * **Ivy Metadata:** The compiler attaches the standard static properties (`ɵcmp` for the component definition, `ɵfac` for the factory) directly to this function.
-* **Factory Hijack:** When the Router or a template "instantiates" the component, the `ɵfac` factory function (a static property on the constructor, distinct from the `ɵɵ`-prefixed runtime instructions) is invoked, running the `setup()` closure and returning the `expose` object instead of a class instance.
-* **Reactive Input Wiring:** During construction, the inputs defined in `bindings` are created as empty signal nodes (or initialized with their default values) — exactly like `input()` properties in a class constructor today. The `providers` and `setup` functions run immediately after, receiving signal *references* rather than resolved values. During the standard CD cycle’s creation-pass update phase, the parent template evaluates its expressions and pushes the actual values into these nodes.
-* **Provider Lifecycle:**
-  * **Synchronous read:** `useFactory: () => new Service(c())` — reads the initial/undefined state of `c`, just as an `input()` read inside a class constructor would before the first CD run.
-  * **Signal reference:** `useFactory: () => new Service(c)` — by passing the signal itself, the service can safely react once CD pushes the actual value into the node.
-* **Delta from Ivy Today:** The core data flow — Instantiation → CD push — is preserved from standard Ivy class components. Inputs are wired into the `setup` closure’s argument object rather than assigned to class instance properties. However, the entire class lifecycle protocol is removed: `ngOnChanges`, `ngOnInit`, ... no longer exist on the component instance. Post-binding notification (previously `ngOnChanges`) is replaced by signal reactivity; teardown is handled by `DestroyRef.onDestroy`; post-render work by `afterRenderEffect`. The `lView[CONTEXT]` slot, which today stores the class instance, instead stores the `expose` object returned by `setup()` — making the factory’s return value a plain object, not a class instance.
+* **Factory Hijack:** When the Router or a template "instantiates" the component, the `ɵfac` factory function (a static property on the constructor, distinct from the `ɵɵ`-prefixed runtime instructions) is invoked. It calls `providers()` then `setup()` and returns the `expose` object instead of a class instance. `lView[CONTEXT]` stores this plain object.
+* **Reactive Input Wiring — the timing problem:** In current Ivy, `renderView()` (creation pass, where the factory runs) and `refreshView()` (update pass, where `ɵɵproperty` evaluates parent expressions and calls `writeToDirectiveInput()`) are two separate, non-consecutive calls. There is no mechanism for the factory to observe dynamic input values at construction time. The one exception is `initialInputs`: static literal-string attributes ARE applied inside `instantiateAllDirectives()`, before `providers()` or `setup()` run.
+* **Proposed extension — eager initial seeding:** For `.ng` component instantiation sites the compiler emits the bound input expressions both in the creation pass (as a seed) and in the update pass (for ongoing reactivity). The new `ɵɵcomponentAnchor` instruction receives this initial-values map and calls `writeToDirectiveInput()` for each entry — the same function used by `initialInputs` and the update pass — before invoking the factory:
+  ```
+  // creation pass: expressions evaluated once as seeds
+  ɵɵcomponentAnchor(0, Counter, [‘c’, ctx.count()]);
+  // update pass: unchanged — owns reactive updates
+  ɵɵproperty(‘c’, ctx.count());
+  ```
+  Double-evaluation is safe because `.ng` bindings are signal reads (pure, side-effect free). `bindingUpdated()` in `ɵɵproperty` compares the binding slot against the new value; since the slot still starts as `NO_CHANGE`, the first update pass re-applies the value harmlessly (the signal is set to the value it already holds) and subsequent passes skip it if unchanged. This constraint — signal-only bindings — is what makes eager seeding safe and is a property the `.ng` model already guarantees.
+* **Provider Lifecycle (with eager seeding):** `providers()` runs before `setup()`, and both receive signal nodes pre-populated with the parent’s current values. `useFactory: () => new Service(c())` works unconditionally — `c()` returns the actual parent value, not `undefined`. Passing the signal reference (`c`) remains valid for services that want to react to future changes.
+* **Delta from Ivy Today:** The core data flow — Instantiation → CD push — is preserved. Inputs are wired into the `setup` closure’s argument object rather than assigned to class instance properties. The entire class lifecycle protocol is removed: `ngOnChanges`, `ngOnInit`, `ngDoCheck`, `ngAfterContent*`, `ngAfterView*`, and `ngOnDestroy` no longer exist on the component instance. Post-binding notification (previously `ngOnChanges`) is replaced by signal reactivity; teardown by `DestroyRef.onDestroy`; post-render work by `afterRenderEffect`. `lView[CONTEXT]` stores the `expose` object, not a class instance.
 
 ---
 
@@ -81,8 +87,8 @@ Allows directives to "tunnel" through hostless components without requiring glob
   1. The parent pushes the "Recipe" into the component’s Logical Anchor.
   2. When the child hits `use:attachments()`, it triggers `ɵɵapplyAttachments`.
   3. The runtime "plays" the recipe on the local element, instantiating directives and wiring up their signals dynamically.
-* **Optimization (Independent Compilation):** This enables 100% independent compilation. Components no longer need to know about the global directive registry; they only care about the instructions they receive at runtime.
-* **Delta from Ivy Today:** Shifts directive matching and instantiation from a static build-time task to a dynamic runtime task, prioritizing build speed (HMR) and modularity over absolute creation-pass micro-optimizations.
+* **Independent Compilation:** The child needs no knowledge of which directives exist anywhere in the application — only the element type `T` declared in `attachable<T>()`. The parent needs no knowledge of the child's internals — only the sink's element type for compile-time validation.
+* **Delta from Ivy Today:** In current Ivy, directive matching runs at the first create pass via CSS-selector matching against the `tView.directiveRegistry` and is then cached on the TNode. The child must have the directive in its compilation scope for the match to occur. The recipe model moves matching responsibility entirely to the parent at compile time and defers instantiation to `ɵɵapplyAttachments` at runtime, removing the shared-registry requirement.
 
 ---
 
@@ -116,7 +122,7 @@ Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping
 
 | Concept | Legacy Class Model | Functional `.ng` Model |
 | :--- | :--- | :--- |
-| **Input Timing** | Inputs uninitialized in the constructor; values pushed by CD after instantiation. | Inputs wired as signal nodes at instantiation; references available in `setup` and `providers`; values pushed by CD on the update pass — same flow as class components. |
+| **Input Timing** | Inputs uninitialized in the constructor; values pushed by CD after instantiation (`refreshView` update pass). | Input signal nodes pre-seeded by `ɵɵcomponentAnchor` before the factory runs (eager creation-pass seeding); `ɵɵproperty` in the update pass still owns reactive updates. `providers()` and `setup()` receive inputs at their actual values. |
 | **Lifecycle Hooks** | `ngOnChanges`, `ngOnInit`, `ngDoCheck`, `ngAfterContent*`, `ngAfterView*`, `ngOnDestroy` on the class instance. | Entirely removed. Signal reactivity replaces `ngOnChanges`; `DestroyRef.onDestroy` replaces `ngOnDestroy`; `afterRenderEffect` replaces `ngAfterViewInit`. `lView[CONTEXT]` stores the `expose` object, not a class instance. |
 | **Host Element** | Implicitly required (physical tag). | Absent by default (comment node anchor). |
 | **Instruction Cursor** | Sequential `ɵɵadvance` on host. | Parent `ɵɵadvance` treats component as 1 slot; Child has a fresh cursor. |
