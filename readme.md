@@ -767,7 +767,6 @@ export const Counter = component({
 - `ng-content`: replaced by `fragments`,
 - `ng-template` (`let-*` shorthands + `ngTemplateGuard_*`): likely replaced by `fragments`,
 - structural directives: likely replaced by `fragments`,
-- `Ng**Outlet` + `ng-container`: likely replaced by the new primitives,
 - `pipes`: replaced by derivations — derivations cover the same transform use case and also support DI,
 - `event delegation`: not explicitly considered, but it could fit as "special attributes" (`onClick`, ...) similarly to [Solid events](https://docs.solidjs.com/concepts/components/event-handlers),
 - `@let`: unchanged,
