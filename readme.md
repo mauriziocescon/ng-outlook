@@ -103,23 +103,6 @@ import { component, input, model, output } from '@angular/core';
 export interface User {/** ... **/}
 
 export const UserDetail = component({
-  /**
-   * Mental model:
-   *
-   * <UserDetail
-   *   style="..."
-   *   user={user()}
-   *   model:email={email}
-   *   on:makeAdmin={makeAdmin} />
-   *
-   * function UserDetail({
-   *   style: '...',
-   *   user: computedInput(() => user(), {transform: ...}),
-   *   email: computedInput(() => email()),
-   *   'on:emailChange': (v: string) => {email.set(v)},
-   *   'on:makeAdmin': () => {makeAdmin()},
-   * }) {...}
-   */
   bindings: {
     user: input.required<User>(),
     email: model<string>(),
