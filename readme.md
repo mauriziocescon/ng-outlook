@@ -522,6 +522,7 @@ export const Button = component({
 Wrapping components and forwarding inputs, outputs and directives:
 ```ts
 import { component, signal, input, computed } from '@angular/core';
+import { tooltip } from '@mylib/tooltip';
 import { UserDetail, User } from './user-detail.ng';
 
 export const UserDetailConsumer = component({
@@ -563,7 +564,7 @@ export const UserDetailWrapper = component.wrap(UserDetail, {
     const other = computed(() => /** something depending on user() or a default value **/);
 
     return (
-      <UserDetail {...rest} user={other()} />
+      <UserDetail {...rest} use:tooltip(message={'Tooltip message'}) user={other()} />
     );
   },
 });
