@@ -109,7 +109,7 @@ export const UserDetail = component({
     makeAdmin: output<void>(),
   },
   setup: (bindings) => (
-    // bindings.user, bindings.email, bindings.makeAdmin, ...
+    // bindings.user, bindings.email, bindings.makeAdmin
   ),
 });
 ```
