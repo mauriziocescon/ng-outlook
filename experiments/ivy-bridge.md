@@ -9,7 +9,7 @@
 
 ---
 
-### 1. The "Fake Class" & Reactive Input Wiring
+### 1. Component Instantiation: The "Fake Class" & Reactive Input Wiring
 The `component()` utility returns a constructor-impersonator to satisfy the DI and Router systems.
 
 * **Change Class:** Compiler + Runtime.
@@ -81,14 +81,12 @@ Template-scoped reactive computations with native DI support.
 Allows directives to "tunnel" through hostless components without requiring global compiler knowledge.
 
 * **Change Class:** Compiler + Runtime.
-* **Compiler Responsibility:** The parent compiler generates a "Recipe" of directive instructions. It does NOT require the child component’s source to do this.
-* **The "Sink" Contract:** The child defines an `attachable<T>` sink. The compiler only validates that the "Recipe" target type matches `T`.
-* **Runtime Execution:**
-  1. The parent pushes the "Recipe" into the component’s Logical Anchor.
-  2. When the child hits `use:attachments()`, it triggers `ɵɵapplyAttachments`.
-  3. The runtime "plays" the recipe on the local element, instantiating directives and wiring up their signals dynamically.
-* **Independent Compilation:** The child needs no knowledge of which directives exist anywhere in the application — only the element type `T` declared in `attachable<T>()`. The parent needs no knowledge of the child's internals — only the sink's element type for compile-time validation.
-* **Delta from Ivy Today:** In current Ivy, directive matching runs at the first create pass via CSS-selector matching against the `tView.directiveRegistry` and is then cached on the TNode. The child must have the directive in its compilation scope for the match to occur. The recipe model moves matching responsibility entirely to the parent at compile time and defers instantiation to `ɵɵapplyAttachments` at runtime, removing the shared-registry requirement.
+* **Analogy with Fragments:** The pattern mirrors fragments: the consuming compiler (CompB) prepares a compile-time artifact — a recipe of directive defs and binding functions — and passes it across the component boundary. The child (CompA) receives an opaque, typed blob and executes it at the `use:attachments()` call site. Just as `@render(frag(args))` executes a pre-compiled template function without the child knowing anything about its contents, `ɵɵapplyAttachments` executes a pre-compiled directive recipe without the child knowing which directives are in it.
+* **Compile-time responsibility (CompB):** When the application compiler processes `<CompA use:ripple() use:tooltip(message={msg()}) />`, it generates the full recipe: directive defs, initial binding values, and update-pass binding functions. The directive matching and validation that Ivy does today via CSS-selector scanning at the first create pass has already been done — at compile time, by CompB’s compiler.
+* **The "Sink" Contract (CompA):** The child defines an `attachable<T>` sink. This is the only interface CompA exposes: the element type `T` for compile-time validation. CompA’s own TView has no knowledge of which directives will arrive.
+* **Runtime Execution:** `ɵɵapplyAttachments` calls each directive factory in the recipe, stores the instances in a per-LView side structure at the element’s position (outside the shared TView blueprint — analogous to `LView[ON_DESTROY_HOOKS]`), and wires bindings. CD visits this side structure for host bindings; destruction scans it for cleanup.
+* **Independent Compilation:** CompA’s TView blueprint is unchanged — no slots are reserved for attached directives. CompB needs no knowledge of CompA’s internals beyond the sink element type. The compiler does the structural work; the runtime does mechanical execution.
+* **Delta from Ivy Today:** In current Ivy, directive matching runs at the first create pass via CSS-selector matching against `tView.directiveRegistry`; the child must have the directive in its compilation scope and the instances live in TView-indexed LView slots. The recipe model moves matching entirely to compile time (CompB’s compiler), removes the shared-registry requirement, and stores attached directive instances in per-LView side storage rather than in the shared TView blueprint.
 
 ---
 
