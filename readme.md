@@ -513,7 +513,8 @@ export const Button = component({
      * Directive Attachments: directives applied to <Button /> are forwarded
      * and instantiated on the internal <button> element at runtime.
      * The element type (HTMLButtonElement) is the only constraint
-     * the child needs to declare (compile-time validation + runtime unrolling).
+     * the child needs to declare. The consuming compiler generates the full
+     * recipe (directive defs + binding functions); the runtime executes it.
      */
     return (
       <button use:attachments() disabled={disabled()} on:click={() => click.emit()}>

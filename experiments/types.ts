@@ -26,9 +26,10 @@ export type FragmentBinding<T> = { readonly [FRAGMENT]: T };
  * PASS-THROUGH FLOW:
  * 1. Parent applies directives to component: <Button use:ripple() use:tooltip() />
  * 2. Component declares sink: attachments: attachable<HTMLButtonElement>()
- * 3. Framework stores directive definitions in component's Logical Anchor
+ * 3. Consuming compiler generates a recipe (directive defs + binding functions)
+ *    stored in the component's Logical Anchor
  * 4. Component forwards: <button use:attachments() />
- * 5. Runtime instantiates directives on the target <button> element
+ * 5. Runtime executes the recipe, instantiating directives on the target <button>
  *
  * The compiler validates at build time that any directive applied
  * by a parent is compatible with the element type T declared here.
