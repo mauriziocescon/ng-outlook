@@ -461,6 +461,11 @@ export const ButtonConsumer = component({
 
     function doSomething() {/** ... **/}
 
+    /**
+     * The compiler enforces that the same directive 
+     * cannot be applied more than once to the same 
+     * component / element.
+     * */
     return (
       <Button
         type="button"
