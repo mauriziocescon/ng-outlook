@@ -15,7 +15,7 @@ Points:
 6. composition with fragments, directives and spread syntax,
 7. expose and template ref,
 8. DI enhancements, 
-9. final considerations (`!important`).
+9. final considerations (`!important`) + [`experimental types`](https://github.com/mauriziocescon/ng-outlook/blob/main/experimental/types.ts).
 
 **Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
 

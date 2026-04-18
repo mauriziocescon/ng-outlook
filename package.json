@@ -21,7 +21,7 @@
     }
   ],
   "scripts": {
-    "typecheck": "tsc --noEmit --strict --target es2022 --moduleResolution bundler experiments/types.spec.ts"
+    "typecheck": "tsc --noEmit --strict --target es2022 --moduleResolution bundler experimental/types.spec.ts"
   },
   "dependencies": {
     "@angular/core": "^21.2.8",
