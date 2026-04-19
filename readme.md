@@ -246,13 +246,13 @@ const simulation = derivation({
      * Only inputs are allowed: a derivation has no DOM host,
      * so there is no surface to emit outputs or sync models against
      */
-    qty: input.required<number>(),
     item: input.required<Item>(),
+    qty: input.required<number>(),
   },
   /**
    * setup always returns Signal<T> (e.g. computed)
    */
-  setup: ({ qty, item }) => {
+  setup: ({ item, qty }) => {
     const priceManager = inject(PriceManager);
 
     return computed(() => priceManager.computePrice(item(), qty()));
@@ -272,7 +272,7 @@ export const PriceSimulator = component({
      */
     return (
       @for (item of items(); track item.id) {
-        @derive price = simulation({qty: 1, item: item});
+        @derive price = simulation(item={item} qty={1});
 
         <h5>{item.desc}</h5>
         <div>Price: {price()}</div>
