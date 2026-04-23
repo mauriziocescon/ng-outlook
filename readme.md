@@ -262,7 +262,7 @@ export const PriceSimulator = component({
 ```
 
 ## Binding syntax helpers
-- Name-matching: omit the value when the local variable name matches the binding; type inferred from the signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs.
+- Name-matching: omit the value when the local variable name matches the binding; type inferred from the binding kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `(payload: T) => void` for outputs.
 - One-time shorthand: `once:` also supports name-matching shorthand (`once:{user}`).
 - Literal form equivalence for inputs: literal attributes and literal expressions are equivalent for inputs: `prop="value"` and `prop={'value'}` produce the same input value.
 - `:when`: conditionally applies a `use:` binding; sits outside the directive's inputs and cannot clash with them.

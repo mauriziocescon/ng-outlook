@@ -19,11 +19,18 @@ declare const ATTACHABLE: unique symbol;
 declare const FRAGMENT_OPTIONAL: unique symbol;
 declare const FRAGMENT_REQUIRED: unique symbol;
 
+type FragmentArgs<T> =
+  [T] extends [void] ? []
+    : T extends any[] ? T
+    : [T];
+
 export type OptionalFragmentBinding<T> = {
+  (...args: FragmentArgs<T>): TemplateMarkup;
   readonly [FRAGMENT]: T;
   readonly [FRAGMENT_OPTIONAL]: true;
 };
 export type RequiredFragmentBinding<T> = {
+  (...args: FragmentArgs<T>): TemplateMarkup;
   readonly [FRAGMENT]: T;
   readonly [FRAGMENT_REQUIRED]: true;
 };

@@ -172,6 +172,7 @@ const UserDetail = component({
     const _u: User = user();
     const _e: string = email();
     const _children: OptionalFragmentBinding<void> | undefined = children;
+    const _rendered = children?.();
     email.set('new');
     makeAdmin.emit();
     return tmpl;
@@ -185,8 +186,22 @@ const RequiredChildren = component({
   },
   setup: ({ children }) => {
     const _c: RequiredFragmentBinding<void> = children;
+    const _rendered = children();
     // @ts-expect-error required fragment is not assignable to optional fragment shape
     const _mustBeOptional: OptionalFragmentBinding<void> | undefined = children;
+    return tmpl;
+  },
+});
+
+// Parameterized fragment: callable with declared arguments
+const RenderItem = component({
+  bindings: {
+    itemTpl: fragment.required<[Item]>(),
+  },
+  setup: ({ itemTpl }) => {
+    const _ok = itemTpl({ id: '1', desc: 'A' });
+    // @ts-expect-error missing required argument
+    itemTpl();
     return tmpl;
   },
 });
