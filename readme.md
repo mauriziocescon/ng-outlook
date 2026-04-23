@@ -1,4 +1,4 @@
-# Anatomy of signal components
+# Anatomy of Signal Components
 **⚠️ Note ⚠️: personal thoughts from a developer's perspective on [the future of Angular](https://myconf.dev/videos/2024-keynote-session-the-future-of-angular) (template level).**
 
 Points:
