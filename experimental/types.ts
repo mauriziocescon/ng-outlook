@@ -35,7 +35,9 @@ export type RequiredFragmentBinding<T> = {
   readonly [FRAGMENT_REQUIRED]: true;
 };
 export type FragmentBinding<T> = OptionalFragmentBinding<T> | RequiredFragmentBinding<T>;
-export type AttachableBinding<T> = { readonly [ATTACHABLE]: T };
+export type AttachableBinding<T extends HTMLElement> = {
+  readonly [ATTACHABLE]: (host: T) => void
+};
 
 export declare function fragment<T>(): OptionalFragmentBinding<T>;
 export declare namespace fragment {

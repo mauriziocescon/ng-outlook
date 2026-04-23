@@ -55,7 +55,7 @@ const _fragIsDir: FragIsDir = 'OK';
 type DirIsFrag = AttachableBinding<HTMLElement> extends FragmentBinding<any> ? 'LEAK' : 'OK';
 const _dirIsFrag: DirIsFrag = 'OK';
 
-type SameInner = FragmentBinding<string> extends AttachableBinding<string> ? 'LEAK' : 'OK';
+type SameInner = FragmentBinding<HTMLElement> extends AttachableBinding<HTMLElement> ? 'LEAK' : 'OK';
 const _sameInner: SameInner = 'OK';
 
 // Required vs optional fragment are distinct types
@@ -68,23 +68,37 @@ const _optIsReq: OptIsReq = 'OK';
 // ────────────────────────────────────────────────────────────────
 // DIRECTIVE ATTACHMENTS — element-type compatibility
 //
-// AttachableBinding<T> is covariant in T: an attachments binding for a
-// narrower element type (HTMLButtonElement) must NOT accept an
-// AttachableBinding typed for a broader or unrelated element type.
+// AttachableBinding<T> is CONTRAVARIANT in T:
+// - an attachments binding typed for a broader element type (HTMLElement)
+//   is assignable to a narrower sink (HTMLButtonElement),
+// - a narrower binding (HTMLButtonElement) is NOT assignable to a broader
+//   sink (HTMLElement).
 // The check reflects compile-time validation: the element type T
 // declared in attachable<T>() constrains which directives are legal at
 // the call site. Instantiation itself is deferred to runtime,
 // but the type-mismatch is caught at build time.
 // ────────────────────────────────────────────────────────────────
 
-// A Button-sink should NOT accept a Div-sink
+// Contravariance on subtype/supertype:
+type ButtonSinkAcceptsAnyElement =
+  AttachableBinding<HTMLElement> extends AttachableBinding<HTMLButtonElement>
+    ? 'OK'
+    : 'LEAK';
+const _buttonSinkAcceptsAnyElement: ButtonSinkAcceptsAnyElement = 'OK';
+
+type AnyElementSinkAcceptsButtonOnly =
+  AttachableBinding<HTMLButtonElement> extends AttachableBinding<HTMLElement>
+    ? 'LEAK'
+    : 'OK';
+const _anyElementSinkAcceptsButtonOnly: AnyElementSinkAcceptsButtonOnly = 'OK';
+
+// Unrelated element types remain incompatible in both directions
 type ButtonSinkAcceptsDiv =
   AttachableBinding<HTMLDivElement> extends AttachableBinding<HTMLButtonElement>
     ? 'LEAK'
     : 'OK';
 const _buttonSinkAcceptsDiv: ButtonSinkAcceptsDiv = 'OK';
 
-// A Div-sink should NOT accept a Button-sink (unrelated narrowing)
 type DivSinkAcceptsButton =
   AttachableBinding<HTMLButtonElement> extends AttachableBinding<HTMLDivElement>
     ? 'LEAK'
