@@ -19,6 +19,22 @@ Points:
 
 **Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
 
+<details>
+  <summary><strong>Table of contents</strong></summary>
+
+- [Component structure and bindings](#component-structure-and-bindings)
+- [Element directives](#element-directives)
+- [Template-Scoped Derivations (`@derive`)](#template-scoped-derivations-derive)
+- [Binding syntax helpers](#binding-syntax-helpers)
+- [One-time bindings (`once:`)](#one-time-bindings-once)
+- [Input-driven providers](#input-driven-providers)
+- [Composition with Fragments, Directives, and Spread syntax](#composition-with-fragments-directives-and-spread-syntax)
+- [Expose and Template Refs](#expose-and-template-refs)
+- [Dependency Injection Enhancements](#dependency-injection-enhancements)
+- [Final considerations](#final-considerations)
+
+</details>
+
 ## Component structure and bindings
 `setup` runs once in an injection context. All bindings are wired and available immediately; destructuring is optional:
 ```ts
@@ -197,44 +213,7 @@ export const tooltip = directive({
 });
 ```
 
-## Binding shorthands
-- **Name-matching**: omit the value when the local variable name matches the binding; type inferred from the signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs.
-- **`:when`**: conditionally applies a `use:` binding; sits outside the directive's inputs and cannot clash with them.
-
-```ts
-import { component, signal } from '@angular/core';
-import { tooltip } from '@mylib/tooltip';
-import { UserDetail, User } from './user-detail.ng';
-
-export const UserCard = component({
-  setup: () => {
-    const user = signal<User>(/** ... **/);
-    const email = signal<string>(/** ... **/);
-    const showTip = signal(true);
-    const tip = signal('View details');
-
-    function userChange() {/** ... **/}
-
-    return (
-      // explicit form — always works
-      <UserDetail
-        user={user()}
-        model:email={email}
-        on:userChange={userChange}
-        use:tooltip(message={tip()}):when={showTip()} />
-
-      // shorthand — when local variable names match binding names
-      <UserDetail
-        {user}
-        model:{email}
-        on:{userChange}
-        use:tooltip(message={tip()}):when={showTip()} />
-    );
-  },
-});
-```
-
-## Template-scope derivations with `@derive`
+## Template-Scoped Derivations (`@derive`)
 `@derive` creates a template-scoped reactive computation, establishing an injection context before calling the derivation's `setup`. It follows the lifecycle of the enclosing view:
 ```ts
 import { component, derivation, computed, inject, input } from '@angular/core';
@@ -282,7 +261,73 @@ export const PriceSimulator = component({
 });
 ```
 
-## Inputs
+## Binding syntax helpers
+- **Name-matching**: omit the value when the local variable name matches the binding; type inferred from the signal kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `() => void` for outputs.
+- **One-time shorthand**: `once:` also supports name-matching shorthand (`once:{user}`).
+- **`:when`**: conditionally applies a `use:` binding; sits outside the directive's inputs and cannot clash with them.
+
+```ts
+import { component, signal } from '@angular/core';
+import { tooltip } from '@mylib/tooltip';
+import { UserDetail, User } from './user-detail.ng';
+
+export const UserCard = component({
+  setup: () => {
+    const user = signal<User>(/** ... **/);
+    const email = signal<string>(/** ... **/);
+    const showTip = signal(true);
+    const tip = signal('View details');
+
+    function userChange() {/** ... **/}
+
+    return (
+      // explicit form — always works
+      <UserDetail
+        user={user()}
+        model:email={email}
+        on:userChange={userChange}
+        use:tooltip(message={tip()}):when={showTip()} />
+
+      // shorthand — when local variable names match binding names
+      <UserDetail
+        {user}
+        model:{email}
+        on:{userChange}
+        use:tooltip(message={tip()}):when={showTip()} />
+    );
+  },
+});
+```
+
+## One-time bindings (`once:`)
+`once:` lets the consumer freeze an input at creation time. The value is seeded once and never updated, even if the source signal changes later. Rules:
+- `once:` applies only to inputs.
+- `once:model:*` and `once:on:*` are compile-time errors.
+- `once:prop` and `prop` together on the same element are a duplicate binding error.
+- Name-matching shorthand also works: `once:{user}`.
+
+```ts
+import { component, signal } from '@angular/core';
+import { UserDetail, User } from './user-detail.ng';
+
+export const UserDetailConsumer = component({
+  setup: () => {
+    const user = signal<User>(/** ... **/);
+    const email = signal<string>(/** ... **/);
+
+    function makeAdmin() {/** ... **/}
+
+    return (
+      <UserDetail
+        once:user={user()}
+        model:email={email}
+        on:makeAdmin={makeAdmin} />
+    );
+  },
+});
+```
+
+## Input-driven providers
 Inputs hoisted to the component level for use in provider initialization (`providers` receives only inputs — not models or outputs):
 ```ts
 import { component, linkedSignal, input, WritableSignal, provide, inject } from '@angular/core';
@@ -322,7 +367,7 @@ export const Counter = component({
 });
 ```
 
-## Composition with fragments, directives and spread syntax
+## Composition with Fragments, Directives, and Spread syntax
 Fragments are similar to [Svelte snippets](https://svelte.dev/docs/svelte/snippet): functions that return HTML markup. The returned markup is opaque — it cannot be manipulated like [React Children (legacy)](https://react.dev/reference/react/Children) or [Solid children](https://www.solidjs.com/tutorial/props_children). Directives behave similarly to [Svelte attachments](https://svelte.dev/docs/svelte/@attach). Spread syntax can be used at the component function level, similarly to React. Note: the examples below are simplified.
 
 Implicit children fragment (placement and lifecycle) and binding context:
@@ -607,7 +652,7 @@ export const UserDetail = component({
 });
 ```
 
-## Expose and Template ref
+## Expose and Template Refs
 `expose` is the public interface of `setup()` for refs. Components return it along with `template`; directives return it from `setup`.
 
 `ref(Type)` → `Signal<expose | undefined>`, `refMany(Type)` → `Signal<expose[]>`; without `expose`, they resolve to `Signal<undefined>` and `Signal<undefined[]>`. Elements and components are bound with `ref={...}`, or with `use:...:ref={...}` for directives, and can be read after `afterNextRender`.
@@ -675,7 +720,7 @@ export const Parent = component({
 });
 ```
 
-## DI enhancements
+## Dependency Injection Enhancements
 Improved ergonomics for types and tokens:
 ```ts
 import { component, inject, provide, injectionToken, input, signal } from '@angular/core';
@@ -768,7 +813,7 @@ export const Counter = component({
 
 ## Final considerations
 
-### Concepts affected by these changes
+### Concepts Impacted by These Changes
 - `ng-content`: replaced by `fragments`,
 - `ng-template` (`let-*` shorthands + `ngTemplateGuard_*`): likely replaced by `fragments`,
 - structural directives: likely replaced by `fragments`,
