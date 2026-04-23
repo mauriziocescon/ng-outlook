@@ -207,6 +207,25 @@ const RequiredChildren = component({
   },
 });
 
+// Reserved names enforcement on component bindings:
+// - children must be fragment(...)
+// - attachments must be attachable(...)
+// @ts-expect-error reserved name "children" must use fragment(...)
+const _NegChildrenMustBeFragment = component({
+  bindings: {
+    children: input<string>(),
+  },
+  setup: () => tmpl,
+});
+
+// @ts-expect-error reserved name "attachments" must use attachable(...)
+const _NegAttachmentsMustBeAttachable = component({
+  bindings: {
+    attachments: input<string>(),
+  },
+  setup: () => tmpl,
+});
+
 // Parameterized fragment: callable with declared arguments
 const RenderItem = component({
   bindings: {
@@ -423,6 +442,44 @@ const WrapperProviders = component.wrap(UserDetail, {
     return [];
   },
 });
+
+// ────────────────────────────────────────────────────────────────
+// TEMPLATE SPREAD COLLISION PRECEDENCE (compiler contract)
+//
+// Rule: React-style "last wins".
+// Example:
+//   <Target {...rest} user={explicit} />  -> explicit wins for `user`
+//   <Target user={explicit} {...rest} />  -> rest wins for `user`
+//
+// This is a compile-time lowering contract for the template compiler.
+// The tests below model that merge order with plain TS object spreads.
+// ────────────────────────────────────────────────────────────────
+
+type MergeProps<Left, Right> = Omit<Left, keyof Right> & Right;
+type IsEqual<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends
+  (<T>() => T extends B ? 1 : 2) ? true : false;
+type Assert<T extends true> = T;
+
+type FromSpread = {
+  user: 'spread';
+  email: 'spread-email';
+  click: 'spread-click';
+};
+
+type FromExplicit = {
+  user: 'explicit';
+};
+
+// <Target {...rest} user={explicit} />
+type SpreadThenExplicit = MergeProps<FromSpread, FromExplicit>;
+type _SpreadThenExplicitUser = Assert<IsEqual<SpreadThenExplicit['user'], 'explicit'>>;
+type _SpreadThenExplicitKeepsOthers = Assert<IsEqual<SpreadThenExplicit['email'], 'spread-email'>>;
+
+// <Target user={explicit} {...rest} />
+type ExplicitThenSpread = MergeProps<FromExplicit, FromSpread>;
+type _ExplicitThenSpreadUser = Assert<IsEqual<ExplicitThenSpread['user'], 'spread'>>;
+type _ExplicitThenSpreadKeepsOthers = Assert<IsEqual<ExplicitThenSpread['click'], 'spread-click'>>;
 
 // ────────────────────────────────────────────────────────────────
 // DIRECTIVE — host as separate config, expose

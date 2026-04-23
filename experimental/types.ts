@@ -126,6 +126,14 @@ type SetupBindings<B> = {
   [K in keyof B]: SetupBindingValue<B[K]>;
 };
 
+type ReservedBindingsConstraint<B extends Record<string, BindingValue>> =
+  ('children' extends keyof B
+    ? B['children'] extends FragmentBinding<any> ? unknown : never
+    : unknown) &
+  ('attachments' extends keyof B
+    ? B['attachments'] extends AttachableBinding<any> ? unknown : never
+    : unknown);
+
 // ────────────────────────────────────────────────────────────────
 // 4b. TEMPLATE MARKUP
 //
@@ -178,7 +186,7 @@ export function component<B extends Record<string, BindingValue>, E = void>(conf
   providers?: (inputs: InputsOnly<B>) => Provider[];
   style?: string;
   styleUrl?: string;
-}): ComponentInstance<B, E>;
+} & (ReservedBindingsConstraint<B> extends never ? never : {})): ComponentInstance<B, E>;
 
 // No bindings
 export function component<E = void>(config: {
