@@ -509,7 +509,7 @@ export const ButtonConsumer = component({
     /**
      * The same directive cannot be applied more than once 
      * to the same component / element.
-     * */
+     */
     return (
       <Button
         type="button"
