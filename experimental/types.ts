@@ -16,11 +16,24 @@ import {
 
 declare const FRAGMENT: unique symbol;
 declare const ATTACHABLE: unique symbol;
+declare const FRAGMENT_OPTIONAL: unique symbol;
+declare const FRAGMENT_REQUIRED: unique symbol;
 
-export type FragmentBinding<T> = { readonly [FRAGMENT]: T };
+export type OptionalFragmentBinding<T> = {
+  readonly [FRAGMENT]: T;
+  readonly [FRAGMENT_OPTIONAL]: true;
+};
+export type RequiredFragmentBinding<T> = {
+  readonly [FRAGMENT]: T;
+  readonly [FRAGMENT_REQUIRED]: true;
+};
+export type FragmentBinding<T> = OptionalFragmentBinding<T> | RequiredFragmentBinding<T>;
 export type AttachableBinding<T> = { readonly [ATTACHABLE]: T };
 
-export declare function fragment<T>(): FragmentBinding<T>;
+export declare function fragment<T>(): OptionalFragmentBinding<T>;
+export declare namespace fragment {
+  export function required<T>(): RequiredFragmentBinding<T>;
+}
 export declare function attachable<T extends HTMLElement>(): AttachableBinding<T>;
 
 // ────────────────────────────────────────────────────────────────
@@ -49,7 +62,8 @@ export type BindingValue =
   | InputSignal<any>
   | ModelSignal<any>
   | OutputEmitterRef<any>
-  | FragmentBinding<any>
+  | OptionalFragmentBinding<any>
+  | RequiredFragmentBinding<any>
   | AttachableBinding<any>;
 
 // ────────────────────────────────────────────────────────────────
@@ -94,6 +108,14 @@ type InputKeys<B> = {
 }[keyof B];
 
 type InputsOnly<B> = Pick<B, InputKeys<B>>;
+
+type SetupBindingValue<V> =
+  V extends OptionalFragmentBinding<infer T> ? OptionalFragmentBinding<T> | undefined
+    : V;
+
+type SetupBindings<B> = {
+  [K in keyof B]: SetupBindingValue<B[K]>;
+};
 
 // ────────────────────────────────────────────────────────────────
 // 4b. TEMPLATE MARKUP
@@ -143,7 +165,7 @@ type SetupReturn<E> =
 // With bindings
 export function component<B extends Record<string, BindingValue>, E = void>(config: {
   bindings: B;
-  setup: (bindings: B) => SetupReturn<E>;
+  setup: (bindings: SetupBindings<B>) => SetupReturn<E>;
   providers?: (inputs: InputsOnly<B>) => Provider[];
   style?: string;
   styleUrl?: string;
@@ -167,7 +189,7 @@ export namespace component {
     target: C,
     config: TargetBindings<C> extends Record<string, BindingValue> ? {
       bindings?: Partial<TargetBindings<C>>;
-      setup: (bindings: TargetBindings<C>) => SetupReturn<E>;
+      setup: (bindings: SetupBindings<TargetBindings<C>>) => SetupReturn<E>;
       providers?: (inputs: InputsOnly<TargetBindings<C>>) => Provider[];
       style?: string;
       styleUrl?: string;
@@ -197,7 +219,7 @@ export function directive<
 >(config: {
   host: Ref<H | undefined>;
   bindings: B;
-  setup: (bindings: B, context: { host: Ref<H | undefined> }) => E;
+  setup: (bindings: SetupBindings<B>, context: { host: Ref<H | undefined> }) => E;
 }): DirectiveInstance<H, B, E>;
 
 // No bindings

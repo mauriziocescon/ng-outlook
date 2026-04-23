@@ -17,6 +17,8 @@ import {
   type TemplateMarkup,
   type DerivationInstance,
   type FragmentBinding,
+  type OptionalFragmentBinding,
+  type RequiredFragmentBinding,
   type AttachableBinding,
   type InjectionToken,
   component,
@@ -55,6 +57,13 @@ const _dirIsFrag: DirIsFrag = 'OK';
 
 type SameInner = FragmentBinding<string> extends AttachableBinding<string> ? 'LEAK' : 'OK';
 const _sameInner: SameInner = 'OK';
+
+// Required vs optional fragment are distinct types
+type ReqIsOpt = RequiredFragmentBinding<void> extends OptionalFragmentBinding<void> ? 'LEAK' : 'OK';
+const _reqIsOpt: ReqIsOpt = 'OK';
+
+type OptIsReq = OptionalFragmentBinding<void> extends RequiredFragmentBinding<void> ? 'LEAK' : 'OK';
+const _optIsReq: OptIsReq = 'OK';
 
 // ────────────────────────────────────────────────────────────────
 // DIRECTIVE ATTACHMENTS — element-type compatibility
@@ -162,8 +171,22 @@ const UserDetail = component({
   setup: ({ user, email, makeAdmin, children, attachments }) => {
     const _u: User = user();
     const _e: string = email();
+    const _children: OptionalFragmentBinding<void> | undefined = children;
     email.set('new');
     makeAdmin.emit();
+    return tmpl;
+  },
+});
+
+// fragment.required: children must be present in setup
+const RequiredChildren = component({
+  bindings: {
+    children: fragment.required<void>(),
+  },
+  setup: ({ children }) => {
+    const _c: RequiredFragmentBinding<void> = children;
+    // @ts-expect-error required fragment is not assignable to optional fragment shape
+    const _mustBeOptional: OptionalFragmentBinding<void> | undefined = children;
     return tmpl;
   },
 });
@@ -285,7 +308,7 @@ const UserDetailWrapper = component.wrap(UserDetail, {
     const _r: {
       email: ModelSignal<string>;
       makeAdmin: OutputEmitterRef<void>;
-      children: FragmentBinding<void>;
+      children: OptionalFragmentBinding<void> | undefined;
       attachments: AttachableBinding<HTMLElement>;
     } = rest;
     const other = computed(() => user());

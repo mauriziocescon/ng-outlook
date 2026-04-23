@@ -422,7 +422,7 @@ export const Menu = component({
 
 export const MenuItem = component({
   bindings: {
-    children: fragment<void>(),
+    children: fragment.required<void>(),
   },
   setup: ({ children }) => (
     @render(children())
@@ -479,7 +479,7 @@ import { component, input, fragment } from '@angular/core';
 export const Menu = component({
   bindings: {
     items: input.required<{ id: string, desc: string }[]>(),
-    menuItem: fragment<[{ id: string, desc: string }]>(),
+    menuItem: fragment.required<[{ id: string, desc: string }]>(),
   },
   setup: ({ items, menuItem }) => (
     <h1> Total items: {items().length} </h1>
@@ -534,7 +534,7 @@ export const Button = component({
     style: input<string>(''),
     disabled: input<boolean>(false),
     click: output<void>(),
-    children: fragment<void>(),
+    children: fragment.required<void>(),
     /**
      * Provided by ng from applied directives (not bindable directly)
      * Name reserved to ng

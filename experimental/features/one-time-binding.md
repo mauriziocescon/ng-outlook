@@ -169,7 +169,8 @@ export type BindingValue =
   | OnceInput<any>        // ← new
   | ModelSignal<any>
   | OutputEmitterRef<any>
-  | FragmentBinding<any>
+  | OptionalFragmentBinding<any>
+  | RequiredFragmentBinding<any>
   | AttachableBinding<any>;
 ```
 
