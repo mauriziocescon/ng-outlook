@@ -2,12 +2,25 @@ import {
   type Signal,
   type InputSignal,
   type ModelSignal,
-  OutputEmitterRef,
+  type OutputEmitterRef,
   type Provider,
 } from '@angular/core';
 
 // ────────────────────────────────────────────────────────────────
-// 1. BRANDED BINDING TYPES
+// 1. TEMPLATE MARKUP
+//
+// Branded type so the compiler can distinguish a raw template
+// return (shorthand) from an object return (full form).
+// In practice the compiler produces TemplateMarkup from the DSL;
+// here we use `any` as a stand-in.
+// ────────────────────────────────────────────────────────────────
+
+declare const TEMPLATE: unique symbol;
+
+export type TemplateMarkup = { readonly [TEMPLATE]: true };
+
+// ────────────────────────────────────────────────────────────────
+// 2. BRANDED BINDING TYPES
 //
 // These do not exist in Angular today. They use unique symbols
 // so TypeScript treats each as a distinct nominal type rather
@@ -36,7 +49,7 @@ export type RequiredFragmentBinding<T> = {
 };
 export type FragmentBinding<T> = OptionalFragmentBinding<T> | RequiredFragmentBinding<T>;
 export type AttachableBinding<T extends HTMLElement> = {
-  readonly [ATTACHABLE]: (host: T) => void
+  readonly [ATTACHABLE]: (host: T) => void;
 };
 
 export declare function fragment<T>(): OptionalFragmentBinding<T>;
@@ -46,7 +59,7 @@ export declare namespace fragment {
 export declare function attachable<T extends HTMLElement>(): AttachableBinding<T>;
 
 // ────────────────────────────────────────────────────────────────
-// 2. REF
+// 3. REF
 //
 // Read-only signal populated by the framework. Extends Signal<T>
 // with a branded symbol so the template compiler can distinguish
@@ -62,7 +75,7 @@ export interface Ref<T> extends Signal<T> {
 }
 
 // ────────────────────────────────────────────────────────────────
-// 3. BINDING VALUE
+// 4. BINDING VALUE
 //
 // BindingValue — union of everything that can appear in `bindings`.
 // ────────────────────────────────────────────────────────────────
@@ -76,7 +89,7 @@ export type BindingValue =
   | AttachableBinding<any>;
 
 // ────────────────────────────────────────────────────────────────
-// 4. INSTANCE TYPES & SHARED HELPERS
+// 5. INSTANCE TYPES & SHARED HELPERS
 //
 // ComponentInstance has bindings + expose.
 // DirectiveInstance adds a host element type (H) — a directive
@@ -135,25 +148,13 @@ type ReservedBindingsConstraint<B extends Record<string, BindingValue>> =
     : unknown);
 
 // ────────────────────────────────────────────────────────────────
-// 4b. TEMPLATE MARKUP
-//
-// Branded type so the compiler can distinguish a raw template
-// return (shorthand) from an object return (full form).
-// In practice the compiler produces TemplateMarkup from the DSL;
-// here we use `any` as a stand-in.
-// ────────────────────────────────────────────────────────────────
-
-declare const TEMPLATE: unique symbol;
-
-export type TemplateMarkup = { readonly [TEMPLATE]: true };
-
 type SetupReturn<E> =
-  | { template: TemplateMarkup; expose: E }   // full form with expose
-  | { template: TemplateMarkup }               // full form, no expose
-  | TemplateMarkup;                            // shorthand: raw template
+  | { template: TemplateMarkup; expose: E } // full form with expose
+  | { template: TemplateMarkup } // full form, no expose
+  | TemplateMarkup; // shorthand: raw template
 
 // ────────────────────────────────────────────────────────────────
-// 5. COMPONENT
+// 6. COMPONENT
 //
 // setup return type — two forms:
 //   Shorthand: return raw TemplateMarkup (no expose).
@@ -217,7 +218,7 @@ export namespace component {
 (component as any).wrap = (_target: any, config: any) => config;
 
 // ────────────────────────────────────────────────────────────────
-// 6. DIRECTIVE
+// 7. DIRECTIVE
 //
 // Single-call, all generics inferred:
 //   H from host, B from bindings, E from setup return.
@@ -250,7 +251,7 @@ export function directive(config: any): any {
 }
 
 // ────────────────────────────────────────────────────────────────
-// 7. DERIVATION
+// 8. DERIVATION
 //
 // Template-scoped reactive computation. Only InputSignal bindings
 // are allowed (no host, no outputs, no models — a derivation has
@@ -280,7 +281,7 @@ export function derivation(config: any): any {
 }
 
 // ────────────────────────────────────────────────────────────────
-// 8. REF UTILITIES
+// 9. REF UTILITIES
 //
 // ref()  — single instance, resolves after afterNextRender.
 // refMany() — multiple instances (e.g. inside @for).
@@ -310,7 +311,7 @@ export function refMany(_type?: any): any {
 }
 
 // ────────────────────────────────────────────────────────────────
-// 9. INJECTION TOKEN
+// 10. INJECTION TOKEN
 //
 // Three flavours:
 //   Component-level — must be provided explicitly via provide().
@@ -348,7 +349,7 @@ export function injectionToken(_desc: string, _config: any): any {
 }
 
 // ────────────────────────────────────────────────────────────────
-// 10. INJECT
+// 11. INJECT
 //
 // inject(Component)  → ExposeOf<Component>
 // inject(Directive)  → ExposeOf<Directive>
@@ -366,7 +367,7 @@ export function inject(_token: any): any {
 }
 
 // ────────────────────────────────────────────────────────────────
-// 11. PROVIDE
+// 12. PROVIDE
 //
 // Shorthand — provide(token): uses the token's default factory.
 // Object    — provide({ token, useFactory }): overrides factory.

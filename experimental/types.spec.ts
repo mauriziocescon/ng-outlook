@@ -39,6 +39,16 @@ interface User { id: string; name: string; }
 interface Item { id: string; desc: string; }
 
 // ────────────────────────────────────────────────────────────────
+// TEST HELPERS
+// ────────────────────────────────────────────────────────────────
+
+type IsEqual<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends
+  (<T>() => T extends B ? 1 : 2) ? true : false;
+type Assert<T extends true> = T;
+type MergeProps<Left, Right> = Omit<Left, keyof Right> & Right;
+
+// ────────────────────────────────────────────────────────────────
 // BRANDED TYPE NOMINALITY
 //
 // FragmentBinding and AttachableBinding must be distinct nominal
@@ -454,12 +464,6 @@ const WrapperProviders = component.wrap(UserDetail, {
 // This is a compile-time lowering contract for the template compiler.
 // The tests below model that merge order with plain TS object spreads.
 // ────────────────────────────────────────────────────────────────
-
-type MergeProps<Left, Right> = Omit<Left, keyof Right> & Right;
-type IsEqual<A, B> =
-  (<T>() => T extends A ? 1 : 2) extends
-  (<T>() => T extends B ? 1 : 2) ? true : false;
-type Assert<T extends true> = T;
 
 type FromSpread = {
   user: 'spread';
