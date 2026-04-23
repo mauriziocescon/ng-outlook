@@ -2,20 +2,20 @@
 **⚠️ Note ⚠️: personal thoughts from a developer's perspective on [the future of Angular](https://myconf.dev/videos/2024-keynote-session-the-future-of-angular) at the template level.**
 
 Highlights:
-1. building blocks as functions:
+1. Building blocks as functions:
     - `*.ng` files with template DSL (see [`authoring format`](https://github.com/mauriziocescon/ng-outlook/blob/main/authoring-format.md)),
     - `component`: a `setup` with scoped logic that returns a `template` or `{ template, expose }`,
     - `directive`: a `setup` that can change the appearance or behavior of DOM elements,
     - `derivation`: a factory for template-scoped computed values that requires DI,
     - `fragment`: a way to capture some markup in the form of a function,
 2. TS expressions with `{}`: bindings + text interpolation
-3. extra bindings for DOM elements: `bind:`, `on:`, `model:`, `class:`, `style:`, `animate:`, `use:`,
-4. hostless components + TS lexical scoping for templates,
-5. component inputs: lifted up + immediately available in setup and providers,
+3. Extra bindings for DOM elements: `bind:`, `on:`, `model:`, `class:`, `style:`, `animate:`, `use:`,
+4. Hostless components + TS lexical scoping for templates,
+5. Component inputs: lifted up + immediately available in setup and providers,
 6. Composition with Fragments, Directives, and Spread syntax,
 7. Expose and Template Refs,
 8. Dependency Injection Enhancements,
-9. final considerations (`!important`) + [`experimental types`](https://github.com/mauriziocescon/ng-outlook/blob/main/experimental/types.ts).
+9. Final considerations (`!important`) + [`experimental types`](https://github.com/mauriziocescon/ng-outlook/blob/main/experimental/types.ts).
 
 **Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
 
