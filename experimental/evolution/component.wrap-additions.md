@@ -1,19 +1,19 @@
 # Wrapper API Shaping (`addBindings` / `omitBindings`)
 
-It is proposed that `component.wrap` be evolved so that wrappers can expose a curated API while preserving current compile-time forwarding guarantees.
+This proposal evolves `component.wrap` so wrappers can expose a curated API while preserving current compile-time forwarding guarantees.
 
 ## Goal
 
-It is observed that `component.wrap(Target, ...)` currently mirrors target bindings (with optional overrides), and that `{...rest}` forwards target-compatible bindings at compile time.
+Today, `component.wrap(Target, ...)` mirrors target bindings (with optional overrides), and `{...rest}` forwards target-compatible bindings at compile time.
 
-Two additional capabilities are proposed:
+This evolution adds two capabilities:
 
 1. `addBindings`: wrapper-local bindings not present on the target.
 2. `omitBindings`: hide selected target bindings from the wrapper public API.
 
-The primary constraint is that target soundness should not be weakened. Added bindings should never be treated as implicit target bindings.
+The primary constraint is preserving target soundness. Added bindings are never treated as implicit target bindings.
 
-It should also be noted that all practical scenarios described in this document are achievable today by implementing a pure façade component (`component(...)`) that explicitly maps bindings to the target. The present evolution is intended mainly for cases in which one or two bindings need to be adjusted, hidden, or renamed on top of a large target API, while preserving current wrapper ergonomics.
+All practical scenarios described here are achievable today by implementing a pure façade component (`component(...)`) that explicitly maps bindings to the target. This evolution mainly covers cases where only one or two bindings need to be adjusted, hidden, or renamed on top of a large target API, while keeping wrapper ergonomics.
 
 ---
 
@@ -54,7 +54,7 @@ export const EnterpriseUser = component.wrap(UserDetail, {
 
 ### Why object form for `omitBindings`
 
-It is proposed that a typed marker object be used instead of string arrays:
+A typed marker object is used instead of string arrays:
 
 ```ts
 omitBindings: {
@@ -63,7 +63,7 @@ omitBindings: {
 }
 ```
 
-The following benefits are expected:
+Benefits:
 
 - autocomplete on valid keys,
 - rename-safe in editors,
@@ -110,7 +110,7 @@ export declare function wrap<
 ): ComponentInstance<EffectiveBindings<C, Added, OmitM>, E>;
 ```
 
-It is intended that:
+Notes:
 
 - `bindings` still means "target binding overrides" only.
 - `addBindings` is separate to avoid ambiguity.
@@ -130,7 +130,7 @@ component.wrap(Target, {
 });
 ```
 
-The compiler contract would be:
+Compiler contract:
 
 1. Build target-forwardable key set = `keyof Target` minus omitted keys.
 2. Lower `{...rest}` by unrolling only that key set.
@@ -138,13 +138,13 @@ The compiler contract would be:
 4. Keep existing explicit-binding precedence (React-style last wins).
 5. Preserve attachable passthrough chain for forwardable attachable keys.
 
-No runtime spread object would be required; the same strategy as current `component.wrap` would be retained.
+No runtime spread object is required; the same strategy as current `component.wrap` is retained.
 
 ---
 
 ## Examples
 
-The examples below are presented in wrapper form because they demonstrate the ergonomics targeted by this evolution. It is acknowledged that each of these examples can already be implemented today using a pure façade component with explicit mapping.
+The examples below are shown in wrapper form because they demonstrate the ergonomics targeted by this evolution. Each example can also be implemented today using a pure façade component with explicit mapping.
 
 ### 1. Corporate defaults + hidden unsafe knobs
 
@@ -249,7 +249,7 @@ export const UserCard = component.wrap(UserDetail, {
 
 ## Migration and compatibility
 
-It is expected that this can be introduced as a backward-compatible extension:
+This can be introduced as a backward-compatible extension:
 
 - Existing wrappers without `addBindings` / `omitBindings` behave exactly the same.
 - Existing compiler lowering of `{...rest}` is unchanged unless `omitBindings` is present.
@@ -263,6 +263,6 @@ It is expected that this can be introduced as a backward-compatible extension:
 
 - **Type system** computes effective wrapper API.
 - **Compiler** adjusts key expansion set for `{...rest}` and enforces non-forwarding of wrapper-local keys.
-- **Runtime** would remain unchanged in principle; generated instructions would remain in the same class as those emitted today.
+- **Runtime** remains unchanged in principle; generated instructions stay in the same class as those emitted today.
 
 **Change Class:** Compiler + Type-level (no new runtime primitive).
