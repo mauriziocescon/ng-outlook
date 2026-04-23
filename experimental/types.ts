@@ -143,7 +143,7 @@ type SetupReturn<E> =
 // With bindings
 export function component<B extends Record<string, BindingValue>, E = void>(config: {
   bindings: B;
-  setup: (props: B) => SetupReturn<E>;
+  setup: (bindings: B) => SetupReturn<E>;
   providers?: (inputs: InputsOnly<B>) => Provider[];
   style?: string;
   styleUrl?: string;
@@ -167,7 +167,7 @@ export namespace component {
     target: C,
     config: TargetBindings<C> extends Record<string, BindingValue> ? {
       bindings?: Partial<TargetBindings<C>>;
-      setup: (props: TargetBindings<C>) => SetupReturn<E>;
+      setup: (bindings: TargetBindings<C>) => SetupReturn<E>;
       providers?: (inputs: InputsOnly<TargetBindings<C>>) => Provider[];
       style?: string;
       styleUrl?: string;
@@ -197,13 +197,13 @@ export function directive<
 >(config: {
   host: Ref<H | undefined>;
   bindings: B;
-  setup: (props: B, context: { host: Ref<H | undefined> }) => E;
+  setup: (bindings: B, context: { host: Ref<H | undefined> }) => E;
 }): DirectiveInstance<H, B, E>;
 
 // No bindings
 export function directive<H extends HTMLElement, E = void>(config: {
   host: Ref<H | undefined>;
-  setup: (context: { host: Ref<H | undefined> }) => E;
+  setup: (bindings: {}, context: { host: Ref<H | undefined> }) => E;
 }): DirectiveInstance<H, {}, E>;
 
 export function directive(config: any): any {
@@ -228,7 +228,7 @@ export type DerivationInstance<B, T> = {
 // With bindings
 export function derivation<B extends Record<string, InputSignal<any>>, T>(config: {
   bindings: B;
-  setup: (props: B) => Signal<T>;
+  setup: (bindings: B) => Signal<T>;
 }): DerivationInstance<B, T>;
 
 // No bindings

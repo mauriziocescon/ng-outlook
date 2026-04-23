@@ -399,7 +399,7 @@ const tooltip = directive({
 // Directive without bindings
 const ripple = directive({
   host: ref<HTMLElement>(),
-  setup: ({ host }) => {
+  setup: ({}, { host }) => {
     const _hostEl: Ref<HTMLElement | undefined> = host;
   },
 });
@@ -407,7 +407,7 @@ const ripple = directive({
 // Directive with void expose: ref resolves to Ref<undefined>
 const voidDir = directive({
   host: ref<HTMLElement>(),
-  setup: ({ host }) => {},
+  setup: ({}, { host }) => {},
 });
 const voidDirRef = ref(voidDir);
 const _voidDirCheck: Ref<undefined> = voidDirRef;
@@ -771,7 +771,7 @@ const _accordionRefType: Ref<Toggleable | undefined> = accordionRef;
 
 const toggleDirective = directive({
   host: ref<HTMLElement>(),
-  setup: ({ host }) => {
+  setup: ({}, { host }) => {
     const open = signal(false);
 
     return {
