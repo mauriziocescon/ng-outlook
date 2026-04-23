@@ -399,9 +399,7 @@ import { component, fragment } from '@angular/core';
 export const Menu = component({
   bindings: {
     /**
-     * children = fragment<void>()
-     *
-     * Nullable function provided by ng (not bindable directly)
+     * Provided by ng from nested content (not bindable directly)
      * Name reserved to ng
      */
      children: fragment<void>(),
@@ -538,9 +536,7 @@ export const Button = component({
     click: output<void>(),
     children: fragment<void>(),
     /**
-     * All directives applied to <Button />
-     *
-     * Readonly signal provided by ng (not bindable directly)
+     * Provided by ng from applied directives (not bindable directly)
      * Name reserved to ng
      */
     attachments: attachable<HTMLButtonElement>(),
