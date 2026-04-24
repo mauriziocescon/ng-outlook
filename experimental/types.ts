@@ -1,9 +1,9 @@
 import {
-  type Signal,
   type InputSignal,
   type ModelSignal,
   type OutputEmitterRef,
   type Provider,
+  type Signal,
 } from '@angular/core';
 
 // ────────────────────────────────────────────────────────────────
@@ -111,6 +111,7 @@ export type ComponentBindingValue = BaseBindingValue | AttachableBinding<any>;
 declare const BINDINGS: unique symbol;
 declare const EXPOSE: unique symbol;
 declare const HOST: unique symbol;
+declare const REST: unique symbol;
 
 export type ComponentInstance<B, E = void> = {
   readonly [BINDINGS]: B;
@@ -137,6 +138,15 @@ type InputKeys<B> = {
 
 type InputsOnly<B> = Pick<B, InputKeys<B>>;
 
+type ExactSubset<Sel extends Record<string, any>, All extends Record<string, any>> = {
+  [K in keyof Sel]-?: K extends keyof All ? (Sel[K] extends All[K] ? Sel[K] : never) : never;
+};
+
+type RestToken<B> = {
+  // Compile-time forwarding marker for wrap setup context.
+  readonly [REST]: B;
+};
+
 type SetupBindingValue<V> =
   V extends OptionalFragmentBinding<infer T> ? OptionalFragmentBinding<T> | undefined
     : V;
@@ -153,7 +163,6 @@ type ReservedBindingsConstraint<B extends Record<string, ComponentBindingValue>>
     ? B['attachments'] extends AttachableBinding<any> ? unknown : never
     : unknown);
 
-// ────────────────────────────────────────────────────────────────
 type SetupReturn<E> =
   | { template: TemplateMarkup; expose: E } // full form with expose
   | { template: TemplateMarkup } // full form, no expose
@@ -173,17 +182,16 @@ type SetupReturn<E> =
 // component.wrap(Target, ...) — wrapper mode:
 //   Target is passed as a value; C is inferred from it (consistent
 //   with ref(Child), inject(Child), etc.).
-//   bindings are partial and type-checked against Target while
-//   preserving binding kind per key.
-//   setup receives binding wrappers (signals/outputs/etc.), matching
-//   the standard component mental model. {...rest} spread is a
-//   compile-time operation: the compiler unrolls it into individual
-//   bindings on the target, re-wiring each wrapper to the
-//   corresponding target binding. No runtime object spread.
-//   For AttachableBinding keys in {...rest}, the compiler passes them
+//   bindings are a strict subset of target bindings while preserving
+//   key, binding kind, and inner type per selected key.
+//   setup receives selected bindings as first arg and { rest } as
+//   second arg.
+//   rest is a compile-time forwarding token (not a runtime object):
+//   the compiler unrolls <Target {...rest} /> into individual
+//   forwarded bindings.
+//   For AttachableBinding keys in <Target {...rest} />, the compiler passes them
 //   through intact to the target component; the chain is maintained
 //   from parent → wrapper → target element at run time.
-//
 // ────────────────────────────────────────────────────────────────
 
 // With bindings
@@ -209,12 +217,19 @@ export function component(config: any): any {
 
 // Wrapper namespace helper (target as first arg, C inferred from value)
 export namespace component {
-  export declare function wrap<C extends ComponentInstance<any, any>, E = void>(
+  export declare function wrap<
+    C extends ComponentInstance<any, any>,
+    Sel extends Record<string, ComponentBindingValue>,
+    E = void
+  >(
     target: C,
     config: TargetBindings<C> extends Record<string, ComponentBindingValue> ? {
-      bindings?: Partial<TargetBindings<C>>;
-      setup: (bindings: SetupBindings<TargetBindings<C>>) => SetupReturn<E>;
-      providers?: (inputs: InputsOnly<TargetBindings<C>>) => Provider[];
+      bindings: ExactSubset<Sel, TargetBindings<C>>;
+      setup: (
+        bindings: SetupBindings<Sel>,
+        context: { rest: RestToken<Omit<TargetBindings<C>, keyof Sel>> }
+      ) => SetupReturn<E>;
+      providers?: (inputs: InputsOnly<Sel>) => Provider[];
       style?: string;
       styleUrl?: string;
     } : never

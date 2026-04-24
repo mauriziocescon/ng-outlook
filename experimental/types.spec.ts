@@ -1,36 +1,35 @@
 import {
-  type Signal,
   type InputSignal,
-  type ModelSignal,
   type OutputEmitterRef,
-  signal,
+  type Signal,
+  afterNextRender,
   computed,
   input,
   model,
   output,
-  afterNextRender,
+  signal,
 } from '@angular/core';
 
 import {
+  type AttachableBinding,
   type ComponentBindingValue,
-  type Ref,
-  type TemplateMarkup,
   type DerivationInstance,
   type FragmentBinding,
-  type OptionalFragmentBinding,
-  type RequiredFragmentBinding,
-  type AttachableBinding,
   type InjectionToken,
-  component,
-  directive,
-  derivation,
-  fragment,
+  type OptionalFragmentBinding,
+  type Ref,
+  type RequiredFragmentBinding,
+  type TemplateMarkup,
   attachable,
-  ref,
-  refMany,
+  component,
+  derivation,
+  directive,
+  fragment,
   inject,
   injectionToken,
   provide,
+  ref,
+  refMany,
 } from './types';
 
 declare const tmpl: TemplateMarkup;
@@ -348,38 +347,42 @@ const NoExpose = component({
 });
 
 // ────────────────────────────────────────────────────────────────
-// COMPONENT — wrapper with generic target and spread
+// COMPONENT — wrapper with selected bindings + rest forwarding token
 //
 // Target passed as first arg; C is inferred from the value
 // (consistent with ref(Child), inject(Child), etc.).
-// setup receives wrapped bindings, same as standard components.
-// {...rest} spread is compile-time: the compiler unrolls it into
-// individual bindings on the target. No runtime object spread.
+// setup receives selected bindings in arg1 and { rest } in arg2.
+// rest is a compile-time forwarding token used in <Target {...rest} />.
+// No runtime object spread is modeled here.
 // ────────────────────────────────────────────────────────────────
 
 const UserDetailWrapper = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
   },
-  setup: ({ user, ...rest }) => {
+  setup: ({ user }, { rest }) => {
     const _u: User = user();
-    const _r: {
-      email: ModelSignal<string>;
-      makeAdmin: OutputEmitterRef<void>;
-      children: OptionalFragmentBinding<void> | undefined;
-      attachments: AttachableBinding<HTMLElement>;
-    } = rest;
     const other = computed(() => user());
     return tmpl;
   },
 });
 
-// rest should NOT contain explicitly destructured keys
-const _NegRest = component.wrap(UserDetail, {
+// setup first arg includes only selected keys
+const _NegSelectedOnly = component.wrap(UserDetail, {
   bindings: { user: input.required<User>() },
-  setup: ({ user, ...rest }) => {
-    // @ts-expect-error user was destructured, not in rest
-    rest.user;
+  setup: ({
+    user,
+    // @ts-expect-error email is not selected in wrapper bindings
+    email,
+  }) => tmpl,
+});
+
+// rest is opaque and not inspectable
+const _NegRestInspect = component.wrap(UserDetail, {
+  bindings: { user: input.required<User>() },
+  setup: ({ user }, { rest }) => {
+    // @ts-expect-error rest is forwarding-only token; key inspection is invalid
+    rest.email;
     return tmpl;
   },
 });
@@ -391,7 +394,7 @@ const _NegExtra = component.wrap(UserDetail, {
     // @ts-expect-error nonsense is not in target bindings
     nonsense: input<string>(),
   },
-  setup: ({ user, ...rest }) => tmpl,
+  setup: ({ user }, { rest }) => tmpl,
 });
 
 // bindings should NOT accept wrong inner types
@@ -400,7 +403,7 @@ const _NegWrongType = component.wrap(UserDetail, {
     // @ts-expect-error user input type should be User
     user: input.required<string>(),
   },
-  setup: ({ user, ...rest }) => tmpl,
+  setup: ({ user }, { rest }) => tmpl,
 });
 
 // bindings should preserve target binding kind
@@ -409,10 +412,10 @@ const _NegWrongKind = component.wrap(UserDetail, {
     // @ts-expect-error makeAdmin is an output on target, not an input
     makeAdmin: input<void>(),
   },
-  setup: ({ makeAdmin }) => tmpl,
+  setup: ({ makeAdmin }, { rest }) => tmpl,
 });
 
-// Wrap with no explicit bindings: all target bindings forwarded
+// Wrap with empty selected bindings: all target bindings forwarded via rest token
 interface Simple { id: string; }
 
 const Base = component({
@@ -425,29 +428,29 @@ const Base = component({
 });
 
 const PassThrough = component.wrap(Base, {
-  setup: ({ item, selected, click }) => {
-    const _i: InputSignal<Simple> = item;
-    const _s: ModelSignal<boolean | undefined> = selected;
-    const _c: OutputEmitterRef<void> = click;
+  bindings: {},
+  setup: ({}, { rest }) => {
+    // @ts-expect-error rest is forwarding-only token; no property reads
+    rest.item;
     return tmpl;
   },
 });
 
-// Wrapper providers should receive inputs only (target-kind aware)
+// Wrapper providers should receive selected inputs only (Option A)
 const WrapperProviders = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
   },
-  setup: ({ user, email, makeAdmin, children, attachments }) => tmpl,
+  setup: ({ user }, { rest }) => tmpl,
   providers: (inputs) => {
     const _user: InputSignal<User> = inputs.user;
-    // @ts-expect-error email is model on target, excluded from wrapper providers
+    // @ts-expect-error email is not selected, excluded from wrapper providers
     inputs.email;
-    // @ts-expect-error makeAdmin is output on target, excluded from wrapper providers
+    // @ts-expect-error makeAdmin is not selected, excluded from wrapper providers
     inputs.makeAdmin;
-    // @ts-expect-error children is fragment on target, excluded from wrapper providers
+    // @ts-expect-error children is not selected, excluded from wrapper providers
     inputs.children;
-    // @ts-expect-error attachments is attachable on target, excluded from wrapper providers
+    // @ts-expect-error attachments is not selected, excluded from wrapper providers
     inputs.attachments;
     return [];
   },

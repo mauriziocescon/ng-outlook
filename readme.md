@@ -591,12 +591,15 @@ export const UserDetailConsumer = component({
  * Wrapper mode: component.wrap(Target, { ... }).
  * Target is passed as a value; the type is inferred from it,
  * consistent with ref(Child), inject(Child), etc.
- * setup receives wrapped bindings (same as standard components).
+ * setup receives (selectedBindings, { rest }).
+ * providers (if declared) receive only selected input bindings.
  *
- * {...rest} is a compile-time operation: the compiler statically
- * unrolls the spread into individual bindings on the target,
- * re-wiring each binding wrapper (InputSignal, ModelSignal, etc.)
- * to the corresponding target binding. No runtime object spread.
+ * wrapper bindings are a strict subset of the target bindings:
+ * selected keys are visible in setup arg1, and all remaining target
+ * bindings are represented by rest in setup arg2.
+ * rest is a compile-time forwarding token (not a runtime object).
+ * The compiler statically unrolls <Target {...rest} /> into
+ * individual forwarded bindings.
  *
  * attachments act as a behavior passthrough — forwarding directives
  * from the caller through to the innermost element where
@@ -606,7 +609,7 @@ export const UserDetailWrapper = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
   },
-  setup: ({ user, ...rest }) => {
+  setup: ({ user }, { rest }) => {
     const other = computed(() => /** something depending on user() or a default value **/);
 
     return (
