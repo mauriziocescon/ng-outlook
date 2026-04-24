@@ -598,9 +598,9 @@ export const UserDetailConsumer = component({
  * selected keys are visible in setup arg1, and all remaining target
  * bindings are represented by forwarded in setup arg2.
  * forwarded is a compile-time forwarding token (not a runtime object).
- * The compiler statically unrolls <Target forward:{forwarded} /> into
+ * The compiler statically unrolls <Target forward:forwarded /> into
  * individual forwarded bindings.
- * forward:{forwarded} can be applied only to components.
+ * forward:forwarded can be applied only to components.
  *
  * attachments act as a behavior passthrough — forwarding directives
  * from the caller through to the innermost element where
@@ -614,7 +614,7 @@ export const UserDetailWrapper = component.wrap(UserDetail, {
     const other = computed(() => /** something depending on user() or a default value **/);
 
     return (
-      <UserDetail forward:{forwarded} use:tooltip(message={'Tooltip message'}) user={other()} />
+      <UserDetail forward:forwarded use:tooltip(message={'Tooltip message'}) user={other()} />
     );
   },
 });

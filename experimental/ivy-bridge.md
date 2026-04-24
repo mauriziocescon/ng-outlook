@@ -99,14 +99,14 @@ A compile-time macro for structurally wrapping an existing component.
   1. Resolves `Selected = keys(wrapper.bindings)` and type-checks `bindings` as a strict subset of `TargetBindings` (key, binding kind, and inner type preserved).
   2. Resolves `Forwarded = keyof TargetBindings - Selected`.
   3. Binds `setup` as `setup(selectedBindings, { forwarded })`, where `forwarded` has type `ForwardedToken<Forwarded>` and is branded by the internal `FORWARDED` marker (not a runtime object).
-  4. Lowers `<Target forward:{forwarded} />` by unrolling only `Forwarded` keys directly to target bindings.
-  5. Preserves explicit prop precedence in mixed forms such as `<Target forward:{forwarded} user={x} />` and `<Target user={x} forward:{forwarded} />` (explicit bindings always win).
+  4. Lowers `<Target forward:forwarded />` by unrolling only `Forwarded` keys directly to target bindings.
+  5. Preserves explicit prop precedence in mixed forms such as `<Target forward:forwarded user={x} />` and `<Target user={x} forward:forwarded />` (explicit bindings always win).
   6. For `AttachableBinding` keys in `Forwarded`, preserves passthrough chain from parent → wrapper → target element. `ɵɵapplyAttachments` is emitted only at the target `use:attachments` site.
   7. Emits no additional Ivy instructions compared with explicit forwarding; no runtime forwarding object is allocated.
 - **Token diagnostics:**
-  - `forwarded` used outside `forward:{forwarded}` positions.
+  - `forwarded` used outside `forward:forwarded` positions.
   - attempted inspection such as `forwarded.foo` or enumeration.
-  - `forward:{forwarded}` applied to non-component elements (native elements, directives, derivations, fragments).
+  - `forward:forwarded` applied to non-component elements (native elements, directives, derivations, fragments).
 - **Delta from Ivy Today:** Standard Angular has no spread syntax for forwarding component inputs. Developers must enumerate every forwarded binding manually, making wrapper components fragile when the wrapped component’s API changes. `component.wrap` formalizes a strict compile-time macro for structural wrapping: the Ivy runtime never observes a "wrapper object" and incurs no object-spread overhead.
 
 ---
@@ -138,4 +138,4 @@ Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping
 | **CSS Scoping** | Tied to the physical host attribute. | Applied to all template elements via compiler-generated attributes. |
 | **Template Queries** | `@ViewChild`/`@ViewChildren` resolved by a tree-walk; refreshed via `ɵɵqueryRefresh` every CD cycle. | Signal-push via `ref`/`refMany`; `expose` written once at child creation — no periodic refresh. |
 | **Transform / Memoization** | `Pipe` instances per view slot; limited DI access and no signal reactivity. | `derivation` slots with full native DI; driven directly by the signal reactive graph. |
-| **Component Wrapping** | Manual enumeration of every forwarded binding; no spread syntax. | Compile-time macro (`component.wrap`) with `setup(selectedBindings, { forwarded })`; `forwarded` is a `ForwardedToken` (internally branded by `FORWARDED`), not a runtime object, and `<Target forward:{forwarded} />` is unrolled by the compiler with zero runtime overhead. |
+| **Component Wrapping** | Manual enumeration of every forwarded binding; no spread syntax. | Compile-time macro (`component.wrap`) with `setup(selectedBindings, { forwarded })`; `forwarded` is a `ForwardedToken` (internally branded by `FORWARDED`), not a runtime object, and `<Target forward:forwarded />` is unrolled by the compiler with zero runtime overhead. |

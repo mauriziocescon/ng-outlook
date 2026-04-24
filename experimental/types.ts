@@ -187,12 +187,12 @@ type SetupReturn<E> =
 //   setup receives selected bindings as first arg and { forwarded } as
 //   second arg.
 //   forwarded is a compile-time forwarding token (not a runtime object):
-//   the compiler unrolls <Target forward:{forwarded} /> into individual
+//   the compiler unrolls <Target forward:forwarded /> into individual
 //   forwarded bindings.
-//   For AttachableBinding keys in <Target forward:{forwarded} />, the compiler passes them
+//   For AttachableBinding keys in <Target forward:forwarded />, the compiler passes them
 //   through intact to the target component; the chain is maintained
 //   from parent → wrapper → target element at run time.
-//   forward:{forwarded} can be used only on component elements.
+//   forward:forwarded can be used only on component elements.
 // ────────────────────────────────────────────────────────────────
 
 // With bindings
