@@ -591,15 +591,16 @@ export const UserDetailConsumer = component({
  * Wrapper mode: component.wrap(Target, { ... }).
  * Target is passed as a value; the type is inferred from it,
  * consistent with ref(Child), inject(Child), etc.
- * setup receives (selectedBindings, { rest }).
+ * setup receives (selectedBindings, { forwarded }).
  * providers (if declared) receive only selected input bindings.
  *
  * wrapper bindings are a strict subset of the target bindings:
  * selected keys are visible in setup arg1, and all remaining target
- * bindings are represented by rest in setup arg2.
- * rest is a compile-time forwarding token (not a runtime object).
- * The compiler statically unrolls <Target {...rest} /> into
+ * bindings are represented by forwarded in setup arg2.
+ * forwarded is a compile-time forwarding token (not a runtime object).
+ * The compiler statically unrolls <Target forward:{forwarded} /> into
  * individual forwarded bindings.
+ * forward:{forwarded} can be applied only to components.
  *
  * attachments act as a behavior passthrough — forwarding directives
  * from the caller through to the innermost element where
@@ -609,11 +610,11 @@ export const UserDetailWrapper = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
   },
-  setup: ({ user }, { rest }) => {
+  setup: ({ user }, { forwarded }) => {
     const other = computed(() => /** something depending on user() or a default value **/);
 
     return (
-      <UserDetail {...rest} use:tooltip(message={'Tooltip message'}) user={other()} />
+      <UserDetail forward:{forwarded} use:tooltip(message={'Tooltip message'}) user={other()} />
     );
   },
 });

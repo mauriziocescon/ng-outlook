@@ -111,7 +111,7 @@ export type ComponentBindingValue = BaseBindingValue | AttachableBinding<any>;
 declare const BINDINGS: unique symbol;
 declare const EXPOSE: unique symbol;
 declare const HOST: unique symbol;
-declare const REST: unique symbol;
+declare const FORWARDED: unique symbol;
 
 export type ComponentInstance<B, E = void> = {
   readonly [BINDINGS]: B;
@@ -142,9 +142,9 @@ type ExactSubset<Sel extends Record<string, any>, All extends Record<string, any
   [K in keyof Sel]-?: K extends keyof All ? (Sel[K] extends All[K] ? Sel[K] : never) : never;
 };
 
-type RestToken<B> = {
+type ForwardedToken<B> = {
   // Compile-time forwarding marker for wrap setup context.
-  readonly [REST]: B;
+  readonly [FORWARDED]: B;
 };
 
 type SetupBindingValue<V> =
@@ -184,14 +184,15 @@ type SetupReturn<E> =
 //   with ref(Child), inject(Child), etc.).
 //   bindings are a strict subset of target bindings while preserving
 //   key, binding kind, and inner type per selected key.
-//   setup receives selected bindings as first arg and { rest } as
+//   setup receives selected bindings as first arg and { forwarded } as
 //   second arg.
-//   rest is a compile-time forwarding token (not a runtime object):
-//   the compiler unrolls <Target {...rest} /> into individual
+//   forwarded is a compile-time forwarding token (not a runtime object):
+//   the compiler unrolls <Target forward:{forwarded} /> into individual
 //   forwarded bindings.
-//   For AttachableBinding keys in <Target {...rest} />, the compiler passes them
+//   For AttachableBinding keys in <Target forward:{forwarded} />, the compiler passes them
 //   through intact to the target component; the chain is maintained
 //   from parent → wrapper → target element at run time.
+//   forward:{forwarded} can be used only on component elements.
 // ────────────────────────────────────────────────────────────────
 
 // With bindings
@@ -227,7 +228,7 @@ export namespace component {
       bindings: ExactSubset<Sel, TargetBindings<C>>;
       setup: (
         bindings: SetupBindings<Sel>,
-        context: { rest: RestToken<Omit<TargetBindings<C>, keyof Sel>> }
+        context: { forwarded: ForwardedToken<Omit<TargetBindings<C>, keyof Sel>> }
       ) => SetupReturn<E>;
       providers?: (inputs: InputsOnly<Sel>) => Provider[];
       style?: string;

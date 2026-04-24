@@ -34,16 +34,23 @@ import {
 
 declare const tmpl: TemplateMarkup;
 
-interface User { id: string; name: string; }
-interface Item { id: string; desc: string; }
+interface User {
+  id: string;
+  name: string;
+}
+interface Item {
+  id: string;
+  desc: string;
+}
 
 // ────────────────────────────────────────────────────────────────
 // TEST HELPERS
 // ────────────────────────────────────────────────────────────────
 
 type IsEqual<A, B> =
-  (<T>() => T extends A ? 1 : 2) extends
-  (<T>() => T extends B ? 1 : 2) ? true : false;
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+    ? true
+    : false;
 type Assert<T extends true> = T;
 type MergeProps<Left, Right> = Omit<Left, keyof Right> & Right;
 
@@ -58,20 +65,31 @@ type MergeProps<Left, Right> = Omit<Left, keyof Right> & Right;
 // Sink constraint checked by the compiler at build time.
 // ────────────────────────────────────────────────────────────────
 
-type FragIsDir = FragmentBinding<void> extends AttachableBinding<any> ? 'LEAK' : 'OK';
+type FragIsDir =
+  FragmentBinding<void> extends AttachableBinding<any> ? 'LEAK' : 'OK';
 const _fragIsDir: FragIsDir = 'OK';
 
-type DirIsFrag = AttachableBinding<HTMLElement> extends FragmentBinding<any> ? 'LEAK' : 'OK';
+type DirIsFrag =
+  AttachableBinding<HTMLElement> extends FragmentBinding<any> ? 'LEAK' : 'OK';
 const _dirIsFrag: DirIsFrag = 'OK';
 
-type SameInner = FragmentBinding<HTMLElement> extends AttachableBinding<HTMLElement> ? 'LEAK' : 'OK';
+type SameInner =
+  FragmentBinding<HTMLElement> extends AttachableBinding<HTMLElement>
+    ? 'LEAK'
+    : 'OK';
 const _sameInner: SameInner = 'OK';
 
 // Required vs optional fragment are distinct types
-type ReqIsOpt = RequiredFragmentBinding<void> extends OptionalFragmentBinding<void> ? 'LEAK' : 'OK';
+type ReqIsOpt =
+  RequiredFragmentBinding<void> extends OptionalFragmentBinding<void>
+    ? 'LEAK'
+    : 'OK';
 const _reqIsOpt: ReqIsOpt = 'OK';
 
-type OptIsReq = OptionalFragmentBinding<void> extends RequiredFragmentBinding<void> ? 'LEAK' : 'OK';
+type OptIsReq =
+  OptionalFragmentBinding<void> extends RequiredFragmentBinding<void>
+    ? 'LEAK'
+    : 'OK';
 const _optIsReq: OptIsReq = 'OK';
 
 // ────────────────────────────────────────────────────────────────
@@ -219,7 +237,7 @@ const RequiredChildren = component({
 // Reserved names enforcement on component bindings:
 // - children must be fragment(...)
 // - attachments must be attachable(...)
-// @ts-expect-error reserved name "children" must use fragment(...)
+// @ts-expect-error reserved name 'children' must use fragment(...)
 const _NegChildrenMustBeFragment = component({
   bindings: {
     children: input<string>(),
@@ -227,7 +245,7 @@ const _NegChildrenMustBeFragment = component({
   setup: () => tmpl,
 });
 
-// @ts-expect-error reserved name "attachments" must use attachable(...)
+// @ts-expect-error reserved name 'attachments' must use attachable(...)
 const _NegAttachmentsMustBeAttachable = component({
   bindings: {
     attachments: input<string>(),
@@ -347,20 +365,21 @@ const NoExpose = component({
 });
 
 // ────────────────────────────────────────────────────────────────
-// COMPONENT — wrapper with selected bindings + rest forwarding token
+// COMPONENT — wrapper with selected bindings + forwarded token
 //
 // Target passed as first arg; C is inferred from the value
 // (consistent with ref(Child), inject(Child), etc.).
-// setup receives selected bindings in arg1 and { rest } in arg2.
-// rest is a compile-time forwarding token used in <Target {...rest} />.
-// No runtime object spread is modeled here.
+// setup receives selected bindings in arg1 and { forwarded } in arg2.
+// forwarded is a compile-time forwarding token used in
+// <Target forward:{forwarded} />.
+// forward:{forwarded} is valid on components only.
 // ────────────────────────────────────────────────────────────────
 
 const UserDetailWrapper = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
   },
-  setup: ({ user }, { rest }) => {
+  setup: ({ user }, { forwarded }) => {
     const _u: User = user();
     const other = computed(() => user());
     return tmpl;
@@ -377,12 +396,12 @@ const _NegSelectedOnly = component.wrap(UserDetail, {
   }) => tmpl,
 });
 
-// rest is opaque and not inspectable
-const _NegRestInspect = component.wrap(UserDetail, {
+// forwarded is opaque and not inspectable
+const _NegForwardedInspect = component.wrap(UserDetail, {
   bindings: { user: input.required<User>() },
-  setup: ({ user }, { rest }) => {
-    // @ts-expect-error rest is forwarding-only token; key inspection is invalid
-    rest.email;
+  setup: ({ user }, { forwarded }) => {
+    // @ts-expect-error forwarded is forwarding-only token; key inspection is invalid
+    forwarded.email;
     return tmpl;
   },
 });
@@ -394,7 +413,7 @@ const _NegExtra = component.wrap(UserDetail, {
     // @ts-expect-error nonsense is not in target bindings
     nonsense: input<string>(),
   },
-  setup: ({ user }, { rest }) => tmpl,
+  setup: ({ user }, { forwarded }) => tmpl,
 });
 
 // bindings should NOT accept wrong inner types
@@ -403,7 +422,7 @@ const _NegWrongType = component.wrap(UserDetail, {
     // @ts-expect-error user input type should be User
     user: input.required<string>(),
   },
-  setup: ({ user }, { rest }) => tmpl,
+  setup: ({ user }, { forwarded }) => tmpl,
 });
 
 // bindings should preserve target binding kind
@@ -412,11 +431,13 @@ const _NegWrongKind = component.wrap(UserDetail, {
     // @ts-expect-error makeAdmin is an output on target, not an input
     makeAdmin: input<void>(),
   },
-  setup: ({ makeAdmin }, { rest }) => tmpl,
+  setup: ({ makeAdmin }, { forwarded }) => tmpl,
 });
 
-// Wrap with empty selected bindings: all target bindings forwarded via rest token
-interface Simple { id: string; }
+// Wrap with empty selected bindings: all target bindings forwarded via token
+interface Simple {
+  id: string;
+}
 
 const Base = component({
   bindings: {
@@ -429,9 +450,9 @@ const Base = component({
 
 const PassThrough = component.wrap(Base, {
   bindings: {},
-  setup: ({}, { rest }) => {
-    // @ts-expect-error rest is forwarding-only token; no property reads
-    rest.item;
+  setup: ({}, { forwarded }) => {
+    // @ts-expect-error forwarded is forwarding-only token; no property reads
+    forwarded.item;
     return tmpl;
   },
 });
@@ -441,7 +462,7 @@ const WrapperProviders = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
   },
-  setup: ({ user }, { rest }) => tmpl,
+  setup: ({ user }, { forwarded }) => tmpl,
   providers: (inputs) => {
     const _user: InputSignal<User> = inputs.user;
     // @ts-expect-error email is not selected, excluded from wrapper providers
@@ -464,7 +485,7 @@ const WrapperProvidersSelectedKinds = component.wrap(Base, {
     selected: model<boolean>(),
     click: output<void>(),
   },
-  setup: ({ item, selected, click }, { rest }) => tmpl,
+  setup: ({ item, selected, click }, { forwarded }) => tmpl,
   providers: (inputs) => {
     const _item: InputSignal<Simple> = inputs.item;
     // @ts-expect-error selected is a model, excluded from providers
@@ -476,36 +497,45 @@ const WrapperProvidersSelectedKinds = component.wrap(Base, {
 });
 
 // ────────────────────────────────────────────────────────────────
-// TEMPLATE SPREAD COLLISION PRECEDENCE (compiler contract)
+// FORWARD COLLISION PRECEDENCE (compiler contract)
 //
-// Rule: React-style "last wins".
+// Rule: explicit bindings override forwarded bindings, regardless of
+// attribute order in source.
 // Example:
-//   <Target {...rest} user={explicit} />  -> explicit wins for `user`
-//   <Target user={explicit} {...rest} />  -> rest wins for `user`
+//   <Target forward:{forwarded} user={explicit} />  -> explicit wins for `user`
+//   <Target user={explicit} forward:{forwarded} />  -> explicit wins for `user`
 //
-// This is a compile-time lowering contract for the template compiler.
-// The tests below model that merge order with plain TS object spreads.
+// The tests below model compiler-normalized output where forwarded keys are
+// applied first and explicit keys are applied last.
 // ────────────────────────────────────────────────────────────────
 
-type FromSpread = {
-  user: 'spread';
-  email: 'spread-email';
-  click: 'spread-click';
+type FromForwarded = {
+  user: 'forwarded';
+  email: 'forwarded-email';
+  click: 'forwarded-click';
 };
 
 type FromExplicit = {
   user: 'explicit';
 };
 
-// <Target {...rest} user={explicit} />
-type SpreadThenExplicit = MergeProps<FromSpread, FromExplicit>;
-type _SpreadThenExplicitUser = Assert<IsEqual<SpreadThenExplicit['user'], 'explicit'>>;
-type _SpreadThenExplicitKeepsOthers = Assert<IsEqual<SpreadThenExplicit['email'], 'spread-email'>>;
+// <Target forward:{forwarded} user={explicit} />
+type ForwardThenExplicit = MergeProps<FromForwarded, FromExplicit>;
+type _ForwardThenExplicitUser = Assert<
+  IsEqual<ForwardThenExplicit['user'], 'explicit'>
+>;
+type _ForwardThenExplicitKeepsOthers = Assert<
+  IsEqual<ForwardThenExplicit['email'], 'forwarded-email'>
+>;
 
-// <Target user={explicit} {...rest} />
-type ExplicitThenSpread = MergeProps<FromExplicit, FromSpread>;
-type _ExplicitThenSpreadUser = Assert<IsEqual<ExplicitThenSpread['user'], 'spread'>>;
-type _ExplicitThenSpreadKeepsOthers = Assert<IsEqual<ExplicitThenSpread['click'], 'spread-click'>>;
+// <Target user={explicit} forward:{forwarded} />
+type ExplicitThenForward = MergeProps<FromForwarded, FromExplicit>;
+type _ExplicitThenForwardUser = Assert<
+  IsEqual<ExplicitThenForward['user'], 'explicit'>
+>;
+type _ExplicitThenForwardKeepsOthers = Assert<
+  IsEqual<ExplicitThenForward['click'], 'forwarded-click'>
+>;
 
 // ────────────────────────────────────────────────────────────────
 // DIRECTIVE — host as separate config, expose
@@ -554,7 +584,9 @@ const typedDir = directive({
   setup: ({ label }, { host }) => ({ getLabel: () => label() }),
 });
 const typedDirRef = ref(typedDir);
-const _typedDirRefCheck: Ref<{ getLabel: () => string | undefined } | undefined> = typedDirRef;
+const _typedDirRefCheck: Ref<
+  { getLabel: () => string | undefined } | undefined
+> = typedDirRef;
 
 // Host type constraint: narrows to specific element type
 const buttonOnly = directive({
@@ -614,7 +646,10 @@ const simulation = derivation({
   setup: ({ qty, item }) => computed(() => item().desc + ' x ' + qty()),
 });
 
-const _simType: DerivationInstance<{ qty: InputSignal<number>; item: InputSignal<Item> }, string> = simulation;
+const _simType: DerivationInstance<
+  { qty: InputSignal<number>; item: InputSignal<Item> },
+  string
+> = simulation;
 
 // Derivation without bindings: setup receives no args
 const simple = derivation({
@@ -663,7 +698,8 @@ const _divRefType: Ref<HTMLDivElement | undefined> = divRef;
 // Component with expose
 const childRef = ref(Child);
 const _childRefType: Ref<{ text: Signal<string> } | undefined> = childRef;
-const _childRefAsSignal: Signal<{ text: Signal<string> } | undefined> = childRef;
+const _childRefAsSignal: Signal<{ text: Signal<string> } | undefined> =
+  childRef;
 
 // Component without expose
 const noExposeRef = ref(NoExpose);
@@ -713,7 +749,8 @@ const ExposedInput = component({
 
 const exposedInputRef = ref(ExposedInput);
 const _exposedName: InputSignal<string> | undefined = exposedInputRef()?.name;
-const _exposedAge: InputSignal<number | undefined> | undefined = exposedInputRef()?.age;
+const _exposedAge: InputSignal<number | undefined> | undefined =
+  exposedInputRef()?.age;
 
 // Mixed: inputs + local signals in expose
 const MixedExpose = component({
@@ -791,7 +828,7 @@ const compToken = injectionToken('desc', {
     const counter = signal(0);
     return {
       value: counter.asReadonly(),
-      increase: () => counter.update(v => v + 1),
+      increase: () => counter.update((v) => v + 1),
     };
   },
 });
@@ -808,7 +845,7 @@ const rootToken = injectionToken('desc', {
     const counter = signal(0);
     return {
       value: counter.asReadonly(),
-      decrease: () => counter.update(v => v - 1),
+      decrease: () => counter.update((v) => v - 1),
     };
   },
 });
@@ -844,7 +881,8 @@ const _injectedNoExpose: void = inject(NoExpose);
 const _injectedTooltip: { toggle: () => void } = inject(tooltip);
 
 // inject(InjectionToken) → token type
-const _injectedComp: { value: Signal<number>; increase: () => void } = inject(compToken);
+const _injectedComp: { value: Signal<number>; increase: () => void } =
+  inject(compToken);
 const _injectedMulti: number[] = inject(multiToken);
 
 // inject(Class) → class instance
@@ -962,7 +1000,7 @@ const Accordion = component({
     return {
       template: tmpl,
       expose: {
-        toggle: () => open.update(v => !v),
+        toggle: () => open.update((v) => !v),
         isOpen: open.asReadonly(),
       } satisfies Toggleable,
     };
@@ -981,7 +1019,7 @@ const toggleDirective = directive({
     const open = signal(false);
 
     return {
-      toggle: () => open.update(v => !v),
+      toggle: () => open.update((v) => !v),
       isOpen: open.asReadonly(),
     } satisfies Toggleable;
   },
