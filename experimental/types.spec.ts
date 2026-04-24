@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 
 import {
-  type BindingValue,
+  type ComponentBindingValue,
   type Ref,
   type TemplateMarkup,
   type DerivationInstance,
@@ -546,6 +546,29 @@ const buttonOnly = directive({
   },
 });
 
+// Directive accepts fragment bindings (TemplateRef-style use cases)
+const directiveWithFragment = directive({
+  host: ref<HTMLElement>(),
+  bindings: {
+    content: fragment.required<void>(),
+  },
+  setup: ({ content }, { host }) => {
+    const _content: RequiredFragmentBinding<void> = content;
+    const _rendered = content();
+    const _host: Ref<HTMLElement | undefined> = host;
+  },
+});
+
+// Directive must reject attachable bindings
+// @ts-expect-error directives cannot declare attachable bindings
+const _NegDirectiveAttachable = directive({
+  host: ref<HTMLElement>(),
+  bindings: {
+    attachments: attachable<HTMLElement>(),
+  },
+  setup: (_bindings, _context) => {},
+});
+
 // ────────────────────────────────────────────────────────────────
 // DERIVATION — only inputs, setup returns Signal<T>
 // ────────────────────────────────────────────────────────────────
@@ -566,6 +589,15 @@ const simple = derivation({
 });
 
 const _simpleType: DerivationInstance<{}, number> = simple;
+
+// Derivation must reject non-input bindings
+// @ts-expect-error derivations cannot declare model bindings
+const _NegDerivationNonInput = derivation({
+  bindings: {
+    changed: model<number>(),
+  },
+  setup: () => computed(() => 1),
+});
 
 // ────────────────────────────────────────────────────────────────
 // REF UTILITIES — ref, refMany, read-only enforcement
@@ -777,7 +809,7 @@ const _providers = [
 //
 // satisfies applies excess-property checking on object literals,
 // so the interface must cover all keys in the object — or use
-// an intersection with Record<string, BindingValue> to allow
+// an intersection with Record<string, ComponentBindingValue> to allow
 // extra keys.
 // ────────────────────────────────────────────────────────────────
 
@@ -803,7 +835,7 @@ const SortableTableExtra = component({
     sortKey: input.required<string>(),
     sortDirection: input.required<'asc' | 'desc'>(),
     pageSize: input<number>(),
-  } satisfies Sortable & Record<string, BindingValue>,
+  } satisfies Sortable & Record<string, ComponentBindingValue>,
   setup: ({ sortKey, sortDirection, pageSize }) => tmpl,
 });
 

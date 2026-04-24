@@ -75,18 +75,24 @@ export interface Ref<T> extends Signal<T> {
 }
 
 // ────────────────────────────────────────────────────────────────
-// 4. BINDING VALUE
+// 4. BINDING SURFACES
 //
-// BindingValue — union of everything that can appear in `bindings`.
+// Layered binding model:
+// - Derivation: inputs only
+// - Directive: derivation + model/output/fragment
+// - Component: directive + attachable
 // ────────────────────────────────────────────────────────────────
 
-export type BindingValue =
+type BaseBindingValue =
   | InputSignal<any>
   | ModelSignal<any>
   | OutputEmitterRef<any>
   | OptionalFragmentBinding<any>
-  | RequiredFragmentBinding<any>
-  | AttachableBinding<any>;
+  | RequiredFragmentBinding<any>;
+
+export type DerivationBindingValue = InputSignal<any>;
+export type DirectiveBindingValue = BaseBindingValue;
+export type ComponentBindingValue = BaseBindingValue | AttachableBinding<any>;
 
 // ────────────────────────────────────────────────────────────────
 // 5. INSTANCE TYPES & SHARED HELPERS
@@ -139,7 +145,7 @@ type SetupBindings<B> = {
   [K in keyof B]: SetupBindingValue<B[K]>;
 };
 
-type ReservedBindingsConstraint<B extends Record<string, BindingValue>> =
+type ReservedBindingsConstraint<B extends Record<string, ComponentBindingValue>> =
   ('children' extends keyof B
     ? B['children'] extends FragmentBinding<any> ? unknown : never
     : unknown) &
@@ -181,7 +187,7 @@ type SetupReturn<E> =
 // ────────────────────────────────────────────────────────────────
 
 // With bindings
-export function component<B extends Record<string, BindingValue>, E = void>(config: {
+export function component<B extends Record<string, ComponentBindingValue>, E = void>(config: {
   bindings: B;
   setup: (bindings: SetupBindings<B>) => SetupReturn<E>;
   providers?: (inputs: InputsOnly<B>) => Provider[];
@@ -205,7 +211,7 @@ export function component(config: any): any {
 export namespace component {
   export declare function wrap<C extends ComponentInstance<any, any>, E = void>(
     target: C,
-    config: TargetBindings<C> extends Record<string, BindingValue> ? {
+    config: TargetBindings<C> extends Record<string, ComponentBindingValue> ? {
       bindings?: Partial<TargetBindings<C>>;
       setup: (bindings: SetupBindings<TargetBindings<C>>) => SetupReturn<E>;
       providers?: (inputs: InputsOnly<TargetBindings<C>>) => Provider[];
@@ -232,7 +238,7 @@ export namespace component {
 // With bindings
 export function directive<
   H extends HTMLElement,
-  B extends Record<string, BindingValue>,
+  B extends Record<string, DirectiveBindingValue>,
   E = void,
 >(config: {
   host: Ref<H | undefined>;
@@ -265,9 +271,13 @@ export type DerivationInstance<B, T> = {
   readonly [RESULT]: T;
 };
 
-// With bindings
-export function derivation<B extends Record<string, InputSignal<any>>, T>(config: {
-  bindings: B;
+type NoModelBindings<B extends Record<string, DerivationBindingValue>> = {
+  [K in keyof B]: B[K] extends ModelSignal<any> ? never : B[K];
+};
+
+// With bindings (explicit derivation binding surface)
+export function derivation<B extends Record<string, DerivationBindingValue>, T>(config: {
+  bindings: B & NoModelBindings<B>;
   setup: (bindings: B) => Signal<T>;
 }): DerivationInstance<B, T>;
 
