@@ -456,6 +456,25 @@ const WrapperProviders = component.wrap(UserDetail, {
   },
 });
 
+// Wrapper providers expose only selected INPUT bindings, even if selected
+// bindings include models/outputs.
+const WrapperProvidersSelectedKinds = component.wrap(Base, {
+  bindings: {
+    item: input.required<Simple>(),
+    selected: model<boolean>(),
+    click: output<void>(),
+  },
+  setup: ({ item, selected, click }, { rest }) => tmpl,
+  providers: (inputs) => {
+    const _item: InputSignal<Simple> = inputs.item;
+    // @ts-expect-error selected is a model, excluded from providers
+    inputs.selected;
+    // @ts-expect-error click is an output, excluded from providers
+    inputs.click;
+    return [];
+  },
+});
+
 // ────────────────────────────────────────────────────────────────
 // TEMPLATE SPREAD COLLISION PRECEDENCE (compiler contract)
 //
@@ -609,6 +628,22 @@ const _simpleType: DerivationInstance<{}, number> = simple;
 const _NegDerivationNonInput = derivation({
   bindings: {
     changed: model<number>(),
+  },
+  setup: () => computed(() => 1),
+});
+
+// @ts-expect-error derivations cannot declare output bindings
+const _NegDerivationOutput = derivation({
+  bindings: {
+    changed: output<number>(),
+  },
+  setup: () => computed(() => 1),
+});
+
+// @ts-expect-error derivations cannot declare fragment bindings
+const _NegDerivationFragment = derivation({
+  bindings: {
+    content: fragment<void>(),
   },
   setup: () => computed(() => 1),
 });
@@ -791,6 +826,14 @@ const multiToken = injectionToken('desc', {
 
 const _multiTokenType: InjectionToken<number[]> = multiToken;
 
+// Invalid token configuration combinations
+// @ts-expect-error token cannot be both root-level and multi
+const _NegTokenRootAndMulti = injectionToken('desc', {
+  level: 'root',
+  multi: true,
+  factory: () => 1,
+});
+
 // inject(Component) → expose type
 const _injectedChild: { text: Signal<string> } = inject(Child);
 
@@ -814,6 +857,10 @@ const _providers = [
   provide({ token: multiToken, useFactory: () => 10 }),
   provide({ token: Store, useFactory: () => new Store() }),
 ];
+
+// Multi provide factory returns a single item, not an array.
+// @ts-expect-error useFactory for multi token must return number, not number[]
+provide({ token: multiToken, useFactory: () => [1, 2, 3] });
 
 // ────────────────────────────────────────────────────────────────
 // INTERFACE CONFORMANCE — satisfies on bindings and expose
