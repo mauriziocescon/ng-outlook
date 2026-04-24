@@ -456,7 +456,7 @@ export const MenuConsumer = component({
        *  </div>
        * }
        * <Menu items={items()} menuItem={menuItem} />
-       * 
+       *
        * Inline form: @fragment declared inside the component tags is
        * automatically passed as the matching fragment input — no explicit
        * menuItem={menuItem} needed.
@@ -506,7 +506,7 @@ export const ButtonConsumer = component({
     function doSomething() {/** ... **/}
 
     /**
-     * The same directive cannot be applied more than once 
+     * The same directive cannot be applied more than once
      * to the same component / element.
      */
     return (
@@ -795,13 +795,13 @@ export const Counter = component({
   providers: ({ initialValue }) => [
     // provide compToken at Counter level using the default factory
     provide(compToken),
-    
+
     // multi: default factory called once per provide(multiToken)
     provide(multiToken),
     provide(multiToken),
     provide({ token: multiToken, useFactory: () => 10 }),
     provide({ token: multiToken, useFactory: () => initialValue() }),
-    
+
     // class
     provide({ token: Store, useFactory: () => new Store() }),
   ],
