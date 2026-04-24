@@ -2,7 +2,17 @@
 
 This proposal evolves `component.wrap` so wrappers can expose a curated API while preserving current compile-time forwarding guarantees.
 
-## Goal
+> Status: proposal only. This document describes a possible evolution and is not implemented in `experimental/types.ts` yet.
+
+## Conventions
+
+Normative keywords in this document follow RFC-style meaning:
+
+- `MUST` / `MUST NOT`: mandatory behavior.
+- `SHOULD` / `SHOULD NOT`: recommended behavior with possible justified exceptions.
+- `MAY`: optional behavior.
+
+## Summary
 
 Today, `component.wrap(Target, ...)` mirrors target bindings (with optional overrides), and `{...rest}` forwards target-compatible bindings at compile time.
 
@@ -13,11 +23,13 @@ This evolution adds two capabilities:
 
 The primary constraint is preserving target soundness. Added bindings are never treated as implicit target bindings.
 
-All practical scenarios described here are achievable today by implementing a pure façade component (`component(...)`) that explicitly maps bindings to the target. This evolution mainly covers cases where only one or two bindings need to be adjusted, hidden, or renamed on top of a large target API, while keeping wrapper ergonomics.
+All practical scenarios described here are achievable today with a pure façade component (`component(...)`) that explicitly maps bindings to the target. This evolution mainly optimizes ergonomics when only one or two bindings need to be adjusted, hidden, or renamed on top of a large target API.
 
 ---
 
 ## Proposed API
+
+Examples below use proposal syntax and are not type-checked against the current `experimental/types.ts`.
 
 ```ts
 export const UserDetail = component({
@@ -36,7 +48,7 @@ export const EnterpriseUser = component.wrap(UserDetail, {
     makeAdmin: true,
   },
   addBindings: {
-    contactEmail: input.required<string>(),
+    contactEmail: model.required<string>(),
     readOnly: input<boolean>(true),
   },
   setup: ({ contactEmail, readOnly, ...rest }) => (
@@ -72,7 +84,9 @@ Benefits:
 
 ---
 
-## Type-level shape
+## Type-Level Shape
+
+The types below are **proposed** shapes for this evolution, not current source-of-truth declarations.
 
 ```ts
 type OmitMap<B> = Partial<Record<Extract<keyof B, string>, true>>;
@@ -83,17 +97,19 @@ type KeysMarkedTrue<M> = {
 
 type EffectiveBindings<
   C extends ComponentInstance<any, any>,
-  Added extends Record<string, BindingValue>,
+  Added extends Record<string, ComponentBindingValue>,
   OmitM extends OmitMap<TargetBindings<C>>
 > = Omit<TargetBindings<C>, KeysMarkedTrue<OmitM>> & Added;
 ```
 
 `wrap` config sketch:
 
+This is a **proposed** extension of `component.wrap`, not the current signature in `experimental/types.ts`.
+
 ```ts
 export declare function wrap<
   C extends ComponentInstance<any, any>,
-  Added extends Record<string, BindingValue> = {},
+  Added extends Record<string, ComponentBindingValue> = {},
   OmitM extends OmitMap<TargetBindings<C>> = {},
   E = void
 >(
@@ -112,13 +128,13 @@ export declare function wrap<
 
 Notes:
 
-- `bindings` still means "target binding overrides" only.
+- `bindings` still means target binding overrides only.
 - `addBindings` is separate to avoid ambiguity.
 - `setup` sees target-minus-omitted plus added.
 
 ---
 
-## Lowering / compiler behavior
+## Compiler Lowering
 
 Given:
 
@@ -132,11 +148,11 @@ component.wrap(Target, {
 
 Compiler contract:
 
-1. Build target-forwardable key set = `keyof Target` minus omitted keys.
-2. Lower `{...rest}` by unrolling only that key set.
-3. Never include `addBindings` keys in target forwarding.
-4. Keep existing explicit-binding precedence (React-style last wins).
-5. Preserve attachable passthrough chain for forwardable attachable keys.
+1. The compiler `MUST` build the target-forwardable key set as `keyof Target` minus omitted keys.
+2. The compiler `MUST` lower `{...rest}` by unrolling only that key set.
+3. The compiler `MUST NOT` include `addBindings` keys in target forwarding.
+4. The compiler `MUST` keep existing explicit-binding precedence (React-style last wins).
+5. The compiler `SHOULD` preserve attachable passthrough chain for forwardable attachable keys.
 
 No runtime spread object is required; the same strategy as current `component.wrap` is retained.
 
@@ -144,7 +160,7 @@ No runtime spread object is required; the same strategy as current `component.wr
 
 ## Examples
 
-The examples below are shown in wrapper form because they demonstrate the ergonomics targeted by this evolution. Each example can also be implemented today using a pure façade component with explicit mapping.
+The examples below are in wrapper form because they show the intended ergonomics directly. Each can also be implemented today using a pure façade component with explicit mapping.
 
 ### 1. Corporate defaults + hidden unsafe knobs
 
@@ -199,7 +215,7 @@ export const UserProfile = component.wrap(UserDetail, {
     email: true,
   },
   addBindings: {
-    contactEmail: input.required<string>(),
+    contactEmail: model.required<string>(),
   },
   setup: ({ contactEmail, ...rest }) => (
     <UserDetail {...rest} model:email={contactEmail} />
@@ -233,21 +249,21 @@ export const UserCard = component.wrap(UserDetail, {
 
 ---
 
-## Constraints and diagnostics
+## Constraints and Diagnostics
 
 | Rule | Diagnostic |
 | :--- | :--- |
-| `omitBindings` contains unknown target key | Compile error: invalid omitted key |
-| `omitBindings` marks a key with non-`true` value | Compile error: omit marker must be literal `true` |
-| `addBindings` reuses existing target key | Compile error: duplicate binding key |
-| `addBindings` key appears in target-forwarded `{...rest}` | Compile error: wrapper-local binding cannot be forwarded implicitly |
-| Omitted key still consumed from wrapper call-site | Compile error: binding is not part of wrapper public API |
-| `bindings` includes omitted key | Compile error: cannot override omitted target key |
-| Omitted required target input not set internally | Compile error at wrapper template call to target (required input missing) |
+| `omitBindings` contains an unknown target key | `WRAP001` — invalid omitted key |
+| `omitBindings` marks a key with non-`true` value | `WRAP002` — omit marker must be literal `true` |
+| `addBindings` reuses an existing target key | `WRAP003` — duplicate binding key |
+| `addBindings` key appears in target-forwarded `{...rest}` | `WRAP004` — wrapper-local binding cannot be forwarded implicitly |
+| Omitted key is still consumed from wrapper call-site | `WRAP005` — binding is not part of wrapper public API |
+| `bindings` includes an omitted key | `WRAP006` — cannot override omitted target key |
+| Omitted required target input is not set internally | `WRAP007` — required target input missing |
 
 ---
 
-## Migration and compatibility
+## Migration and Compatibility
 
 This can be introduced as a backward-compatible extension:
 

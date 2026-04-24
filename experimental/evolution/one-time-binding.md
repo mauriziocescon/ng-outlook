@@ -2,7 +2,22 @@
 
 Two mechanisms for values that are read once and never updated.
 
-## 1. Consumer side: `once:` prefix
+> Status: proposal only. This document describes a possible evolution and is not implemented in `experimental/types.ts` yet.
+
+## Conventions
+
+Normative keywords in this document follow RFC-style meaning:
+
+- `MUST` / `MUST NOT`: mandatory behavior.
+- `SHOULD` / `SHOULD NOT`: recommended behavior with possible justified exceptions.
+- `MAY`: optional behavior.
+
+## Summary
+
+1. Consumer-side `once:` freezes an otherwise reactive input at call-site.
+2. Declaration-side `input.once(...)` declares a creation-time-only input.
+
+## 1. Consumer-Side: `once:` Prefix
 
 The consumer freezes a binding at its initial value, regardless of how the target declared the input. This is template-level: the target still declares a normal `input()`, while codegen treats the specific binding as one-time.
 
@@ -45,11 +60,12 @@ The name-matching shorthand works with `once:` — same rules as other prefixes:
 <UserDetail once:{user} model:{email} on:{makeAdmin} />
 ```
 
-### Compiler behavior
+### Compiler Lowering
 
 When the consumer writes `once:user={user()}`, the compiler:
-1. emits the value in the `ɵɵcomponentAnchor` seed (creation pass),
-2. **skips** emitting `ɵɵproperty('user', ...)` in the update pass.
+
+1. `MUST` emit the value in the `ɵɵcomponentAnchor` seed (creation pass).
+2. `MUST` skip emitting `ɵɵproperty('user', ...)` in the update pass.
 
 The target `InputSignal<User>` is written once through the normal input-write path and never written again. No runtime flag or special signal variant is needed.
 
@@ -69,9 +85,11 @@ Derivations are also supported: when a value passed into an `@derive` usage is m
 
 ---
 
-## 2. Declaration side: `input.once<T>()`
+## 2. Declaration-Side: `input.once<T>()`
 
 The author declares that an input is creation-time only. In `setup`, the binding is exposed as plain `T` (not `InputSignal<T>`).
+
+This section introduces new API (`input.once`) that is **proposed**, not currently available in `experimental/types.ts`.
 
 ```ts
 import { component, input, signal } from '@angular/core';
@@ -108,7 +126,7 @@ export const Panel = component({
 });
 ```
 
-### Runtime / compiler behavior
+### Compiler Lowering
 
 For `input.once`, codegen follows the same pattern: seed in `ɵɵcomponentAnchor`, skip update-pass `ɵɵproperty` writes.
 
@@ -119,7 +137,7 @@ For `input.once`, codegen follows the same pattern: seed in `ɵɵcomponentAnchor
 // ɵɵproperty('mode', ...) IS emitted (regular input)
 ```
 
-Semantics: write once at creation, then treat as constant. `setup` sees plain `T`; `providers` can still use an input-like read API (`title()` in examples).
+Semantics: write once at creation, then treat as constant. `setup` sees plain `T`; `providers` can still use an input-like read API (`title()` in examples). The compiler `MUST NOT` emit update-pass writes for `input.once` bindings.
 
 ### Use in providers
 
@@ -147,15 +165,17 @@ export const Panel = component({
 });
 ```
 
-### Use in directives and derivations
+### Use in Directives and Derivations
 
 `input.once` is also valid at directive level. A directive can declare creation-time-only configuration inputs the same way a component does; they are seeded once and not updated afterward.
 
 Derivations are also supported: they do declare input `bindings`, so they can use `input.once(...)` for creation-time-only derivation inputs.
 
-### Type-level integration
+### Type-Level Integration
 
-A branded `OnceInput<T>` extends `BindingValue`. In `setup`, `OnceInput<T>` is unwrapped to `T`.
+A branded `OnceInput<T>` extends the binding surfaces (`DerivationBindingValue`, `DirectiveBindingValue`, `ComponentBindingValue`). In `setup`, `OnceInput<T>` is unwrapped to `T`.
+
+The following type snippets are **proposed deltas** to the current type model.
 
 ```ts
 declare const ONCE_INPUT: unique symbol;
@@ -163,18 +183,28 @@ declare const ONCE_INPUT: unique symbol;
 // Branded type distinct from InputSignal
 export type OnceInput<T> = { readonly [ONCE_INPUT]: T };
 
-// Extended BindingValue union
-export type BindingValue =
+// Extended derivation binding surface
+export type DerivationBindingValue =
   | InputSignal<any>
-  | OnceInput<any>        // ← new
+  | OnceInput<any>;       // ← new
+
+// Extended directive binding surface
+export type DirectiveBindingValue =
+  | DerivationBindingValue
   | ModelSignal<any>
   | OutputEmitterRef<any>
   | OptionalFragmentBinding<any>
-  | RequiredFragmentBinding<any>
+  | RequiredFragmentBinding<any>;
+
+// Extended component binding surface
+export type ComponentBindingValue =
+  | DirectiveBindingValue
   | AttachableBinding<any>;
 ```
 
 `InputsOnly<B>` (used by `providers`) includes `OnceInput` keys:
+
+This is also a **proposed** change relative to current `InputKeys` in `experimental/types.ts`.
 
 ```ts
 type InputKeys<B> = {
@@ -187,6 +217,8 @@ type InputKeys<B> = {
 
 The `setup` signature unwraps `OnceInput<T>` to `T`:
 
+This unwrapping behavior is **proposed** and not present in current `SetupBindingValue`.
+
 ```ts
 // Compiler-resolved type mapping for setup parameter
 type ResolveBinding<V> =
@@ -196,7 +228,7 @@ type ResolveBinding<V> =
 
 ---
 
-## Interaction between `once:` and `input.once`
+## Interaction Between `once:` and `input.once`
 
 | Declaration | Consumer | Result |
 | :--- | :--- | :--- |
@@ -208,23 +240,23 @@ type ResolveBinding<V> =
 
 ---
 
-## Constraints and diagnostics
+## Constraints and Diagnostics
 
 | Rule | Diagnostic |
 | :--- | :--- |
-| `once:` + `model:` on the same binding | Compile error: models are two-way, one-time is contradictory |
-| `once:` + `on:` on the same binding | Compile error: outputs are event emitters, not inputs |
-| `once:prop` and `prop` on the same element | Compile error: duplicate binding name |
-| `input.once` receives later parent changes | No error — ignored by contract (value is creation-time only) |
-| `once:prop` / `input.once.required` without an initial value | Required-input diagnostic at creation (same behavior as existing required inputs) |
-| `input.once` in directive bindings | Valid — once-inputs act as fixed configuration values |
-| `input.once` in `@derive` bindings | Valid — derivations support input bindings, including once-inputs |
-| `once:` on a `fragment` binding | Compile error: fragments are structural, not value bindings |
-| `once:` on an `attachable` binding | Compile error: attachable is framework-managed |
+| `once:` + `model:` on the same binding | `ONCE001` — models are two-way; one-time is contradictory |
+| `once:` + `on:` on the same binding | `ONCE002` — outputs are emitters, not inputs |
+| `once:prop` and `prop` on the same element | `ONCE003` — duplicate binding name |
+| `input.once` receives later parent changes | `ONCE004` — no error; updates are ignored by contract |
+| `once:prop` / `input.once.required` without an initial value | `ONCE005` — required-input diagnostic at creation |
+| `input.once` in directive bindings | `ONCE006` — valid |
+| `input.once` in `@derive` bindings | `ONCE007` — valid |
+| `once:` on a `fragment` binding | `ONCE008` — fragments are structural, not value bindings |
+| `once:` on an `attachable` binding | `ONCE009` — attachable is framework-managed |
 
 ---
 
-## Ivy bridge considerations
+## Ivy Bridge Considerations
 
 One-time binding needs no new runtime instructions; it is a **compiler-only** change:
 

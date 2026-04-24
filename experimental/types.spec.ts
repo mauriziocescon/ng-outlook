@@ -569,6 +569,17 @@ const _NegDirectiveAttachable = directive({
   setup: (_bindings, _context) => {},
 });
 
+// Directive must reject attachable bindings regardless of binding key name
+// (defensive check against component-reserved name confusion).
+// @ts-expect-error directives cannot declare attachable bindings
+const _NegDirectiveChildrenAttachable = directive({
+  host: ref<HTMLElement>(),
+  bindings: {
+    children: attachable<HTMLElement>(),
+  },
+  setup: (_bindings, _context) => {},
+});
+
 // ────────────────────────────────────────────────────────────────
 // DERIVATION — only inputs, setup returns Signal<T>
 // ────────────────────────────────────────────────────────────────
@@ -809,8 +820,8 @@ const _providers = [
 //
 // satisfies applies excess-property checking on object literals,
 // so the interface must cover all keys in the object — or use
-// an intersection with Record<string, ComponentBindingValue> to allow
-// extra keys.
+// an intersection with Record<string, ComponentBindingValue>
+// to allow extra keys in the component binding surface.
 // ────────────────────────────────────────────────────────────────
 
 // -- Bindings conformance: component --------------
