@@ -14,7 +14,7 @@ Normative keywords in this document follow RFC-style meaning:
 
 ## Summary
 
-Today, `component.wrap(Target, ...)` mirrors target bindings (with optional overrides), and `{...rest}` forwards target-compatible bindings at compile time.
+Today, `component.wrap(Target, ...)` mirrors target bindings (with optional overrides), and setup receives an opaque `rest` forwarding token in `setup(bindings, { rest })`. In templates, `{...rest}` forwards target-compatible bindings at compile time.
 
 This evolution adds two capabilities:
 
@@ -51,12 +51,12 @@ export const EnterpriseUser = component.wrap(UserDetail, {
     contactEmail: model.required<string>(),
     readOnly: input<boolean>(true),
   },
-  setup: ({ contactEmail, readOnly, ...rest }) => (
+  setup: (bindings, { rest }) => (
     <UserDetail
       {...rest}
-      model:email={contactEmail}
+      model:email={bindings.contactEmail}
       on:makeAdmin={() => {
-        if (!readOnly()) {
+        if (!bindings.readOnly()) {
           // internal policy
         }
       }} />
@@ -100,6 +100,11 @@ type EffectiveBindings<
   Added extends Record<string, ComponentBindingValue>,
   OmitM extends OmitMap<TargetBindings<C>>
 > = Omit<TargetBindings<C>, KeysMarkedTrue<OmitM>> & Added;
+
+type ForwardableTargetBindings<
+  C extends ComponentInstance<any, any>,
+  OmitM extends OmitMap<TargetBindings<C>>
+> = Omit<TargetBindings<C>, KeysMarkedTrue<OmitM>>;
 ```
 
 `wrap` config sketch:
@@ -118,7 +123,10 @@ export declare function wrap<
     omitBindings?: OmitM;
     addBindings?: Added;
     bindings?: Partial<Omit<TargetBindings<C>, KeysMarkedTrue<OmitM>>>;
-    setup: (b: SetupBindings<EffectiveBindings<C, Added, OmitM>>) => SetupReturn<E>;
+    setup: (
+      b: SetupBindings<EffectiveBindings<C, Added, OmitM>>,
+      context: { rest: RestToken<ForwardableTargetBindings<C, OmitM>> }
+    ) => SetupReturn<E>;
     providers?: (inputs: InputsOnly<EffectiveBindings<C, Added, OmitM>>) => Provider[];
     style?: string;
     styleUrl?: string;
@@ -130,7 +138,8 @@ Notes:
 
 - `bindings` still means target binding overrides only.
 - `addBindings` is separate to avoid ambiguity.
-- `setup` sees target-minus-omitted plus added.
+- `setup` sees target-minus-omitted plus added as the first argument.
+- `context.rest` is an opaque forwarding token for target-minus-omitted bindings only.
 
 ---
 
@@ -142,7 +151,9 @@ Given:
 component.wrap(Target, {
   omitBindings: { x: true },
   addBindings: { y: input.required<number>() },
-  setup: ({ y, ...rest }) => <Target {...rest} />,
+  setup: (bindings, { rest }) => (
+    <Target {...rest} x={bindings.y()} />
+  ),
 });
 ```
 
@@ -153,8 +164,9 @@ Compiler contract:
 3. The compiler `MUST NOT` include `addBindings` keys in target forwarding.
 4. The compiler `MUST` keep existing explicit-binding precedence (React-style last wins).
 5. The compiler `SHOULD` preserve attachable passthrough chain for forwardable attachable keys.
+6. The compiler `MUST` treat `rest` as opaque: no property reads, enumeration, or JS object-rest destructuring.
 
-No runtime spread object is required; the same strategy as current `component.wrap` is retained.
+No runtime rest object is required; the same strategy as current `component.wrap` is retained.
 
 ---
 
@@ -187,13 +199,13 @@ export const CorpGrid = component.wrap(ThirdPartyGrid, {
   addBindings: {
     corporateDensity: input<'compact' | 'comfortable'>('compact'),
   },
-  setup: ({ corporateDensity, ...rest }) => (
+  setup: (bindings, { rest }) => (
     <ThirdPartyGrid
       {...rest}
       debugMode={false}
       unsafeHtml={false}
       theme={'corporate'}
-      density={corporateDensity()} />
+      density={bindings.corporateDensity()} />
   ),
 });
 ```
@@ -217,8 +229,8 @@ export const UserProfile = component.wrap(UserDetail, {
   addBindings: {
     contactEmail: model.required<string>(),
   },
-  setup: ({ contactEmail, ...rest }) => (
-    <UserDetail {...rest} model:email={contactEmail} />
+  setup: (bindings, { rest }) => (
+    <UserDetail {...rest} model:email={bindings.contactEmail} />
   ),
 });
 ```
@@ -239,8 +251,8 @@ export const UserCard = component.wrap(UserDetail, {
   addBindings: {
     highlight: input<boolean>(false),
   },
-  setup: ({ highlight, ...rest }) => (
-    <section class:highlight={highlight()}>
+  setup: (bindings, { rest }) => (
+    <section class:highlight={bindings.highlight()}>
       <UserDetail {...rest} />
     </section>
   ),
@@ -260,6 +272,8 @@ export const UserCard = component.wrap(UserDetail, {
 | Omitted key is still consumed from wrapper call-site | `WRAP005` — binding is not part of wrapper public API |
 | `bindings` includes an omitted key | `WRAP006` — cannot override omitted target key |
 | Omitted required target input is not set internally | `WRAP007` — required target input missing |
+| `rest` is inspected (`rest.foo`, `Object.keys(rest)`, etc.) | `WRAP008` — rest token is opaque |
+| JS object-rest destructuring used to derive forwarding (`...rest` in setup params) | `WRAP009` — use `context.rest` token instead |
 
 ---
 
@@ -270,6 +284,7 @@ This can be introduced as a backward-compatible extension:
 - Existing wrappers without `addBindings` / `omitBindings` behave exactly the same.
 - Existing compiler lowering of `{...rest}` is unchanged unless `omitBindings` is present.
 - Type-level changes are additive.
+- Setup parameter style remains token-based (`setup(bindings, { rest })`); object-rest parameter patterns are not part of the model.
 
 ---
 
@@ -278,7 +293,7 @@ This can be introduced as a backward-compatible extension:
 `addBindings` / `omitBindings` is primarily a **compiler + type-system** evolution.
 
 - **Type system** computes effective wrapper API.
-- **Compiler** adjusts key expansion set for `{...rest}` and enforces non-forwarding of wrapper-local keys.
+- **Compiler** adjusts key expansion set for `{...rest}`, enforces non-forwarding of wrapper-local keys, and keeps `rest` as an opaque token (`RestToken` branded by `REST`).
 - **Runtime** remains unchanged in principle; generated instructions stay in the same class as those emitted today.
 
 **Change Class:** Compiler + Type-level (no new runtime primitive).

@@ -98,7 +98,7 @@ A compile-time macro for structurally wrapping an existing component.
 - **Mechanism:** `component.wrap(Target, { bindings, setup })` is processed entirely at compile time. When the compiler encounters a wrapper, it:
   1. Resolves `Selected = keys(wrapper.bindings)` and type-checks `bindings` as a strict subset of `TargetBindings` (key, binding kind, and inner type preserved).
   2. Resolves `Forwarded = keyof TargetBindings - Selected`.
-  3. Binds `setup` as `setup(selectedBindings, { rest })`, where `rest` is an opaque compiler token representing `Forwarded` (not a runtime object).
+  3. Binds `setup` as `setup(selectedBindings, { rest })`, where `rest` has type `RestToken<Forwarded>` and is branded by the internal `REST` marker (not a runtime object).
   4. Lowers `<Target {...rest} />` by unrolling only `Forwarded` keys directly to target bindings.
   5. Preserves explicit prop precedence (last wins) in mixed forms such as `<Target {...rest} user={x} />` and `<Target user={x} {...rest} />`.
   6. For `AttachableBinding` keys in `Forwarded`, preserves passthrough chain from parent → wrapper → target element. `ɵɵapplyAttachments` is emitted only at the target `use:attachments` site.
@@ -137,4 +137,4 @@ Without a `:host` element, CSS encapsulation relies on **compiler-driven scoping
 | **CSS Scoping** | Tied to the physical host attribute. | Applied to all template elements via compiler-generated attributes. |
 | **Template Queries** | `@ViewChild`/`@ViewChildren` resolved by a tree-walk; refreshed via `ɵɵqueryRefresh` every CD cycle. | Signal-push via `ref`/`refMany`; `expose` written once at child creation — no periodic refresh. |
 | **Transform / Memoization** | `Pipe` instances per view slot; limited DI access and no signal reactivity. | `derivation` slots with full native DI; driven directly by the signal reactive graph. |
-| **Component Wrapping** | Manual enumeration of every forwarded binding; no spread syntax. | Compile-time macro (`component.wrap`) with `setup(selectedBindings, { rest })`; `rest` is a forwarding token, not a runtime object, and `<Target {...rest} />` is unrolled by the compiler with zero runtime overhead. |
+| **Component Wrapping** | Manual enumeration of every forwarded binding; no spread syntax. | Compile-time macro (`component.wrap`) with `setup(selectedBindings, { rest })`; `rest` is a `RestToken` (internally branded by `REST`), not a runtime object, and `<Target {...rest} />` is unrolled by the compiler with zero runtime overhead. |
