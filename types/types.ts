@@ -200,6 +200,13 @@ type SetupReturn<E> =
 //   forwarded is a compile-time forwarding token (not a runtime object):
 //   the compiler unrolls <Target forward:forwarded /> into individual
 //   forwarded bindings.
+//
+//   forward:forwarded should be enforced by template lowering:
+//   if Omit<TargetBindings<C>, keyof Sel> is non-empty, the wrapper template
+//   must include at least one forward:forwarded usage.
+//   If this condition is not met, the compiler should emit a diagnostic
+//   listing the dropped remainder keys.
+//
 //   For AttachableBinding keys in <Target forward:forwarded />, the compiler passes them
 //   through intact to the target component; the chain is maintained
 //   from parent → wrapper → target element at run time.

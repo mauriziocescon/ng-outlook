@@ -372,6 +372,7 @@ const NoExpose = component({
 // setup receives selected bindings in arg1 and { forwarded } in arg2.
 // forwarded is a compile-time forwarding token used in
 // <Target forward:forwarded />.
+//
 // forward:forwarded is valid on components only.
 // ────────────────────────────────────────────────────────────────
 
