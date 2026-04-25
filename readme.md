@@ -5,7 +5,7 @@
 Highlights:
 
 1. Building blocks as functions:
-  - `*.ng` files with template DSL (see [`authoring format` appendix](#appendix-co-located-templates-in-angular-via-ng-files)),
+  - `*.ng` files with template DSL (see [appendix](#appendix-co-located-templates-in-angular-via-ng-files)),
   - `component`: a `setup` with scoped logic that returns a `template` or `{ template, expose }`,
   - `directive`: a `setup` that can change the appearance or behavior of DOM elements,
   - `derivation`: a factory for template-scoped computed values that requires DI,
