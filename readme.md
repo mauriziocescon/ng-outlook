@@ -5,7 +5,7 @@
 Highlights:
 
 1. Building blocks as functions:
-  - `*.ng` files with template DSL (see [`authoring format` appendix](#appendix)),
+  - `*.ng` files with template DSL (see [`authoring format` appendix](#appendix-co-located-templates-in-angular-via-ng-files)),
   - `component`: a `setup` with scoped logic that returns a `template` or `{ template, expose }`,
   - `directive`: a `setup` that can change the appearance or behavior of DOM elements,
   - `derivation`: a factory for template-scoped computed values that requires DI,
@@ -34,7 +34,7 @@ Highlights:
 - [Expose and Template Refs](#expose-and-template-refs)
 - [Dependency Injection Enhancements](#dependency-injection-enhancements)
 - [Final considerations](#final-considerations)
-- [Appendix](#appendix)
+- [Appendix: Co-located templates in Angular via `.ng` files](#appendix-co-located-templates-in-angular-via-ng-files)
 
 </details>
 
@@ -880,10 +880,9 @@ Cons:
 - noticeable repetition in how bindings are declared and consumed,
 - not plain TypeScript.
 
-## Appendix
+---
 
-<details>
-  <summary><strong>Co-located templates in Angular via <code>.ng</code> files (extended note)</strong></summary>
+## Appendix: Co-located templates in Angular via `.ng` files
 
 `tsx` does not support Angular control flow/directives today, so co-located templates likely require an Angular DSL in `*.ng` files plus dedicated tooling/parser support.
 
@@ -947,5 +946,3 @@ Three additional points:
 - **Why not `defineBindings(...)` inside `setup`?** It would reduce repetition, but `providers` needs input access *before* `setup` runs — so it would require compiler hoisting magic or giving up input access in providers. It also introduces a second authoring style (à la Vue Options vs. Composition API) that tooling, docs, and developers all have to support.
 
 One authoring format, explicit bindings, keeps the mental model simple — for humans and AI agents alike.
-
-</details>
