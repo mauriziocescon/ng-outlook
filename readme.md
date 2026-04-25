@@ -634,7 +634,10 @@ export const UserDetailWrapper = component.wrap(UserDetail, {
     const other = computed(() => /** something depending on user() or a default value **/);
 
     return (
-      <UserDetail forward:forwarded use:tooltip(message={'Tooltip message'}) user={other()} />
+      <UserDetail 
+        forward:forwarded 
+        use:tooltip(message={'Tooltip message'}) 
+        user={other()} />
     );
   },
 });
