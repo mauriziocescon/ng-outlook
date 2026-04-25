@@ -510,7 +510,7 @@ export const Menu = component({
 });
 ```
 
-Directives attached to a component and forwarded to an element:
+Directives attached to a component and propagated to an element:
 
 ```ts
 import { component, signal } from '@angular/core';
@@ -565,7 +565,7 @@ export const Button = component({
     const innerStyle = computed(() => `${style()}; color: red;`);
 
     /**
-     * Directive Attachments: directives applied to <Button /> are forwarded
+     * Directive Attachments: directives applied to <Button /> are propagated
      * and instantiated on the internal <button> element.
      * The element type (HTMLButtonElement) is the only constraint
      * the child needs to declare.
@@ -612,16 +612,15 @@ export const UserDetailConsumer = component({
  * Wrapper mode: component.wrap(Target, { ... }).
  * Target is passed as a value; the type is inferred from it,
  * consistent with ref(Child), inject(Child), etc.
- * setup receives (selectedBindings, { forwarded }).
+ * setup receives selected bindings.
  * providers (if declared) receive only selected input bindings.
  *
  * wrapper bindings are a strict subset of the target bindings:
- * selected keys are visible in setup arg1, and all remaining target
- * bindings are represented by forwarded in setup arg2.
- * forwarded is a compile-time forwarding token (not a runtime object).
- * The compiler statically unrolls <Target @forward(forwarded) /> into
- * individual forwarded bindings.
- * @forward(forwarded) can be applied only to components.
+ * selected keys are visible in setup, and all remaining target
+ * bindings are compiler-selected as the forwarding remainder.
+ * The compiler statically unrolls <Target @forward() /> into
+ * individual remainder bindings.
+ * @forward() can be applied only to components.
  *
  * attachments act as a behavior passthrough — forwarding directives
  * from the caller through to the innermost element where
@@ -631,12 +630,12 @@ export const UserDetailWrapper = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
   },
-  setup: ({ user }, { forwarded }) => {
+  setup: ({ user }) => {
     const other = computed(() => /** something depending on user() or a default value **/);
 
     return (
       <UserDetail 
-        @forward(forwarded) 
+        @forward() 
         use:tooltip(message={'Tooltip message'}) 
         user={other()} />
     );

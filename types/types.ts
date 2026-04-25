@@ -113,7 +113,6 @@ export type ComponentBindingValue = AnyBindingValue;
 declare const BINDINGS: unique symbol;
 declare const EXPOSE: unique symbol;
 declare const HOST: unique symbol;
-declare const FORWARDED: unique symbol;
 
 export type ComponentInstance<B, E = void> = {
   readonly [BINDINGS]: B;
@@ -206,11 +205,6 @@ type ValidateWrapSelection<Sel extends Record<string, unknown>, All extends Reco
     ? Sel & WrapSelectionDiagnostics<Sel, All>
     : Sel;
 
-type ForwardedToken<B> = {
-  // Compile-time forwarding marker for wrap setup context.
-  readonly [FORWARDED]: B;
-};
-
 type SetupBindingValue<V> =
   V extends OptionalFragmentBinding<infer T> ? OptionalFragmentBinding<T> | undefined
     : V;
@@ -262,27 +256,26 @@ type SetupReturn<E> =
 //   with ref(Child), inject(Child), etc.).
 //   bindings are a strict subset of target bindings while preserving
 //   key, binding kind, and inner type per selected key.
-//   setup receives selected bindings as first arg and { forwarded } as
-//   second arg.
-//   forwarded is a compile-time forwarding token (not a runtime object):
-//   the compiler unrolls <Target @forward(forwarded) /> into individual
-//   forwarded bindings.
+//   setup receives selected bindings as first arg.
+//   @forward() is a compile-time forwarding marker (not a runtime object):
+//   the compiler unrolls <Target @forward() /> into individual
+//   remainder bindings.
 //
-//   @forward(forwarded) should be enforced by template lowering:
+//   @forward() should be enforced by template lowering:
 //   if Omit<TargetBindings<C>, keyof Sel> is non-empty, the wrapper template
-//   must include at least one @forward(forwarded) usage.
+//   must include at least one @forward() usage.
 //   If this condition is not met, the compiler should emit a diagnostic
 //   listing the dropped remainder keys.
 //
 //   Collision precedence: explicit bindings declared on the wrapped target
-//   element always override forwarded bindings for the same key, regardless
-//   of source order. Lowering model: apply forwarded first, explicit last.
+//   element always override remainder bindings for the same key,
+//   regardless of source order. Lowering model: apply remainder first, explicit last.
 //   This applies uniformly to all binding kinds (input/model/output/fragment/attachable).
 //
-//   For AttachableBinding keys in <Target @forward(forwarded) />, the compiler passes them
+//   For AttachableBinding keys in <Target @forward() />, the compiler passes them
 //   through intact to the target component; the chain is maintained
 //   from parent → wrapper → target element at run time.
-//   @forward(forwarded) can be used only on component elements.
+//   @forward() can be used only on component elements.
 // ────────────────────────────────────────────────────────────────
 
 // With bindings
@@ -316,14 +309,7 @@ export namespace component {
     target: C,
     config: TargetBindings<C> extends Record<string, ComponentBindingValue> ? {
       bindings: ValidateWrapSelection<Sel, TargetBindings<C>>;
-      setup: (
-        bindings: SetupBindings<Sel>,
-        context: {
-          forwarded: keyof Omit<TargetBindings<C>, keyof Sel> extends never
-            ? never
-            : ForwardedToken<Omit<TargetBindings<C>, keyof Sel>>;
-        }
-      ) => SetupReturn<E>;
+      setup: (bindings: SetupBindings<Sel>) => SetupReturn<E>;
       providers?: (inputs: InputsOnly<Sel>) => Provider[];
       style?: string;
       styleUrl?: string;

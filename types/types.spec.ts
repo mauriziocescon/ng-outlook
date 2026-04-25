@@ -368,24 +368,23 @@ const NoExpose = component({
 });
 
 // ────────────────────────────────────────────────────────────────
-// COMPONENT — wrapper with selected bindings + forwarded token
+// COMPONENT — wrapper with selected bindings + forwarding marker
 //
 // Target passed as first arg; C is inferred from the value
 // (consistent with ref(Child), inject(Child), etc.).
-// setup receives selected bindings in arg1 and { forwarded } in arg2.
-// forwarded is a compile-time forwarding token used in
-// <Target @forward(forwarded) />.
+// setup receives selected bindings only.
+// @forward() is a compile-time forwarding marker used in
+// wrapper templates.
 //
-// @forward(forwarded) is valid on components only.
+// @forward() is valid on components only.
 // ────────────────────────────────────────────────────────────────
 
 const UserDetailWrapper = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
   },
-  setup: ({ user }, { forwarded }) => {
+  setup: ({ user }) => {
     const _u: User = user();
-    const other = computed(() => user());
     return tmpl;
   },
 });
@@ -400,16 +399,6 @@ const _NegSelectedOnly = component.wrap(UserDetail, {
   }) => tmpl,
 });
 
-// forwarded is opaque and not inspectable
-const _NegForwardedInspect = component.wrap(UserDetail, {
-  bindings: { user: input.required<User>() },
-  setup: ({ user }, { forwarded }) => {
-    // @ts-expect-error forwarded is forwarding-only token; key inspection is invalid
-    forwarded.email;
-    return tmpl;
-  },
-});
-
 // bindings should NOT accept keys outside the target type
 const _NegExtra = component.wrap(UserDetail, {
   // @ts-expect-error nonsense is not in target bindings
@@ -417,7 +406,7 @@ const _NegExtra = component.wrap(UserDetail, {
     user: input.required<User>(),
     nonsense: input<string>(),
   },
-  setup: ({ user }, { forwarded }) => tmpl,
+  setup: () => tmpl,
 });
 
 // bindings should NOT accept wrong inner types
@@ -426,7 +415,7 @@ const _NegWrongType = component.wrap(UserDetail, {
   bindings: {
     user: input.required<string>(),
   },
-  setup: ({ user }, { forwarded }) => tmpl,
+  setup: () => tmpl,
 });
 
 // bindings should preserve target binding kind
@@ -435,7 +424,7 @@ const _NegWrongKind = component.wrap(UserDetail, {
   bindings: {
     makeAdmin: input<void>(),
   },
-  setup: ({ makeAdmin }, { forwarded }) => tmpl,
+  setup: () => tmpl,
 });
 
 // bindings should NOT allow subtype narrowing in wrappers
@@ -451,7 +440,7 @@ const _NegNarrowedSubtype = component.wrap(WideInput, {
   bindings: {
     value: input.required<string>(),
   },
-  setup: ({ value }, { forwarded }) => tmpl,
+  setup: () => tmpl,
 });
 
 // bindings should NOT allow supertype widening in wrappers
@@ -467,10 +456,10 @@ const _NegWidenedSupertype = component.wrap(NarrowInput, {
   bindings: {
     value: input.required<string | number>(),
   },
-  setup: ({ value }, { forwarded }) => tmpl,
+  setup: () => tmpl,
 });
 
-// Wrap with empty selected bindings: all target bindings forwarded via token
+// Wrap with empty selected bindings: all target bindings are in forwarding remainder
 interface Simple {
   id: string;
 }
@@ -486,9 +475,9 @@ const Base = component({
 
 const PassThrough = component.wrap(Base, {
   bindings: {},
-  setup: ({}, { forwarded }) => {
-    // @ts-expect-error forwarded is forwarding-only token; no property reads
-    forwarded.item;
+  setup: (bindings) => {
+    // @ts-expect-error empty selection should expose no setup keys
+    bindings.item;
     return tmpl;
   },
 });
@@ -498,7 +487,7 @@ const WrapperProviders = component.wrap(UserDetail, {
   bindings: {
     user: input.required<User>(),
   },
-  setup: ({ user }, { forwarded }) => tmpl,
+  setup: ({ user }) => tmpl,
   providers: (inputs) => {
     const _user: InputSignal<User> = inputs.user;
     // @ts-expect-error email is not selected, excluded from wrapper providers
@@ -521,7 +510,7 @@ const WrapperProvidersSelectedKinds = component.wrap(Base, {
     selected: model<boolean>(),
     click: output<void>(),
   },
-  setup: ({ item, selected, click }, { forwarded }) => tmpl,
+  setup: ({ item, selected, click }) => tmpl,
   providers: (inputs) => {
     const _item: InputSignal<Simple> = inputs.item;
     // @ts-expect-error selected is a model, excluded from providers
@@ -532,60 +521,47 @@ const WrapperProvidersSelectedKinds = component.wrap(Base, {
   },
 });
 
-// forwarded becomes never when selected bindings cover all target bindings
-const FullSelect = component.wrap(Base, {
-  bindings: {
-    item: input.required<Simple>(),
-    selected: model<boolean>(),
-    click: output<void>(),
-  },
-  setup: ({ item, selected, click }, { forwarded }) => {
-    const _forwardedIsNever: never = forwarded;
-    return tmpl;
-  },
-});
-
 // ────────────────────────────────────────────────────────────────
 // FORWARD COLLISION PRECEDENCE (compiler contract)
 //
-// Rule: explicit bindings override forwarded bindings, regardless of
+// Rule: explicit bindings override remainder bindings, regardless of
 // attribute order in source.
 // Scope: applies uniformly to all binding kinds
 // (input/model/output/fragment/attachable).
 // Example:
-//   <Target @forward(forwarded) user={explicit} />  -> explicit wins for `user`
-//   <Target user={explicit} @forward(forwarded) />  -> explicit wins for `user`
+//   <Target @forward() user={explicit} />  -> explicit wins for `user`
+//   <Target user={explicit} @forward() />  -> explicit wins for `user`
 //
-// The tests below model compiler-normalized output where forwarded keys are
+// The tests below model compiler-normalized output where remainder keys are
 // applied first and explicit keys are applied last.
 // ────────────────────────────────────────────────────────────────
 
-type FromForwarded = {
-  user: 'forwarded';
-  email: 'forwarded-email';
-  click: 'forwarded-click';
+type FromRemainder = {
+  user: 'remainder';
+  email: 'remainder-email';
+  click: 'remainder-click';
 };
 
 type FromExplicit = {
   user: 'explicit';
 };
 
-// <Target @forward(forwarded) user={explicit} />
-type ForwardThenExplicit = MergeProps<FromForwarded, FromExplicit>;
+// <Target @forward() user={explicit} />
+type ForwardThenExplicit = MergeProps<FromRemainder, FromExplicit>;
 type _ForwardThenExplicitUser = Assert<
   IsEqual<ForwardThenExplicit['user'], 'explicit'>
 >;
 type _ForwardThenExplicitKeepsOthers = Assert<
-  IsEqual<ForwardThenExplicit['email'], 'forwarded-email'>
+  IsEqual<ForwardThenExplicit['email'], 'remainder-email'>
 >;
 
-// <Target user={explicit} @forward(forwarded) />
-type ExplicitThenForward = MergeProps<FromForwarded, FromExplicit>;
+// <Target user={explicit} @forward() />
+type ExplicitThenForward = MergeProps<FromRemainder, FromExplicit>;
 type _ExplicitThenForwardUser = Assert<
   IsEqual<ExplicitThenForward['user'], 'explicit'>
 >;
 type _ExplicitThenForwardKeepsOthers = Assert<
-  IsEqual<ExplicitThenForward['click'], 'forwarded-click'>
+  IsEqual<ExplicitThenForward['click'], 'remainder-click'>
 >;
 
 // ────────────────────────────────────────────────────────────────
