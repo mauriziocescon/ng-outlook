@@ -1,5 +1,6 @@
 import {
   type InputSignal,
+  type ModelSignal,
   type OutputEmitterRef,
   type Signal,
   afterNextRender,
@@ -20,6 +21,8 @@ import {
   type Ref,
   type RequiredFragmentBinding,
   type TemplateMarkup,
+  type __ReservedBindingsConstraint,
+  type __WrapSelectionDiagnostics,
   attachable,
   component,
   derivation,
@@ -1108,3 +1111,92 @@ const _NegMissingExpose = component({
     } satisfies Toggleable,
   }),
 });
+
+// ────────────────────────────────────────────────────────────────
+// DIAGNOSTIC CONTRACTS — wrapper + reserved names
+//
+// Keep these checks at the end: they validate the shape of type-level
+// diagnostics, not core API behavior.
+// ────────────────────────────────────────────────────────────────
+
+type UserDetailBindings = {
+  user: InputSignal<User>;
+  email: ModelSignal<string>;
+  makeAdmin: OutputEmitterRef<void>;
+  children: OptionalFragmentBinding<void>;
+  attachments: AttachableBinding<HTMLElement>;
+};
+
+type _NoWrapDiag = __WrapSelectionDiagnostics<
+  { user: InputSignal<User> },
+  UserDetailBindings
+>;
+type _NoWrapDiagKeys = Assert<IsEqual<keyof _NoWrapDiag, never>>;
+
+type _WrapUnknownDiag = __WrapSelectionDiagnostics<
+  { user: InputSignal<User>; nonsense: InputSignal<string | undefined> },
+  UserDetailBindings
+>;
+type _WrapUnknownKey = Assert<
+  IsEqual<_WrapUnknownDiag['__wrap_unknown_keys__']['keys'], 'nonsense'>
+>;
+type _WrapUnknownMessage = Assert<
+  IsEqual<
+    _WrapUnknownDiag['__wrap_unknown_keys__']['message'],
+    'wrapper bindings contain keys not present in target bindings'
+  >
+>;
+
+type _WrapKindDiag = __WrapSelectionDiagnostics<
+  { makeAdmin: InputSignal<void | undefined> },
+  UserDetailBindings
+>;
+type _WrapKindKey = Assert<
+  IsEqual<_WrapKindDiag['__wrap_kind_mismatch__']['keys'], 'makeAdmin'>
+>;
+type _WrapKindMessage = Assert<
+  IsEqual<
+    _WrapKindDiag['__wrap_kind_mismatch__']['message'],
+    'wrapper binding kind must match target binding kind'
+  >
+>;
+
+type _WrapTypeDiag = __WrapSelectionDiagnostics<
+  { user: InputSignal<string> },
+  UserDetailBindings
+>;
+type _WrapTypeKey = Assert<
+  IsEqual<_WrapTypeDiag['__wrap_type_mismatch__']['keys'], 'user'>
+>;
+type _WrapTypeMessage = Assert<
+  IsEqual<
+    _WrapTypeDiag['__wrap_type_mismatch__']['message'],
+    'wrapper binding type must exactly match target binding type'
+  >
+>;
+
+type _ReservedChildrenDiag = __ReservedBindingsConstraint<{
+  children: InputSignal<string>;
+}>;
+type _ReservedChildrenMsg = Assert<
+  IsEqual<
+    _ReservedChildrenDiag['__reserved_children_error__'],
+    'children binding must use fragment(...) or fragment.required(...)'
+  >
+>;
+
+type _ReservedAttachmentsDiag = __ReservedBindingsConstraint<{
+  attachments: InputSignal<string>;
+}>;
+type _ReservedAttachmentsMsg = Assert<
+  IsEqual<
+    _ReservedAttachmentsDiag['__reserved_attachments_error__'],
+    'attachments binding must use attachable<...>()'
+  >
+>;
+
+type _ReservedOk = __ReservedBindingsConstraint<{
+  children: OptionalFragmentBinding<void>;
+  attachments: AttachableBinding<HTMLElement>;
+}>;
+type _ReservedOkKeys = Assert<IsEqual<keyof _ReservedOk, never>>;

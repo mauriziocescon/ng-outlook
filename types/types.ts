@@ -83,16 +83,18 @@ export interface Ref<T> extends Signal<T> {
 // - Component: directive + attachable
 // ────────────────────────────────────────────────────────────────
 
-type BaseBindingValue =
+type AnyNonAttachableBinding =
   | InputSignal<any>
   | ModelSignal<any>
   | OutputEmitterRef<any>
   | OptionalFragmentBinding<any>
   | RequiredFragmentBinding<any>;
 
+type AnyBindingValue = AnyNonAttachableBinding | AttachableBinding<any>;
+
 export type DerivationBindingValue = InputSignal<any>;
-export type DirectiveBindingValue = BaseBindingValue;
-export type ComponentBindingValue = BaseBindingValue | AttachableBinding<any>;
+export type DirectiveBindingValue = AnyNonAttachableBinding;
+export type ComponentBindingValue = AnyBindingValue;
 
 // ────────────────────────────────────────────────────────────────
 // 5. INSTANCE TYPES & SHARED HELPERS
@@ -228,6 +230,16 @@ type ReservedBindingsConstraint<B extends Record<string, ComponentBindingValue>>
       __reserved_attachments_error__: 'attachments binding must use attachable<...>()';
     }
     : unknown);
+
+// Test-only exports for diagnostic contract checks in types.spec.ts
+export type __WrapSelectionDiagnostics<
+  Sel extends Record<string, unknown>,
+  All extends Record<string, unknown>,
+> = WrapSelectionDiagnostics<Sel, All>;
+
+export type __ReservedBindingsConstraint<
+  B extends Record<string, ComponentBindingValue>,
+> = ReservedBindingsConstraint<B>;
 
 type SetupReturn<E> =
   | { template: TemplateMarkup; expose: E } // full form with expose
