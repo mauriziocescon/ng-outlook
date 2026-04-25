@@ -265,12 +265,12 @@ type SetupReturn<E> =
 //   setup receives selected bindings as first arg and { forwarded } as
 //   second arg.
 //   forwarded is a compile-time forwarding token (not a runtime object):
-//   the compiler unrolls <Target forward:forwarded /> into individual
+//   the compiler unrolls <Target @forward(forwarded) /> into individual
 //   forwarded bindings.
 //
-//   forward:forwarded should be enforced by template lowering:
+//   @forward(forwarded) should be enforced by template lowering:
 //   if Omit<TargetBindings<C>, keyof Sel> is non-empty, the wrapper template
-//   must include at least one forward:forwarded usage.
+//   must include at least one @forward(forwarded) usage.
 //   If this condition is not met, the compiler should emit a diagnostic
 //   listing the dropped remainder keys.
 //
@@ -279,10 +279,10 @@ type SetupReturn<E> =
 //   of source order. Lowering model: apply forwarded first, explicit last.
 //   This applies uniformly to all binding kinds (input/model/output/fragment/attachable).
 //
-//   For AttachableBinding keys in <Target forward:forwarded />, the compiler passes them
+//   For AttachableBinding keys in <Target @forward(forwarded) />, the compiler passes them
 //   through intact to the target component; the chain is maintained
 //   from parent → wrapper → target element at run time.
-//   forward:forwarded can be used only on component elements.
+//   @forward(forwarded) can be used only on component elements.
 // ────────────────────────────────────────────────────────────────
 
 // With bindings

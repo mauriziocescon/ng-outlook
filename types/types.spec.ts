@@ -374,9 +374,9 @@ const NoExpose = component({
 // (consistent with ref(Child), inject(Child), etc.).
 // setup receives selected bindings in arg1 and { forwarded } in arg2.
 // forwarded is a compile-time forwarding token used in
-// <Target forward:forwarded />.
+// <Target @forward(forwarded) />.
 //
-// forward:forwarded is valid on components only.
+// @forward(forwarded) is valid on components only.
 // ────────────────────────────────────────────────────────────────
 
 const UserDetailWrapper = component.wrap(UserDetail, {
@@ -553,8 +553,8 @@ const FullSelect = component.wrap(Base, {
 // Scope: applies uniformly to all binding kinds
 // (input/model/output/fragment/attachable).
 // Example:
-//   <Target forward:forwarded user={explicit} />  -> explicit wins for `user`
-//   <Target user={explicit} forward:forwarded />  -> explicit wins for `user`
+//   <Target @forward(forwarded) user={explicit} />  -> explicit wins for `user`
+//   <Target user={explicit} @forward(forwarded) />  -> explicit wins for `user`
 //
 // The tests below model compiler-normalized output where forwarded keys are
 // applied first and explicit keys are applied last.
@@ -570,7 +570,7 @@ type FromExplicit = {
   user: 'explicit';
 };
 
-// <Target forward:forwarded user={explicit} />
+// <Target @forward(forwarded) user={explicit} />
 type ForwardThenExplicit = MergeProps<FromForwarded, FromExplicit>;
 type _ForwardThenExplicitUser = Assert<
   IsEqual<ForwardThenExplicit['user'], 'explicit'>
@@ -579,7 +579,7 @@ type _ForwardThenExplicitKeepsOthers = Assert<
   IsEqual<ForwardThenExplicit['email'], 'forwarded-email'>
 >;
 
-// <Target user={explicit} forward:forwarded />
+// <Target user={explicit} @forward(forwarded) />
 type ExplicitThenForward = MergeProps<FromForwarded, FromExplicit>;
 type _ExplicitThenForwardUser = Assert<
   IsEqual<ExplicitThenForward['user'], 'explicit'>
