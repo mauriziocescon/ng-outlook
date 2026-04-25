@@ -92,7 +92,7 @@ type BaseBindingValue =
 
 export type DerivationBindingValue = InputSignal<any>;
 export type DirectiveBindingValue = BaseBindingValue;
-export type ComponentBindingValue = BaseBindingValue | AttachableBinding<never>;
+export type ComponentBindingValue = BaseBindingValue | AttachableBinding<any>;
 
 // ────────────────────────────────────────────────────────────────
 // 5. INSTANCE TYPES & SHARED HELPERS
@@ -145,13 +145,64 @@ type IsExact<A, B> =
       : false
     : false;
 
-type ExactSubset<Sel extends Record<string, unknown>, All extends Record<string, unknown>> = {
-  [K in keyof Sel]-?: K extends keyof All
-    ? IsExact<Sel[K], All[K]> extends true
-      ? Sel[K]
-      : never
-    : never;
-};
+type HasOwnKeys<T extends object> = keyof T extends never ? false : true;
+
+type BindingKind<V> =
+  V extends ModelSignal<any> ? 'model'
+    : V extends InputSignal<any> ? 'input'
+    : V extends OutputEmitterRef<any> ? 'output'
+    : V extends FragmentBinding<any> ? 'fragment'
+    : V extends AttachableBinding<any> ? 'attachable'
+    : 'unknown';
+
+type ExtraKeys<Sel extends Record<string, unknown>, All extends Record<string, unknown>> =
+  Exclude<keyof Sel, keyof All>;
+
+type KindMismatchKeys<Sel extends Record<string, unknown>, All extends Record<string, unknown>> = {
+  [K in Extract<keyof Sel, keyof All>]:
+    IsExact<BindingKind<Sel[K]>, BindingKind<All[K]>> extends true ? never : K;
+}[Extract<keyof Sel, keyof All>];
+
+type TypeMismatchKeys<Sel extends Record<string, unknown>, All extends Record<string, unknown>> = {
+  [K in Extract<keyof Sel, keyof All>]:
+    IsExact<BindingKind<Sel[K]>, BindingKind<All[K]>> extends true
+      ? IsExact<Sel[K], All[K]> extends true ? never : K
+      : never;
+}[Extract<keyof Sel, keyof All>];
+
+type WrapUnknownKeysError<Sel extends Record<string, unknown>, All extends Record<string, unknown>> =
+  ExtraKeys<Sel, All> extends never ? {} : {
+    __wrap_unknown_keys__: {
+      message: 'wrapper bindings contain keys not present in target bindings';
+      keys: ExtraKeys<Sel, All>;
+    };
+  };
+
+type WrapKindMismatchError<Sel extends Record<string, unknown>, All extends Record<string, unknown>> =
+  KindMismatchKeys<Sel, All> extends never ? {} : {
+    __wrap_kind_mismatch__: {
+      message: 'wrapper binding kind must match target binding kind';
+      keys: KindMismatchKeys<Sel, All>;
+    };
+  };
+
+type WrapTypeMismatchError<Sel extends Record<string, unknown>, All extends Record<string, unknown>> =
+  TypeMismatchKeys<Sel, All> extends never ? {} : {
+    __wrap_type_mismatch__: {
+      message: 'wrapper binding type must exactly match target binding type';
+      keys: TypeMismatchKeys<Sel, All>;
+    };
+  };
+
+type WrapSelectionDiagnostics<Sel extends Record<string, unknown>, All extends Record<string, unknown>> =
+  WrapUnknownKeysError<Sel, All> &
+  WrapKindMismatchError<Sel, All> &
+  WrapTypeMismatchError<Sel, All>;
+
+type ValidateWrapSelection<Sel extends Record<string, unknown>, All extends Record<string, unknown>> =
+  HasOwnKeys<WrapSelectionDiagnostics<Sel, All>> extends true
+    ? Sel & WrapSelectionDiagnostics<Sel, All>
+    : Sel;
 
 type ForwardedToken<B> = {
   // Compile-time forwarding marker for wrap setup context.
@@ -168,10 +219,14 @@ type SetupBindings<B> = {
 
 type ReservedBindingsConstraint<B extends Record<string, ComponentBindingValue>> =
   ('children' extends keyof B
-    ? B['children'] extends FragmentBinding<unknown> ? unknown : never
+    ? B['children'] extends FragmentBinding<unknown> ? {} : {
+      __reserved_children_error__: 'children binding must use fragment(...) or fragment.required(...)';
+    }
     : unknown) &
   ('attachments' extends keyof B
-    ? B['attachments'] extends AttachableBinding<never> ? unknown : never
+    ? B['attachments'] extends AttachableBinding<any> ? {} : {
+      __reserved_attachments_error__: 'attachments binding must use attachable<...>()';
+    }
     : unknown);
 
 type SetupReturn<E> =
@@ -225,7 +280,7 @@ export function component<B extends Record<string, ComponentBindingValue>, E = v
   providers?: (inputs: InputsOnly<B>) => Provider[];
   style?: string;
   styleUrl?: string;
-} & (ReservedBindingsConstraint<B> extends never ? never : {})): ComponentInstance<B, E>;
+} & ReservedBindingsConstraint<B>): ComponentInstance<B, E>;
 
 // No bindings
 export function component<E = void>(config: {
@@ -248,7 +303,7 @@ export namespace component {
   >(
     target: C,
     config: TargetBindings<C> extends Record<string, ComponentBindingValue> ? {
-      bindings: ExactSubset<Sel, TargetBindings<C>>;
+      bindings: ValidateWrapSelection<Sel, TargetBindings<C>>;
       setup: (
         bindings: SetupBindings<Sel>,
         context: {

@@ -409,9 +409,9 @@ const _NegForwardedInspect = component.wrap(UserDetail, {
 
 // bindings should NOT accept keys outside the target type
 const _NegExtra = component.wrap(UserDetail, {
+  // @ts-expect-error nonsense is not in target bindings
   bindings: {
     user: input.required<User>(),
-    // @ts-expect-error nonsense is not in target bindings
     nonsense: input<string>(),
   },
   setup: ({ user }, { forwarded }) => tmpl,
@@ -419,8 +419,8 @@ const _NegExtra = component.wrap(UserDetail, {
 
 // bindings should NOT accept wrong inner types
 const _NegWrongType = component.wrap(UserDetail, {
+  // @ts-expect-error user input type should be User
   bindings: {
-    // @ts-expect-error user input type should be User
     user: input.required<string>(),
   },
   setup: ({ user }, { forwarded }) => tmpl,
@@ -428,8 +428,8 @@ const _NegWrongType = component.wrap(UserDetail, {
 
 // bindings should preserve target binding kind
 const _NegWrongKind = component.wrap(UserDetail, {
+  // @ts-expect-error makeAdmin is an output on target, not an input
   bindings: {
-    // @ts-expect-error makeAdmin is an output on target, not an input
     makeAdmin: input<void>(),
   },
   setup: ({ makeAdmin }, { forwarded }) => tmpl,
@@ -444,8 +444,8 @@ const WideInput = component({
 });
 
 const _NegNarrowedSubtype = component.wrap(WideInput, {
+  // @ts-expect-error wrapper bindings must exactly match target binding type
   bindings: {
-    // @ts-expect-error wrapper bindings must exactly match target binding type
     value: input.required<string>(),
   },
   setup: ({ value }, { forwarded }) => tmpl,
@@ -460,8 +460,8 @@ const NarrowInput = component({
 });
 
 const _NegWidenedSupertype = component.wrap(NarrowInput, {
+  // @ts-expect-error wrapper bindings must exactly match target binding type
   bindings: {
-    // @ts-expect-error wrapper bindings must exactly match target binding type
     value: input.required<string | number>(),
   },
   setup: ({ value }, { forwarded }) => tmpl,
