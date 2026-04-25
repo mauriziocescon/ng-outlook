@@ -434,6 +434,22 @@ const _NegWrongKind = component.wrap(UserDetail, {
   setup: ({ makeAdmin }, { forwarded }) => tmpl,
 });
 
+// bindings should NOT allow subtype narrowing in wrappers
+const WideInput = component({
+  bindings: {
+    value: input.required<string | number>(),
+  },
+  setup: ({ value }) => tmpl,
+});
+
+const _NegNarrowedSubtype = component.wrap(WideInput, {
+  bindings: {
+    // @ts-expect-error wrapper bindings must exactly match target binding type
+    value: input.required<string>(),
+  },
+  setup: ({ value }, { forwarded }) => tmpl,
+});
+
 // Wrap with empty selected bindings: all target bindings forwarded via token
 interface Simple {
   id: string;
