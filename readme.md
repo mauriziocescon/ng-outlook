@@ -1,18 +1,20 @@
 # Anatomy of Signal Components
+
 **⚠️ Note ⚠️: personal thoughts from a developer's perspective on [the future of Angular](https://myconf.dev/videos/2024-keynote-session-the-future-of-angular) at the template level.**
 
 Highlights:
+
 1. Building blocks as functions:
-    - `*.ng` files with template DSL (see [`authoring format`](https://github.com/mauriziocescon/ng-outlook/blob/main/authoring-format.md)),
-    - `component`: a `setup` with scoped logic that returns a `template` or `{ template, expose }`,
-    - `directive`: a `setup` that can change the appearance or behavior of DOM elements,
-    - `derivation`: a factory for template-scoped computed values that requires DI,
-    - `fragment`: a way to capture some markup in the form of a function,
+  - `*.ng` files with template DSL (see [`authoring format`](https://github.com/mauriziocescon/ng-outlook/blob/main/authoring-format.md)),
+  - `component`: a `setup` with scoped logic that returns a `template` or `{ template, expose }`,
+  - `directive`: a `setup` that can change the appearance or behavior of DOM elements,
+  - `derivation`: a factory for template-scoped computed values that requires DI,
+  - `fragment`: a way to capture some markup in the form of a function,
 2. TS expressions with `{}`: bindings + text interpolation
 3. Extra bindings for DOM elements: `bind:`, `on:`, `model:`, `class:`, `style:`, `animate:`, `use:`,
 4. Hostless components + TS lexical scoping for templates,
 5. Component inputs: lifted up + immediately available in setup and providers,
-6. Composition with Fragments, Directives, and Spread syntax,
+6. Composition with Fragments, Directives, and Forward syntax,
 7. Expose and Template Refs,
 8. Dependency Injection Enhancements,
 9. Final considerations (`!important`) + [`experimental types`](https://github.com/mauriziocescon/ng-outlook/blob/main/experimental/types.ts).
@@ -28,7 +30,7 @@ Highlights:
 - [Binding syntax helpers](#binding-syntax-helpers)
 - [One-time bindings (`once:`)](#one-time-bindings-once)
 - [Input-driven providers](#input-driven-providers)
-- [Composition with Fragments, Directives, and Spread syntax](#composition-with-fragments-directives-and-spread-syntax)
+- [Composition with Fragments, Directives, and Forward syntax](#composition-with-fragments-directives-and-forward-syntax)
 - [Expose and Template Refs](#expose-and-template-refs)
 - [Dependency Injection Enhancements](#dependency-injection-enhancements)
 - [Final considerations](#final-considerations)
@@ -36,7 +38,9 @@ Highlights:
 </details>
 
 ## Component structure and bindings
+
 `setup` runs once in an injection context. All bindings are wired and available immediately; destructuring is optional:
+
 ```ts
 import { component, signal, linkedSignal, input, output } from '@angular/core';
 
@@ -83,6 +87,7 @@ export const TextSearch = component({
 ```
 
 Any component can be used in the template; `bind:`, `model:`, and `on:` behave the same as for native elements:
+
 ```ts
 import { component, signal } from '@angular/core';
 import { UserDetail, User } from './user-detail.ng';
@@ -131,6 +136,7 @@ export const UserDetail = component({
 ```
 
 Lexical scoping resolves in this order: template → setup → functions, constants, enums, and interfaces imported in the file → global.
+
 ```ts
 import { component } from '@angular/core';
 
@@ -155,7 +161,9 @@ export const Counter = component({
 ```
 
 ## Element directives
+
 Change the appearance or behavior of DOM elements:
+
 ```ts
 import { component, signal } from '@angular/core';
 import { tooltip } from '@mylib/tooltip';
@@ -214,7 +222,9 @@ export const tooltip = directive({
 ```
 
 ## Template-Scoped Derivations (`@derive`)
+
 `@derive` creates a template-scoped reactive computation, establishing an injection context before calling the derivation's `setup`. It follows the lifecycle of the enclosing view:
+
 ```ts
 import { component, derivation, computed, inject, input } from '@angular/core';
 import { Item, PriceManager } from '@mylib/item';
@@ -262,6 +272,7 @@ export const PriceSimulator = component({
 ```
 
 ## Binding syntax helpers
+
 - Name-matching: omit the value when the local variable name matches the binding; type inferred from the binding kind — `Signal<T>` for inputs, `WritableSignal<T>` for models, `(payload: T) => void` for outputs.
 - One-time shorthand: `once:` also supports name-matching shorthand (`once:{user}`).
 - Literal form equivalence for inputs: literal attributes and literal expressions are equivalent for inputs: `prop="value"` and `prop={'value'}` produce the same input value.
@@ -301,7 +312,9 @@ export const UserCard = component({
 ```
 
 ## One-time bindings (`once:`)
+
 `once:` lets the consumer freeze an input at creation time. The value is seeded once and never updated, even if the source signal changes later. Rules:
+
 - `once:` applies only to inputs.
 - `once:model:*` and `once:on:*` are compile-time errors.
 - `once:prop` and `prop` together on the same element are a duplicate binding error.
@@ -329,7 +342,9 @@ export const UserDetailConsumer = component({
 ```
 
 ## Input-driven providers
+
 Inputs hoisted to the component level for use in provider initialization (`providers` receives only inputs — not models or outputs):
+
 ```ts
 import { component, linkedSignal, input, WritableSignal, provide, inject } from '@angular/core';
 
@@ -368,10 +383,12 @@ export const Counter = component({
 });
 ```
 
-## Composition with Fragments, Directives, and Spread syntax
-Fragments are similar to [Svelte snippets](https://svelte.dev/docs/svelte/snippet): functions that return HTML markup. The returned markup is opaque — it cannot be manipulated like [React Children (legacy)](https://react.dev/reference/react/Children) or [Solid children](https://www.solidjs.com/tutorial/props_children). Directives behave similarly to [Svelte attachments](https://svelte.dev/docs/svelte/@attach). Spread syntax can be used at the component function level, similarly to React. Note: the examples below are simplified.
+## Composition with Fragments, Directives, and Forward syntax
+
+Fragments are similar to [Svelte snippets](https://svelte.dev/docs/svelte/snippet): functions that return HTML markup. The returned markup is opaque — it cannot be manipulated like [React Children (legacy)](https://react.dev/reference/react/Children) or [Solid children](https://www.solidjs.com/tutorial/props_children). Directives behave similarly to [Svelte attachments](https://svelte.dev/docs/svelte/@attach). Forward syntax can be used at the component function level, similarly to React. Note: the examples below are simplified.
 
 Implicit children fragment (placement and lifecycle) and binding context:
+
 ```ts
 import { component, signal } from '@angular/core';
 import { Menu, MenuItem } from '@mylib/menu';
@@ -431,6 +448,7 @@ export const MenuItem = component({
 ```
 
 Customizing components:
+
 ```ts
 import { component, signal } from '@angular/core';
 import { Menu } from '@mylib/menu';
@@ -492,6 +510,7 @@ export const Menu = component({
 ```
 
 Directives attached to a component and forwarded to an element:
+
 ```ts
 import { component, signal } from '@angular/core';
 import { Button } from '@mylib/button';
@@ -566,6 +585,7 @@ export const Button = component({
 ```
 
 Wrapping components and forwarding inputs, outputs and directives:
+
 ```ts
 import { component, signal, input, computed } from '@angular/core';
 import { tooltip } from '@mylib/tooltip';
@@ -654,9 +674,11 @@ export const UserDetail = component({
 ```
 
 ## Expose and Template Refs
+
 `expose` is the public interface of `setup()` for refs. Components return it along with `template`; directives return it from `setup`.
 
 `ref(Type)` → `Signal<expose | undefined>`, `refMany(Type)` → `Signal<expose[]>`; without `expose`, they resolve to `Signal<undefined>` and `Signal<undefined[]>`. Elements and components are bound with `ref={...}`, or with `use:...:ref={...}` for directives, and can be read after `afterNextRender`.
+
 ```ts
 import { component, ref, refMany, signal, input, afterNextRender, Signal } from '@angular/core';
 import { ripple } from '@mylib/ripple';
@@ -722,7 +744,9 @@ export const Parent = component({
 ```
 
 ## Dependency Injection Enhancements
+
 Improved ergonomics for types and tokens:
+
 ```ts
 import { component, inject, provide, injectionToken, input, signal } from '@angular/core';
 
@@ -815,6 +839,7 @@ export const Counter = component({
 ## Final considerations
 
 ### Concepts Impacted by These Changes
+
 - `ng-content`: replaced by `fragments`,
 - `ng-template` (`let-*` shorthands + `ngTemplateGuard_*`): likely replaced by `fragments`,
 - structural directives: likely replaced by `fragments`,
@@ -829,6 +854,7 @@ export const Counter = component({
 - `interface conformance`: opt-in via `satisfies` on `bindings` and `expose` — the same structural check that `implements` provides for classes.
 
 ### Notes
+
 - other decorator properties: in this proposal, components and directives expose only `providers` and `setup` entries. However, `@Component` and `@Directive` have many more properties, some of which (like `preserveWhitespaces`) should probably remain. They are not covered here to avoid scope creep;
 - `providers` defined at `directive` level: the added value is unclear, but the confusion they generate is well-documented; it is uncertain whether this concept remains meaningful;
 - inputs and outputs can be reassigned inside the setup:
@@ -836,7 +862,9 @@ export const Counter = component({
   - [`no-param-reassign`](https://eslint.org/docs/latest/rules/no-param-reassign).
 
 ### Pros and cons
+
 Pros:
+
 - familiar enough,
 - not subject to typical single-file component (SFC) limitations,
 - enforces a strict structure,
@@ -844,5 +872,6 @@ Pros:
 - no `splitProps` drama 😅.
 
 Cons:
+
 - noticeable repetition in how bindings are declared and consumed,
 - not plain TypeScript.
