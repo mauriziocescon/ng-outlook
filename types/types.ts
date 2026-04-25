@@ -207,6 +207,11 @@ type SetupReturn<E> =
 //   If this condition is not met, the compiler should emit a diagnostic
 //   listing the dropped remainder keys.
 //
+//   Collision precedence: explicit bindings declared on the wrapped target
+//   element always override forwarded bindings for the same key, regardless
+//   of source order. Lowering model: apply forwarded first, explicit last.
+//   This applies uniformly to all binding kinds (input/model/output/fragment/attachable).
+//
 //   For AttachableBinding keys in <Target forward:forwarded />, the compiler passes them
 //   through intact to the target component; the chain is maintained
 //   from parent → wrapper → target element at run time.

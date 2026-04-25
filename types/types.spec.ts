@@ -518,6 +518,8 @@ const WrapperProvidersSelectedKinds = component.wrap(Base, {
 //
 // Rule: explicit bindings override forwarded bindings, regardless of
 // attribute order in source.
+// Scope: applies uniformly to all binding kinds
+// (input/model/output/fragment/attachable).
 // Example:
 //   <Target forward:forwarded user={explicit} />  -> explicit wins for `user`
 //   <Target user={explicit} forward:forwarded />  -> explicit wins for `user`
