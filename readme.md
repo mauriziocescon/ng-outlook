@@ -320,6 +320,7 @@ export const UserCard = component({
 - `once:model:*` and `once:on:*` are compile-time errors.
 - `once:prop` and `prop` together on the same element are a duplicate binding error.
 - Name-matching shorthand also works: `once:{user}`.
+- Literal input expressions are effectively one-time: `prop={'10'}` is semantically equivalent to `once:prop={v()}` where `v()` is a signal returning `'10'`.
 
 ```ts
 import { component, signal } from '@angular/core';
