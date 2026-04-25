@@ -138,8 +138,19 @@ type InputKeys<B> = {
 
 type InputsOnly<B> = Pick<B, InputKeys<B>>;
 
+type IsExact<A, B> =
+  [A] extends [B]
+    ? [B] extends [A]
+      ? true
+      : false
+    : false;
+
 type ExactSubset<Sel extends Record<string, any>, All extends Record<string, any>> = {
-  [K in keyof Sel]-?: K extends keyof All ? (Sel[K] extends All[K] ? Sel[K] : never) : never;
+  [K in keyof Sel]-?: K extends keyof All
+    ? IsExact<Sel[K], All[K]> extends true
+      ? Sel[K]
+      : never
+    : never;
 };
 
 type ForwardedToken<B> = {
