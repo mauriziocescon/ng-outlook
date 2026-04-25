@@ -17,7 +17,7 @@ Highlights:
 6. Composition with Fragments, Directives, and Forward syntax,
 7. Expose and Template Refs,
 8. Dependency Injection Enhancements,
-9. Final considerations (`!important`) + [`experimental types`](https://github.com/mauriziocescon/ng-outlook/blob/main/types/types.ts).
+9. Final considerations (`!important`) + [`types`](https://github.com/mauriziocescon/ng-outlook/blob/main/types/types.ts).
 
 **Template syntax note**: the template syntax in the examples below resembles TSX syntactically but is Angular DSL — not JSX. It supports Angular control flow, directives, and custom bindings.
 
