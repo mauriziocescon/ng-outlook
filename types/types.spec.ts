@@ -15,6 +15,7 @@ import {
   type AttachableBinding,
   type ComponentBindingValue,
   type DerivationInstance,
+  type DirectiveInstance,
   type FragmentBinding,
   type InjectionToken,
   type OptionalFragmentBinding,
@@ -626,6 +627,47 @@ const buttonOnly = directive({
     const _l: string | undefined = label();
   },
 });
+
+const inputOnly = directive({
+  host: ref<HTMLInputElement>(),
+  bindings: {
+    label: input<string>(),
+  },
+  setup: ({ label }, { host }) => {
+    const _hostEl: Ref<HTMLInputElement | undefined> = host;
+    const _l: string | undefined = label();
+  },
+});
+
+// Attachment sink compatibility rule:
+// a directive can attach to a sink only if sink element type is assignable
+// to directive host element type.
+type SinkElement<S extends AttachableBinding<any>> =
+  S extends AttachableBinding<infer E> ? E : never;
+type DirectiveHost<D extends DirectiveInstance<any, any, any>> =
+  D extends DirectiveInstance<infer H, any, any> ? H : never;
+type DirectiveFitsSink<
+  S extends AttachableBinding<any>,
+  D extends DirectiveInstance<any, any, any>,
+> = SinkElement<S> extends DirectiveHost<D> ? true : false;
+
+type _ButtonSinkAcceptsButtonDirective = Assert<
+  IsEqual<
+    DirectiveFitsSink<AttachableBinding<HTMLButtonElement>, typeof buttonOnly>,
+    true
+  >
+>;
+type _ButtonSinkAcceptsGenericDirective = Assert<
+  IsEqual<
+    DirectiveFitsSink<AttachableBinding<HTMLButtonElement>, typeof tooltip>,
+    true
+  >
+>;
+// @ts-expect-error HTMLInputElement host directive is incompatible with HTMLButtonElement sink
+const _negButtonSinkRejectsInputDirective: DirectiveFitsSink<
+  AttachableBinding<HTMLButtonElement>,
+  typeof inputOnly
+> = true;
 
 // Directive accepts fragment bindings (TemplateRef-style use cases)
 const directiveWithFragment = directive({
