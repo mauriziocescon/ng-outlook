@@ -92,7 +92,7 @@ type BaseBindingValue =
 
 export type DerivationBindingValue = InputSignal<any>;
 export type DirectiveBindingValue = BaseBindingValue;
-export type ComponentBindingValue = BaseBindingValue | AttachableBinding<any>;
+export type ComponentBindingValue = BaseBindingValue | AttachableBinding<never>;
 
 // ────────────────────────────────────────────────────────────────
 // 5. INSTANCE TYPES & SHARED HELPERS
@@ -127,7 +127,7 @@ export type DirectiveInstance<H extends HTMLElement, B, E = void> = {
 type ExposeOf<T> =
   T extends { readonly [EXPOSE]: infer E } ? E : never;
 
-type TargetBindings<C extends ComponentInstance<any, any>> =
+type TargetBindings<C extends ComponentInstance<unknown, unknown>> =
   C extends { readonly [BINDINGS]: infer B } ? B : never;
 
 type InputKeys<B> = {
@@ -145,7 +145,7 @@ type IsExact<A, B> =
       : false
     : false;
 
-type ExactSubset<Sel extends Record<string, any>, All extends Record<string, any>> = {
+type ExactSubset<Sel extends Record<string, unknown>, All extends Record<string, unknown>> = {
   [K in keyof Sel]-?: K extends keyof All
     ? IsExact<Sel[K], All[K]> extends true
       ? Sel[K]
@@ -168,10 +168,10 @@ type SetupBindings<B> = {
 
 type ReservedBindingsConstraint<B extends Record<string, ComponentBindingValue>> =
   ('children' extends keyof B
-    ? B['children'] extends FragmentBinding<any> ? unknown : never
+    ? B['children'] extends FragmentBinding<unknown> ? unknown : never
     : unknown) &
   ('attachments' extends keyof B
-    ? B['attachments'] extends AttachableBinding<any> ? unknown : never
+    ? B['attachments'] extends AttachableBinding<never> ? unknown : never
     : unknown);
 
 type SetupReturn<E> =
@@ -242,7 +242,7 @@ export function component(config: any): any {
 // Wrapper namespace helper (target as first arg, C inferred from value)
 export namespace component {
   export declare function wrap<
-    C extends ComponentInstance<any, any>,
+    C extends ComponentInstance<unknown, unknown>,
     Sel extends Record<string, ComponentBindingValue>,
     E = void
   >(
@@ -251,7 +251,11 @@ export namespace component {
       bindings: ExactSubset<Sel, TargetBindings<C>>;
       setup: (
         bindings: SetupBindings<Sel>,
-        context: { forwarded: ForwardedToken<Omit<TargetBindings<C>, keyof Sel>> }
+        context: {
+          forwarded: keyof Omit<TargetBindings<C>, keyof Sel> extends never
+            ? never
+            : ForwardedToken<Omit<TargetBindings<C>, keyof Sel>>;
+        }
       ) => SetupReturn<E>;
       providers?: (inputs: InputsOnly<Sel>) => Provider[];
       style?: string;
@@ -342,7 +346,7 @@ export function derivation(config: any): any {
 // Native element
 export function ref<H extends HTMLElement>(): Ref<H | undefined>;
 // Component or Directive (expose inferred)
-export function ref<T extends ComponentInstance<any, any> | DirectiveInstance<any, any, any>>(
+export function ref<T extends ComponentInstance<unknown, unknown> | DirectiveInstance<HTMLElement, unknown, unknown>>(
   type: T
 ): Ref<ExposeOf<T> extends void ? undefined : ExposeOf<T> | undefined>;
 
@@ -351,7 +355,7 @@ export function ref(_type?: any): any {
 }
 
 // Component or Directive (expose inferred)
-export function refMany<T extends ComponentInstance<any, any> | DirectiveInstance<any, any, any>>(
+export function refMany<T extends ComponentInstance<unknown, unknown> | DirectiveInstance<HTMLElement, unknown, unknown>>(
   type: T
 ): Ref<ExposeOf<T> extends void ? undefined[] : ExposeOf<T>[]>;
 

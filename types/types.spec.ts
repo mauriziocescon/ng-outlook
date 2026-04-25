@@ -451,6 +451,22 @@ const _NegNarrowedSubtype = component.wrap(WideInput, {
   setup: ({ value }, { forwarded }) => tmpl,
 });
 
+// bindings should NOT allow supertype widening in wrappers
+const NarrowInput = component({
+  bindings: {
+    value: input.required<string>(),
+  },
+  setup: ({ value }) => tmpl,
+});
+
+const _NegWidenedSupertype = component.wrap(NarrowInput, {
+  bindings: {
+    // @ts-expect-error wrapper bindings must exactly match target binding type
+    value: input.required<string | number>(),
+  },
+  setup: ({ value }, { forwarded }) => tmpl,
+});
+
 // Wrap with empty selected bindings: all target bindings forwarded via token
 interface Simple {
   id: string;
@@ -510,6 +526,19 @@ const WrapperProvidersSelectedKinds = component.wrap(Base, {
     // @ts-expect-error click is an output, excluded from providers
     inputs.click;
     return [];
+  },
+});
+
+// forwarded becomes never when selected bindings cover all target bindings
+const FullSelect = component.wrap(Base, {
+  bindings: {
+    item: input.required<Simple>(),
+    selected: model<boolean>(),
+    click: output<void>(),
+  },
+  setup: ({ item, selected, click }, { forwarded }) => {
+    const _forwardedIsNever: never = forwarded;
+    return tmpl;
   },
 });
 
