@@ -160,7 +160,7 @@ Compiler contract:
 2. The compiler `MUST` lower `@forward()` by unrolling only that key set.
 3. The compiler `MUST NOT` include `addBindings` keys in target forwarding.
 4. The compiler `MUST` keep existing explicit-binding precedence (React-style last wins).
-5. The compiler `SHOULD` preserve attachable passthrough chain for forwardable attachable keys.
+5. The compiler `SHOULD` preserve attachment passthrough chain for forwardable attachment keys.
 6. The compiler `MUST` treat `@forward()` as marker-only: no forwarding object, property reads, or enumeration.
 7. The compiler `MUST` reject `@forward()` on non-component elements.
 

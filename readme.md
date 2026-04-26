@@ -546,7 +546,7 @@ export const ButtonConsumer = component({
 });
 
 // -- button in @mylib/button --------------------
-import { component, input, output, computed, fragment, attachable } from '@angular/core';
+import { component, input, output, computed, fragment, attachment } from '@angular/core';
 
 export const Button = component({
   bindings: {
@@ -560,7 +560,7 @@ export const Button = component({
      * Provided by ng from applied directives (not bindable directly)
      * Name reserved to ng
      */
-    attachments: attachable<HTMLButtonElement>(),
+    attachments: attachment<HTMLButtonElement>(),
   },
   setup: ({ type, class: className, style, disabled, click, children, attachments }) => {
     const innerStyle = computed(() => `${style()}; color: red;`);
@@ -644,7 +644,7 @@ export const UserDetailWrapper = component.wrap(UserDetail, {
 });
 
 // -- UserDetail -----------------------------------
-import { component, input, model, output, fragment, attachable } from '@angular/core';
+import { component, input, model, output, fragment, attachment } from '@angular/core';
 
 export interface User {
   name: string;
@@ -657,7 +657,7 @@ export const UserDetail = component({
     email: model.required<string>(),
     makeAdmin: output<void>(),
     children: fragment<void>(),
-    attachments: attachable<HTMLElement>(),
+    attachments: attachment<HTMLElement>(),
   },
   setup: ({ user, email, makeAdmin, children, attachments }) => (
     <div @use(attachments)>

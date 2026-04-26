@@ -199,7 +199,7 @@ export type DirectiveBindingValue =
 // Extended component binding surface
 export type ComponentBindingValue =
   | DirectiveBindingValue
-  | AttachableBinding<any>;
+  | AttachmentBinding<any>;
 ```
 
 `InputsOnly<B>` (used by `providers`) includes `OnceInput` keys:
@@ -252,7 +252,7 @@ type ResolveBinding<V> =
 | `input.once` in directive bindings | `ONCE006` — valid |
 | `input.once` in `@derive` bindings | `ONCE007` — valid |
 | `once:` on a `fragment` binding | `ONCE008` — fragments are structural, not value bindings |
-| `once:` on an `attachable` binding | `ONCE009` — attachable is framework-managed |
+| `once:` on an `attachment` binding | `ONCE009` — attachment is framework-managed |
 
 ---
 

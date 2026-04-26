@@ -28,7 +28,7 @@ export type TemplateMarkup = { readonly [TEMPLATE]: true };
 // ────────────────────────────────────────────────────────────────
 
 declare const FRAGMENT: unique symbol;
-declare const ATTACHABLE: unique symbol;
+declare const ATTACHMENT: unique symbol;
 declare const FRAGMENT_OPTIONAL: unique symbol;
 declare const FRAGMENT_REQUIRED: unique symbol;
 
@@ -48,15 +48,15 @@ export type RequiredFragmentBinding<T> = {
   readonly [FRAGMENT_REQUIRED]: true;
 };
 export type FragmentBinding<T> = OptionalFragmentBinding<T> | RequiredFragmentBinding<T>;
-export type AttachableBinding<T extends HTMLElement> = {
-  readonly [ATTACHABLE]: (host: T) => void;
+export type AttachmentBinding<T extends HTMLElement> = {
+  readonly [ATTACHMENT]: (host: T) => void;
 };
 
 export declare function fragment<T>(): OptionalFragmentBinding<T>;
 export declare namespace fragment {
   export function required<T>(): RequiredFragmentBinding<T>;
 }
-export declare function attachable<T extends HTMLElement>(): AttachableBinding<T>;
+export declare function attachment<T extends HTMLElement>(): AttachmentBinding<T>;
 
 // ────────────────────────────────────────────────────────────────
 // 3. REF
@@ -80,20 +80,20 @@ export interface Ref<T> extends Signal<T> {
 // Layered binding model:
 // - Derivation: inputs only
 // - Directive: derivation + model/output/fragment
-// - Component: directive + attachable
+// - Component: directive + attachment
 // ────────────────────────────────────────────────────────────────
 
-type AnyNonAttachableBinding =
+type AnyNonAttachmentBinding =
   | InputSignal<any>
   | ModelSignal<any>
   | OutputEmitterRef<any>
   | OptionalFragmentBinding<any>
   | RequiredFragmentBinding<any>;
 
-type AnyBindingValue = AnyNonAttachableBinding | AttachableBinding<any>;
+type AnyBindingValue = AnyNonAttachmentBinding | AttachmentBinding<any>;
 
 export type DerivationBindingValue = InputSignal<any>;
-export type DirectiveBindingValue = AnyNonAttachableBinding;
+export type DirectiveBindingValue = AnyNonAttachmentBinding;
 export type ComponentBindingValue = AnyBindingValue;
 
 // ────────────────────────────────────────────────────────────────
@@ -153,7 +153,7 @@ type BindingKind<V> =
     : V extends InputSignal<any> ? 'input'
     : V extends OutputEmitterRef<any> ? 'output'
     : V extends FragmentBinding<any> ? 'fragment'
-    : V extends AttachableBinding<any> ? 'attachable'
+    : V extends AttachmentBinding<any> ? 'attachment'
     : 'unknown';
 
 type ExtraKeys<Sel extends Record<string, unknown>, All extends Record<string, unknown>> =
@@ -220,8 +220,8 @@ type ReservedBindingsConstraint<B extends Record<string, ComponentBindingValue>>
     }
     : unknown) &
   ('attachments' extends keyof B
-    ? B['attachments'] extends AttachableBinding<any> ? {} : {
-      __reserved_attachments_error__: 'attachments binding must use attachable<...>()';
+    ? B['attachments'] extends AttachmentBinding<any> ? {} : {
+      __reserved_attachments_error__: 'attachments binding must use attachment<...>()';
     }
     : unknown);
 
@@ -270,9 +270,9 @@ type SetupReturn<E> =
 //   Collision precedence: explicit bindings declared on the wrapped target
 //   element always override remainder bindings for the same key,
 //   regardless of source order. Lowering model: apply remainder first, explicit last.
-//   This applies uniformly to all binding kinds (input/model/output/fragment/attachable).
+//   This applies uniformly to all binding kinds (input/model/output/fragment/attachment).
 //
-//   For AttachableBinding keys in <Target @forward() />, the compiler passes them
+//   For AttachmentBinding keys in <Target @forward() />, the compiler passes them
 //   through intact to the target component; the chain is maintained
 //   from parent → wrapper → target element at run time.
 //   @forward() can be used only on component elements.

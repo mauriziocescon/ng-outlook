@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 
 import {
-  type AttachableBinding,
+  type AttachmentBinding,
   type ComponentBindingValue,
   type DerivationInstance,
   type DirectiveInstance,
@@ -24,7 +24,7 @@ import {
   type TemplateMarkup,
   type __ReservedBindingsConstraint,
   type __WrapSelectionDiagnostics,
-  attachable,
+  attachment,
   component,
   derivation,
   directive,
@@ -61,24 +61,24 @@ type MergeProps<Left, Right> = Omit<Left, keyof Right> & Right;
 // ────────────────────────────────────────────────────────────────
 // BRANDED TYPE NOMINALITY
 //
-// FragmentBinding and AttachableBinding must be distinct nominal
+// FragmentBinding and AttachmentBinding must be distinct nominal
 // types — not structurally assignable to each other.
 //
 // NOTE on Directive Attachments semantics:
-// The element-type parameter T in AttachableBinding<T> is the
+// The element-type parameter T in AttachmentBinding<T> is the
 // Sink constraint checked by the compiler at build time.
 // ────────────────────────────────────────────────────────────────
 
 type FragIsDir =
-  FragmentBinding<void> extends AttachableBinding<any> ? 'LEAK' : 'OK';
+  FragmentBinding<void> extends AttachmentBinding<any> ? 'LEAK' : 'OK';
 const _fragIsDir: FragIsDir = 'OK';
 
 type DirIsFrag =
-  AttachableBinding<HTMLElement> extends FragmentBinding<any> ? 'LEAK' : 'OK';
+  AttachmentBinding<HTMLElement> extends FragmentBinding<any> ? 'LEAK' : 'OK';
 const _dirIsFrag: DirIsFrag = 'OK';
 
 type SameInner =
-  FragmentBinding<HTMLElement> extends AttachableBinding<HTMLElement>
+  FragmentBinding<HTMLElement> extends AttachmentBinding<HTMLElement>
     ? 'LEAK'
     : 'OK';
 const _sameInner: SameInner = 'OK';
@@ -99,52 +99,52 @@ const _optIsReq: OptIsReq = 'OK';
 // ────────────────────────────────────────────────────────────────
 // DIRECTIVE ATTACHMENTS — element-type compatibility
 //
-// AttachableBinding<T> is CONTRAVARIANT in T:
+// AttachmentBinding<T> is CONTRAVARIANT in T:
 // - an attachments binding typed for a broader element type (HTMLElement)
 //   is assignable to a narrower sink (HTMLButtonElement),
 // - a narrower binding (HTMLButtonElement) is NOT assignable to a broader
 //   sink (HTMLElement).
 // The check reflects compile-time validation: the element type T
-// declared in attachable<T>() constrains which directives are legal at
+// declared in attachment<T>() constrains which directives are legal at
 // the call site. Instantiation itself is deferred to runtime,
 // but the type-mismatch is caught at build time.
 // ────────────────────────────────────────────────────────────────
 
 // Contravariance on subtype/supertype:
 type ButtonSinkAcceptsAnyElement =
-  AttachableBinding<HTMLElement> extends AttachableBinding<HTMLButtonElement>
+  AttachmentBinding<HTMLElement> extends AttachmentBinding<HTMLButtonElement>
     ? 'OK'
     : 'LEAK';
 const _buttonSinkAcceptsAnyElement: ButtonSinkAcceptsAnyElement = 'OK';
 
 type AnyElementSinkAcceptsButtonOnly =
-  AttachableBinding<HTMLButtonElement> extends AttachableBinding<HTMLElement>
+  AttachmentBinding<HTMLButtonElement> extends AttachmentBinding<HTMLElement>
     ? 'LEAK'
     : 'OK';
 const _anyElementSinkAcceptsButtonOnly: AnyElementSinkAcceptsButtonOnly = 'OK';
 
 // Unrelated element types remain incompatible in both directions
 type ButtonSinkAcceptsDiv =
-  AttachableBinding<HTMLDivElement> extends AttachableBinding<HTMLButtonElement>
+  AttachmentBinding<HTMLDivElement> extends AttachmentBinding<HTMLButtonElement>
     ? 'LEAK'
     : 'OK';
 const _buttonSinkAcceptsDiv: ButtonSinkAcceptsDiv = 'OK';
 
 type DivSinkAcceptsButton =
-  AttachableBinding<HTMLButtonElement> extends AttachableBinding<HTMLDivElement>
+  AttachmentBinding<HTMLButtonElement> extends AttachmentBinding<HTMLDivElement>
     ? 'LEAK'
     : 'OK';
 const _divSinkAcceptsButton: DivSinkAcceptsButton = 'OK';
 
-// A component declaring attachments: attachable<HTMLButtonElement>()
+// A component declaring attachments: attachment<HTMLButtonElement>()
 // carries the constraint in its bindings — verified here structurally.
 const ButtonSink = component({
   bindings: {
-    attachments: attachable<HTMLButtonElement>(),
+    attachments: attachment<HTMLButtonElement>(),
   },
   setup: ({ attachments }) => {
-    // attachments is AttachableBinding<HTMLButtonElement> — not HTMLDivElement
-    const _sink: AttachableBinding<HTMLButtonElement> = attachments;
+    // attachments is AttachmentBinding<HTMLButtonElement> — not HTMLDivElement
+    const _sink: AttachmentBinding<HTMLButtonElement> = attachments;
     return tmpl;
   },
 });
@@ -153,11 +153,11 @@ const ButtonSink = component({
 // must be a type error.
 const _NegDivSinkToButtonSink = component({
   bindings: {
-    attachments: attachable<HTMLButtonElement>(),
+    attachments: attachment<HTMLButtonElement>(),
   },
   setup: ({ attachments }) => {
-    // @ts-expect-error AttachableBinding<HTMLDivElement> is not assignable to AttachableBinding<HTMLButtonElement>
-    const _sink: AttachableBinding<HTMLDivElement> = attachments;
+    // @ts-expect-error AttachmentBinding<HTMLDivElement> is not assignable to AttachmentBinding<HTMLButtonElement>
+    const _sink: AttachmentBinding<HTMLDivElement> = attachments;
     return tmpl;
   },
 });
@@ -199,10 +199,10 @@ const MinimalFullProviders = component({
 });
 
 // ────────────────────────────────────────────────────────────────
-// COMPONENT — bindings (input, model, output, fragment, attachable)
+// COMPONENT — bindings (input, model, output, fragment, attachment)
 //
 // Setup receives raw Angular types: InputSignal, ModelSignal,
-// OutputEmitterRef, FragmentBinding, AttachableBinding.
+// OutputEmitterRef, FragmentBinding, AttachmentBinding.
 // ────────────────────────────────────────────────────────────────
 
 const UserDetail = component({
@@ -211,7 +211,7 @@ const UserDetail = component({
     email: model.required<string>(),
     makeAdmin: output<void>(),
     children: fragment<void>(),
-    attachments: attachable<HTMLElement>(),
+    attachments: attachment<HTMLElement>(),
   },
   setup: ({ user, email, makeAdmin, children, attachments }) => {
     const _u: User = user();
@@ -240,7 +240,7 @@ const RequiredChildren = component({
 
 // Reserved names enforcement on component bindings:
 // - children must be fragment(...)
-// - attachments must be attachable(...)
+// - attachments must be attachment(...)
 // @ts-expect-error reserved name 'children' must use fragment(...)
 const _NegChildrenMustBeFragment = component({
   bindings: {
@@ -249,8 +249,8 @@ const _NegChildrenMustBeFragment = component({
   setup: () => tmpl,
 });
 
-// @ts-expect-error reserved name 'attachments' must use attachable(...)
-const _NegAttachmentsMustBeAttachable = component({
+// @ts-expect-error reserved name 'attachments' must use attachment(...)
+const _NegAttachmentsMustBeAttachment = component({
   bindings: {
     attachments: input<string>(),
   },
@@ -283,7 +283,7 @@ const AllBindingKinds = component({
     b: model<string>(),
     c: output<void>(),
     d: fragment<void>(),
-    e: attachable<HTMLElement>(),
+    e: attachment<HTMLElement>(),
   },
   setup: (b) => tmpl,
   providers: (inputs) => {
@@ -294,7 +294,7 @@ const AllBindingKinds = component({
     inputs.c;
     // @ts-expect-error d is fragment, excluded from providers
     inputs.d;
-    // @ts-expect-error e is attachable, excluded from providers
+    // @ts-expect-error e is attachment, excluded from providers
     inputs.e;
     return [];
   },
@@ -528,7 +528,7 @@ const WrapperProvidersSelectedKinds = component.wrap(Base, {
 // Rule: explicit bindings override remainder bindings, regardless of
 // attribute order in source.
 // Scope: applies uniformly to all binding kinds
-// (input/model/output/fragment/attachable).
+// (input/model/output/fragment/attachment).
 // Example:
 //   <Target @forward() user={explicit} />  -> explicit wins for `user`
 //   <Target user={explicit} @forward() />  -> explicit wins for `user`
@@ -642,30 +642,30 @@ const inputOnly = directive({
 // Attachment sink compatibility rule:
 // a directive can attach to a sink only if sink element type is assignable
 // to directive host element type.
-type SinkElement<S extends AttachableBinding<any>> =
-  S extends AttachableBinding<infer E> ? E : never;
+type SinkElement<S extends AttachmentBinding<any>> =
+  S extends AttachmentBinding<infer E> ? E : never;
 type DirectiveHost<D extends DirectiveInstance<any, any, any>> =
   D extends DirectiveInstance<infer H, any, any> ? H : never;
 type DirectiveFitsSink<
-  S extends AttachableBinding<any>,
+  S extends AttachmentBinding<any>,
   D extends DirectiveInstance<any, any, any>,
 > = SinkElement<S> extends DirectiveHost<D> ? true : false;
 
 type _ButtonSinkAcceptsButtonDirective = Assert<
   IsEqual<
-    DirectiveFitsSink<AttachableBinding<HTMLButtonElement>, typeof buttonOnly>,
+    DirectiveFitsSink<AttachmentBinding<HTMLButtonElement>, typeof buttonOnly>,
     true
   >
 >;
 type _ButtonSinkAcceptsGenericDirective = Assert<
   IsEqual<
-    DirectiveFitsSink<AttachableBinding<HTMLButtonElement>, typeof tooltip>,
+    DirectiveFitsSink<AttachmentBinding<HTMLButtonElement>, typeof tooltip>,
     true
   >
 >;
 // @ts-expect-error HTMLInputElement host directive is incompatible with HTMLButtonElement sink
 const _negButtonSinkRejectsInputDirective: DirectiveFitsSink<
-  AttachableBinding<HTMLButtonElement>,
+  AttachmentBinding<HTMLButtonElement>,
   typeof inputOnly
 > = true;
 
@@ -682,23 +682,23 @@ const directiveWithFragment = directive({
   },
 });
 
-// Directive must reject attachable bindings
-// @ts-expect-error directives cannot declare attachable bindings
-const _NegDirectiveAttachable = directive({
+// Directive must reject attachment bindings
+// @ts-expect-error directives cannot declare attachment bindings
+const _NegDirectiveAttachment = directive({
   host: ref<HTMLElement>(),
   bindings: {
-    attachments: attachable<HTMLElement>(),
+    attachments: attachment<HTMLElement>(),
   },
   setup: (_bindings, _context) => {},
 });
 
-// Directive must reject attachable bindings regardless of binding key name
+// Directive must reject attachment bindings regardless of binding key name
 // (defensive check against component-reserved name confusion).
-// @ts-expect-error directives cannot declare attachable bindings
-const _NegDirectiveChildrenAttachable = directive({
+// @ts-expect-error directives cannot declare attachment bindings
+const _NegDirectiveChildrenAttachment = directive({
   host: ref<HTMLElement>(),
   bindings: {
-    children: attachable<HTMLElement>(),
+    children: attachment<HTMLElement>(),
   },
   setup: (_bindings, _context) => {},
 });
@@ -1142,7 +1142,7 @@ type UserDetailBindings = {
   email: ModelSignal<string>;
   makeAdmin: OutputEmitterRef<void>;
   children: OptionalFragmentBinding<void>;
-  attachments: AttachableBinding<HTMLElement>;
+  attachments: AttachmentBinding<HTMLElement>;
 };
 
 type _NoWrapDiag = __WrapSelectionDiagnostics<
@@ -1209,12 +1209,12 @@ type _ReservedAttachmentsDiag = __ReservedBindingsConstraint<{
 type _ReservedAttachmentsMsg = Assert<
   IsEqual<
     _ReservedAttachmentsDiag['__reserved_attachments_error__'],
-    'attachments binding must use attachable<...>()'
+    'attachments binding must use attachment<...>()'
   >
 >;
 
 type _ReservedOk = __ReservedBindingsConstraint<{
   children: OptionalFragmentBinding<void>;
-  attachments: AttachableBinding<HTMLElement>;
+  attachments: AttachmentBinding<HTMLElement>;
 }>;
 type _ReservedOkKeys = Assert<IsEqual<keyof _ReservedOk, never>>;
